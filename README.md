@@ -10,3 +10,8 @@ This is the next generation orchestration of autonomous laboratories server infr
 4. What infra is needed for BIG deployment and MAP integration in a programmable form
 5. What we need to do for going beyond adhoc demonstration (e.g. what BIGMAP really is supposed to do)
 6. How to establish data reusability in a machine-actionable form
+
+
+## Acknowledgements
+
+This project has received funding from the European Union’s [Horizon 2020 research and innovation programme](https://ec.europa.eu/programmes/horizon2020/en) under grant agreement [No 957189](https://cordis.europa.eu/project/id/957189).
