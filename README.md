@@ -1,4 +1,6 @@
 # nextGOALS
+next **G**lobal **O**rchestration **A**utonomous **S**erver
+
 This is the next generation orchestration of autonomous laboratories server infrastructure, which is the continuation of FINALES.
 
 # Discussion points from/for Lyngby meeting
