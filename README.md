@@ -1,5 +1,5 @@
 # nextGOALS
-next **G**lobal **O**rchestration **A**utonomous **S**erver
+next **G**eneration **O**rchestrators of **A**utonomous **L**aboratories **S**erver
 
 This is the next generation orchestration of autonomous laboratories server infrastructure, which is the continuation of FINALES.
 
