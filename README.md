@@ -3,6 +3,10 @@ next **F**ast **IN**tention **A**gnostic **LE**arning **S**erver
 
 This is the next generation of FINALES.
 
+# Documents
+
+Documents related to this project and its broader context can be found on the respective Wiki page of this project: [https://github.com/BIG-MAP/FINALES2/wiki/Links](https://github.com/BIG-MAP/FINALES2/wiki/Links)
+
 # Discussion points from/for Lyngby meeting
 
  
