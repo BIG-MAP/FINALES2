@@ -1,4 +1,3 @@
-
 from typing import List
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException
@@ -18,7 +17,8 @@ app = FastAPI(title="FINALES2",
 app.include_router(router=userManager.userRouter)
 
 @app.get("/test")
-def test(token:User=Depends(userManager.getUserForToken)):
+def test(token:User=Depends(userManager.getActiveUser)):
+    print(config.userDB)
     return token
 
 # @app.post("/authenticate")

@@ -1,14 +1,18 @@
-host = 'localhost' #'polstein1.polis.uni-ulm.de'#"stein.hiu-batteries.de"
-port = 13371#49157
+host = 'localhost'
+port = 13371
 
-userDB:str = r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\FINALES2\src\FINALES2\userManagement\userDB.db'
+userDB:str = "src/FINALES2/userManagement/userDB2.db"
 salt_userDB = "dcf832f0ec6a80dc36afdO"
 
-secretKey = "3e469b60dfb746971bdf440cd80306dca5c9469ab589aebbfaf213461b21e8cc"  # use openssl rand -hex 32
+secretKey = "3e469b60dfb746971bdf440cd80306dca5c9469ab589aebbfaf213461b21e8cc"  # use openssl rand -hex 32 to get a random secret key
 algorithm = "HS256"
 tokenExpirationMin = 2
 
 
+
+#----------------------------
+# from FINALES
+#----------------------------
 
 # #values
 # reset: bool = True
