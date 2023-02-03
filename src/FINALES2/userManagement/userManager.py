@@ -11,13 +11,12 @@ from pathlib import Path
 
 from FINALES2.server import config
 import FINALES2.userManagement.authentication as authentication
-from FINALES2.schemas import User, AccessToken
-
+from FINALES2.schemas import User
 # Create a router
 userRouter = APIRouter(prefix="/userManagement", tags=["userManagement"])
 
 # Authentication Scheme
-authenticationScheme = OAuth2PasswordBearer(tokenUrl="userManagement/authenticate")
+authenticationScheme = OAuth2PasswordBearer(tokenUrl=f"{userRouter.prefix.strip('/')}/authenticate")
 token = Depends(authenticationScheme)
 cryptoContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 authenticationError = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed. Wrong username or password.", headers={"WWW-Authenticate": "Bearer"})
@@ -106,7 +105,7 @@ class UserDB():
         '''
 
         # Query all the users for this username from the user database
-        singleUser = self.cursor.execute(f"SELECT * FROM users WHERE username=?", (username))
+        singleUser = self.cursor.execute(f"SELECT * FROM users WHERE username=(?)", (username,))
         row = singleUser.fetchall()
         # If there is only one user with this username
         if len(row) == 1:
@@ -150,48 +149,123 @@ class UserDB():
     #     pass
     
     def closeConnection(self) -> None:
-        ''' This function closes the connection to the database. '''
+        ''' This function closes the connection to the user database.
+        
+        Inputs:
+        This function takes no inputs.
+
+        Outputs:
+        This function has no output.
+        '''
+
+        # Close the connection to the user database
         self.connection.close()
+        # Print an information to the user
         print("Connection to user database closed.")
 
 def createUser(username:str, password:str, usergroups:list[str], userDB:str=config.userDB) -> User:
-    ''' This function creates a new user object and password and saves it to the database. '''
+    ''' This function creates a new user object connected to the given password and saves it to the database.
+    
+    Inputs:
+    username: a string specifying the username
+    password: a string representing the plain text password
+    usergroups: a list of strings providing all the user groups, to which the user is assigned
+    userDB: a string giving the path, where the user database is stored
+
+    Outputs:
+    new_user: a user object with all the data set as in the user database
+    '''
+
+    # Instantiate the user database
     userDB = UserDB(userDB)
     # Instantiate a new user
     new_user = User(username=username, password=password, usergroups=usergroups)
     # Save the new user to the user database
     userDB.addNewUser(new_user)
+    # Print an information to the operator
     print(f'New user with ID {new_user.id} created and added to the user database ({userDB.savepath}).')
+    # Get the just added user from the user database and return it.
+    new_user = userDB.getSingleUser(username=new_user.username)
     return new_user
 
 @userRouter.post("/newUser")
 def newUser(username:str, password:str, usergroups:list[str], userDB:str=config.userDB) -> None:
+    ''' This function creates a new user in a user database.
+    
+    Inputs:
+    username: a string defining the username of the user
+    password: a string specifying the plain text password for the user
+    usergroups: a list of strings representing the usergroups, of which the user is a member
+    userDB: a string specifying the path to the user database
+
+    Outputs:
+    This function has no output.
+    '''
+
+    # Create the new user in the database and print a message to the operator about the newly created user.
     createUser(userDB=userDB, username=username, password=password, usergroups=usergroups)
     return f"New user {username} created in user database {userDB}."
 
 @userRouter.get("/singleUser")
 def singleUser(username:str) -> dict:
+    ''' This function fetches a single user from the user database based on its username and returns the corresponding dictionary of the user object.
+    
+    Inputs:
+    username: a string specifying the username of the user
+
+    Outputs:
+    thisUser: a dictionary created based on the attributes of the user object collected from the user database   
+    '''
+
+    # Get the user from the user database
     thisUser = UserDB(config.userDB).getSingleUser(username=username)
+    # Transform the user object to a dictionary and return it
     thisUser = thisUser.to_dict()
     return thisUser
 
 @userRouter.get("/allUsers")
-def allUsers() -> list[dict]:
-    allUsers = UserDB(config.userDB).getAllUsers()
+def allUsers(userDB:str=config.userDB) -> list[dict]:
+    ''' This function collects all the users saved in the user database.
+    
+    Inputs:
+    userDB: a string specifying the path to the user database, which shall be queried
+
+    Outputs:
+    allUsers: a list of dictionaries comprising a dictionary for each user collected from the user database    
+    '''
+
+    # Get all the entries from the user database
+    allUsers = UserDB(userDB).getAllUsers()
+    # Collect the dictionaries of all the users in a list and return the list
     allUsers = [user.to_dict() for user in allUsers]
     return allUsers
 
-def getUserForToken(token:str=Depends(authenticationScheme)) -> User:
-    return User(username="ATest", id=uuid4(), password='1111')
+# def getUserForToken(token:str=Depends(authenticationScheme)) -> User:
+#     ''' This function  '''
+#     return User(username="ATest", id=uuid4(), password='1111')
 
 def getActiveUser(token:str=Depends(authenticationScheme)) -> User:
+    ''' This function returns the user, to which the given token belongs, if the token belongs to a user.
+    
+    Inputs:
+    token: a string used to extract the username from to search for the user in the user database
+
+    Outputs:
+    activeUser: a user object created based on a query to the user database with the username obtained from the token    
+    '''
+
+    # Try to decode the token
     try:
         decodedJWT = jwt.decode(token, config.secretKey, algorithms=[config.algorithm])
+        # Get the username from the token
         activeUsername:str = decodedJWT.get("sub")
+        # If there is no username, raise an authentication exception
         if activeUsername is None:
             raise authenticationError
+    # If the decoding fails, raise an authentication exception
     except JWTError:
         raise authenticationError
+    # If there is a username, find the corresponding user in the user database and return it
     activeUser = singleUser(username=activeUsername)
     return activeUser
 
@@ -201,38 +275,95 @@ def getActiveUser(token:str=Depends(authenticationScheme)) -> User:
 ''' This implementation is based on the FastAPI documentation https://fastapi.tiangolo.com/tutorial/security/ '''
 
 def hashPassword(password:str) -> str:
-    hashedPW = cryptoContext.hash(password, salt=config.salt_userDB)
+    ''' This function hashes a plain text password.
+    
+    Inputs:
+    password: a string representing the plain text password of a user
+    
+    Outputs:
+    hashPW: a string representing the hash of the plain text password
+    '''
+
+    # Hash the password and return it
+    hashedPW = cryptoContext.hash(password)
     return hashedPW
 
 def verifyPassword(password:str, passwordHash:str) -> bool:
-    return cryptoContext.verify(password, passwordHash)
+    ''' This function verifies a password.
+    Inputs:
+    password: a string representing the plain text password
+    passwordHash: a string representing the hash, which should match the password
+    
+    Outputs:
+    verification: a boolean, which is True, if the password matches the hash, and False otherwise'''
+    
+    verification = cryptoContext.verify(password, passwordHash)
+    return verification
 
 def getAccessToken(tokenData:dict, expirationMin:Union[datetime.timedelta, None]=None) -> str:
+    ''' This function generates an access token for a user.
+    Inputs:
+    tokenData: a dictionary containing the information needed to create the token
+    expirationMin: a timedelta giving the duration until the expiration of the token in minutes or None
+    
+    Outputs:
+    jwtToken: a string representing the token generated
+    '''
+
+    # Create a copy of the token data
     tokenData = tokenData.copy()
+    # If no expiration time is given, use 10 min
     if expirationMin == None:
         expirationMin = datetime.timedelta(minutes=10)
+    # Add the expiration duration to now
     expirationTime = datetime.datetime.now() + expirationMin
+    # Save the expiration time to the tokenData using the key "exp" (it needs to be called exp, because there will be a TypeError otherwise)
     tokenData["exp"] = expirationTime
+    # Encode the token and return it
     jwtToken = jwt.encode(tokenData, config.secretKey, algorithm=config.algorithm)
     return jwtToken
 
-def userAuthentication(username:str, password:str):
-    user = User(**singleUser(username=username))
+def userAuthentication(username:str, password:str) -> User:
+    ''' This function authenticates a user.
+    Inputs:
+    username: a string giving the username of the user, which needs authentication
+    password: a string of the plain text password of the user, which needs authentication
+    
+    Outputs:
+    user: a user object matching the requested username and password. If the password is not correct, an authentication exception is raised
+    '''
+
+    # Get the user from the user database based on its username
+    userDict = singleUser(username=username)
+    # Create the user object from the output
+    user = User(**userDict)
+    # Verify the password and return it, if it is correct
     if verifyPassword(password=password, passwordHash=user.password):
         return user
+    # Raise an authenticatin exception otherwise
     else:
         raise authenticationError
 
 @userRouter.post("/authenticate")
 def authenticate(loginForm:OAuth2PasswordRequestForm=Depends()) -> dict[str, str]:
+    ''' The function allows a user to log in.
+    Inputs:
+    loginForm: a loginForm comprising the username and the password to use for the login
+    
+    Outputs:
+    tokenInfo: a dictionary with the relevant access_token and token_type
+    '''
+
+    # Connect to the user database
     userDB=UserDB(config.userDB)
     # Get the user from the user database and check, if the password is correct
     thisUser = userAuthentication(username=loginForm.username, password=loginForm.password)
+    # Define the expiration time
     tokenExpiration = datetime.timedelta(minutes=config.tokenExpirationMin)
+    # Get the access token for the user
     accessToken = getAccessToken(tokenData={"sub": thisUser.username}, expirationMin=tokenExpiration)
+    # Print an information to the user
     print("Welcome to FINALES2!")
-    return {"access_token": accessToken, "token_type": "bearer"}
-
-# uDB = UserDB(r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\FINALES2\src\FINALES2\userManagement\userDB.db')
-# uDB.addNewUser(User())
-# uDB.getAllUsers()
+    # Assemble and return the access information
+    accessInfo = {"access_token": accessToken, "token_type": "bearer"}
+    return accessInfo
