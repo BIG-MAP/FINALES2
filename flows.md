@@ -169,3 +169,13 @@ flowchart LR
 ```
 
 Need the tenant specs
+
+# FINALES2 Internals
+
+TBD in mermaid
+
+
+# FINALES2 Blocks & Interfaces
+
+TBD in mermaid
+
