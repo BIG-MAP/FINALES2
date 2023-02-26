@@ -1,25 +1,8 @@
-Listing just the conceptual parts:
+# FINALES2 Interactions
 
-```mermaid
-sequenceDiagram
-box Optimizers
-    participant OCond[OCond]
-    participant OCyc[OCyc]
-    participant ORat[ORat]
-end
-box Experiments
-    participant ASAB[ASAB]
-    participant AB[AutoBASS]
-    participant Cycler[Cycler]
-end
-box Simulation
-    participant RULModel[RULModel]
-    participant PARAModel[PARAModel]
-    participant DFNModel[DFNModel]
-    participant ThreeDS[3DSPipelinePilot]
-end
-```
+To plan the hacking week a bit better here are some data flow diagrams for conceptualization.
 
+# DATA FLOW
 Here is a rough data and materials flow diagram without finales:
 
 ```mermaid
@@ -58,6 +41,8 @@ Cycler -->> ORat: High-fidelity data
 
 DB ->> Archive: Nightly backup
 ```
+
+# FINALES Functions
 
 How everything interacts:
 
