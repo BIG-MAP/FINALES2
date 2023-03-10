@@ -22,7 +22,7 @@ class User(ObjectBase):
         self.password: str = password
         self.usergroups: list[str] = usergroups
 
-# @strawberry.type
-# class AccessToken(ObjectBase):
-#     access_token:str
-#     token_type:str
+@strawberry.type
+class AccessToken(ObjectBase):
+    access_token:str
+    token_type:str

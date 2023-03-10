@@ -10,8 +10,7 @@ from pathlib import Path
 
 
 from FINALES2.server import config
-import FINALES2.userManagement.authentication as authentication
-from FINALES2.schemas import User
+from FINALES2.schemas import AccessToken, User
 # Create a router
 userRouter = APIRouter(prefix="/userManagement", tags=["userManagement"])
 
@@ -288,8 +287,9 @@ def hashPassword(password:str) -> str:
     hashedPW = cryptoContext.hash(password)
     return hashedPW
 
-def verifyPassword(password:str, passwordHash:str) -> bool:
+def verifyPassword(password:str, passwordHash:str) -> bool: # Corresponds to verify_passwprd of the tutorial
     ''' This function verifies a password.
+   
     Inputs:
     password: a string representing the plain text password
     passwordHash: a string representing the hash, which should match the password
@@ -302,6 +302,7 @@ def verifyPassword(password:str, passwordHash:str) -> bool:
 
 def getAccessToken(tokenData:dict, expirationMin:Union[datetime.timedelta, None]=None) -> str:
     ''' This function generates an access token for a user.
+    
     Inputs:
     tokenData: a dictionary containing the information needed to create the token
     expirationMin: a timedelta giving the duration until the expiration of the token in minutes or None
@@ -325,6 +326,7 @@ def getAccessToken(tokenData:dict, expirationMin:Union[datetime.timedelta, None]
 
 def userAuthentication(username:str, password:str) -> User:
     ''' This function authenticates a user.
+    
     Inputs:
     username: a string giving the username of the user, which needs authentication
     password: a string of the plain text password of the user, which needs authentication
@@ -344,9 +346,10 @@ def userAuthentication(username:str, password:str) -> User:
     else:
         raise authenticationError
 
-@userRouter.post("/authenticate")
+@userRouter.post("/authenticate", response_model=AccessToken)
 def authenticate(loginForm:OAuth2PasswordRequestForm=Depends()) -> dict[str, str]:
     ''' The function allows a user to log in.
+    
     Inputs:
     loginForm: a loginForm comprising the username and the password to use for the login
     
@@ -354,8 +357,6 @@ def authenticate(loginForm:OAuth2PasswordRequestForm=Depends()) -> dict[str, str
     tokenInfo: a dictionary with the relevant access_token and token_type
     '''
 
-    # Connect to the user database
-    userDB=UserDB(config.userDB)
     # Get the user from the user database and check, if the password is correct
     thisUser = userAuthentication(username=loginForm.username, password=loginForm.password)
     # Define the expiration time
