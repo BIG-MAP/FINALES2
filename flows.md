@@ -156,9 +156,9 @@ flowchart LR
     ORat ---> getCapability
     OCond ---> getCapability
 
-    archivatorTenant -> getData
-    archivatorTenant -> getLimitation
-    archivatorTenant -> getMeta
+    archivatorTenant --> getData
+    archivatorTenant --> getLimitation
+    archivatorTenant --> getMeta
     
 
     archivatorTenant --> Archive
