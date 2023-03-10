@@ -106,6 +106,7 @@ flowchart LR
 
     registerTenant --> setCapability
     registerTenant --> setLimitation
+    registerTenant --> setMeta
 
     postData --> RUN-DB
     postRequest --> RUN-DB
@@ -155,15 +156,20 @@ flowchart LR
     ORat ---> getCapability
     OCond ---> getCapability
 
-    RUN-DB --> triggerArchive
-    triggerArchive --> Archive
+    archivatorTenant -> getData
+    archivatorTenant -> getLimitation
+    archivatorTenant -> getMeta
+    
 
-    TEN-DB --> triggerArchive
+    archivatorTenant --> Archive
 
     setLimitation --> TEN-DB
     
     getLimitation --> TEN-DB
     setCapability --> TEN-DB
+    setMeta --> TEN-DB
+    getMeta --> TEN-DB
+
     getCapability --> TEN-DB
 ```
 
