@@ -69,34 +69,37 @@ flowchart LR
     style postRequest fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
     postData{{postData}}
-    style postData fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style postData fill:#bbf,postData stroke-width:2px,stroke-dasharray: 5 5
 
     getRequest{{getRequest}}
-    style getRequest fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style getRequest fill:#bbf,getRequest stroke-width:2px,stroke-dasharray: 5 5
 
     getData{{getData}}
-    style getData fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style getData fill:#bbf,getData stroke-width:2px,stroke-dasharray: 5 5
 
     getData{{getData}}
-    style getData fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style getData fill:#bbf,getData stroke-width:2px,stroke-dasharray: 5 5
 
     registerTenant{{registerTenant}}
-    style registerTenant fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style registerTenant fill:#bbf,registerTenant stroke-width:2px,stroke-dasharray: 5 5
 
     getCapability{{getCapability}}
-    style getCapability fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style getCapability fill:#bbf,getCapability stroke-width:2px,stroke-dasharray: 5 5
 
     getLimitation{{getLimitation}}
-    style getLimitation fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style getLimitation fill:#bbf,getLimitation stroke-width:2px,stroke-dasharray: 5 5
 
     setCapability{{setCapability}}
-    style setCapability fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style setCapability fill:#bbf,setCapability stroke-width:2px,stroke-dasharray: 5 5
 
     setLimitation{{setLimitation}}
-    style setLimitation fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style setLimitation fill:#bbf,setLimitation stroke-width:2px,stroke-dasharray: 5 5
+    
+    getMeta{{getMeta}}
+    style getMeta fill:#bbf,getMeta stroke-width:2px,stroke-dasharray: 5 5
 
     setMeta{{setMeta}}
-    style setMeta fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style setMeta fill:#bbf,setMeta stroke-width:2px,stroke-dasharray: 5 5
 
     TEN-DB{TENANT DB}
     style TEN-DB fill:#faf,postRequest stroke-width:2px,stroke-dasharray: 5 5
