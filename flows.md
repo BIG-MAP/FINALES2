@@ -77,8 +77,8 @@ flowchart LR
     getData{{getData}}
     style getData fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
-    assembleXY{{assembleXY}}
-    style assembleXY fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    getData{{getData}}
+    style getData fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
     triggerArchive{{triggerArchive}}
     style triggerArchive fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
@@ -104,7 +104,6 @@ flowchart LR
     RUN-DB{RUN DB}
     style RUN-DB fill:#faf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
-    assembleXY --> getData
     registerTenant --> setCapability
     registerTenant --> setLimitation
 
@@ -113,9 +112,9 @@ flowchart LR
     getRequest --> RUN-DB
     getData --> RUN-DB
 
-    OCond --> assembleXY
-    OCyc --> assembleXY
-    ORat --> assembleXY
+    OCond --> getData
+    OCyc --> getData
+    ORat --> getData
 
     RULModel ---> getData
     PARAModel ---> getData
