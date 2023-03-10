@@ -25,7 +25,7 @@ authenticationError = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, de
 ###################
 
 class UserDB():
-    ''' This class provides a database object, which allows to interface an SQL database using sqlite3. '''
+    ''' This class provides a database object, which allows to interface an SQL user database using sqlite3. '''
 
     def __init__(self, savepath:str) -> None:
         ''' This function initializes a database for storing the user data.
@@ -59,6 +59,21 @@ class UserDB():
             self.savepath: str = savepath
             # Print an information, to inform about the use of an existing database
             print('Working with existing user database.')
+
+    def closeConnection(self) -> None:
+        ''' This function closes the connection to the user database.
+        
+        Inputs:
+        This function takes no inputs.
+
+        Outputs:
+        This function has no output.
+        '''
+
+        # Close the connection to the user database
+        self.connection.close()
+        # Print an information to the user
+        print("Connection to user database closed.")
 
     def addNewUser(self, user:User) -> None:
         ''' This function adds a new user with all its fields to the database. The password is hashed in this process and only the hashed value is saved to the database.
@@ -113,7 +128,7 @@ class UserDB():
             return singleU
         else:
             # If there are more than one or no user with this username, raise an exception
-            HTTPException(status_code=403, detail="More than one user with this username was found.")
+            raise HTTPException(status_code=403, detail="More than one user with this username was found.")
 
     def getAllUsers(self) -> list[User]:
         ''' This fuction requests all the users in the user database and returns them as a list of user objects.
@@ -147,21 +162,6 @@ class UserDB():
     #     or user groups without creating a new user and ID. The ID of the user cannot be changed using this function. '''
     #     pass
     
-    def closeConnection(self) -> None:
-        ''' This function closes the connection to the user database.
-        
-        Inputs:
-        This function takes no inputs.
-
-        Outputs:
-        This function has no output.
-        '''
-
-        # Close the connection to the user database
-        self.connection.close()
-        # Print an information to the user
-        print("Connection to user database closed.")
-
 def createUser(username:str, password:str, usergroups:list[str], userDB:str=config.userDB) -> User:
     ''' This function creates a new user object connected to the given password and saves it to the database.
     
@@ -206,7 +206,7 @@ def newUser(username:str, password:str, usergroups:list[str], userDB:str=config.
     return f"New user {username} created in user database {userDB}."
 
 @userRouter.get("/singleUser")
-def singleUser(username:str) -> dict:
+def singleUser(username:str, userDB:str=config.userDB) -> dict:
     ''' This function fetches a single user from the user database based on its username and returns the corresponding dictionary of the user object.
     
     Inputs:
@@ -217,7 +217,7 @@ def singleUser(username:str) -> dict:
     '''
 
     # Get the user from the user database
-    thisUser = UserDB(config.userDB).getSingleUser(username=username)
+    thisUser = UserDB(userDB).getSingleUser(username=username)
     # Transform the user object to a dictionary and return it
     thisUser = thisUser.to_dict()
     return thisUser
