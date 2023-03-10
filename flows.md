@@ -96,7 +96,7 @@ flowchart LR
     style setLimitation fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
     setMeta{{setMeta}}
-    style setLimitation fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+    style setMeta fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
     TEN-DB{TENANT DB}
     style TEN-DB fill:#faf,postRequest stroke-width:2px,stroke-dasharray: 5 5
