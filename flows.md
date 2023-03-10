@@ -80,9 +80,6 @@ flowchart LR
     getData{{getData}}
     style getData fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
-    triggerArchive{{triggerArchive}}
-    style triggerArchive fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
-
     registerTenant{{registerTenant}}
     style registerTenant fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
@@ -96,6 +93,9 @@ flowchart LR
     style setCapability fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
     setLimitation{{setLimitation}}
+    style setLimitation fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
+
+    setMeta{{setMeta}}
     style setLimitation fill:#bbf,postRequest stroke-width:2px,stroke-dasharray: 5 5
 
     TEN-DB{TENANT DB}
