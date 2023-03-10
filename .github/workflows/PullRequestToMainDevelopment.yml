@@ -29,4 +29,4 @@ jobs:
           src: "./src/FINALES2/test"
       - name: Run the tests
         run: |
-          pytest
+          pytest -v ./src/FINALES2/test
