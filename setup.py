@@ -14,4 +14,5 @@ setup(
         "strawberry",
         "uvicorn",
     ],
+    py_modules=[],
 )
