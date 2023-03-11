@@ -185,6 +185,7 @@ def createUser(username:str, password:str, usergroups:list[str], userDB:str=conf
     print(f'New user with ID {new_user.id} created and added to the user database ({userDB.savepath}).')
     # Get the just added user from the user database and return it.
     new_user = userDB.getSingleUser(username=new_user.username)
+    userDB.closeConnection()
     return new_user
 
 @userRouter.post("/newUser")
@@ -239,11 +240,7 @@ def allUsers(userDB:str=config.userDB) -> list[dict]:
     allUsers = [user.to_dict() for user in allUsers]
     return allUsers
 
-# def getUserForToken(token:str=Depends(authenticationScheme)) -> User:
-#     ''' This function  '''
-#     return User(username="ATest", id=uuid4(), password='1111')
-
-def getActiveUser(token:str=Depends(authenticationScheme)) -> User:
+def getActiveUser(token:str=Depends(authenticationScheme), userDB:str=config.userDB) -> User:
     ''' This function returns the user, to which the given token belongs, if the token belongs to a user.
     
     Inputs:
@@ -265,7 +262,7 @@ def getActiveUser(token:str=Depends(authenticationScheme)) -> User:
     except JWTError:
         raise authenticationError
     # If there is a username, find the corresponding user in the user database and return it
-    activeUser = singleUser(username=activeUsername)
+    activeUser = singleUser(username=activeUsername, userDB=userDB)
     return activeUser
 
 ####################
@@ -316,6 +313,7 @@ def getAccessToken(tokenData:dict, expirationMin:Union[datetime.timedelta, None]
     # If no expiration time is given, use 10 min
     if expirationMin == None:
         expirationMin = datetime.timedelta(minutes=10)
+
     # Add the expiration duration to now
     expirationTime = datetime.datetime.now() + expirationMin
     # Save the expiration time to the tokenData using the key "exp" (it needs to be called exp, because there will be a TypeError otherwise)
@@ -324,7 +322,7 @@ def getAccessToken(tokenData:dict, expirationMin:Union[datetime.timedelta, None]
     jwtToken = jwt.encode(tokenData, config.secretKey, algorithm=config.algorithm)
     return jwtToken
 
-def userAuthentication(username:str, password:str) -> User:
+def userAuthentication(username:str, password:str, userDB:str=config.userDB) -> User:
     ''' This function authenticates a user.
     
     Inputs:
@@ -336,7 +334,7 @@ def userAuthentication(username:str, password:str) -> User:
     '''
 
     # Get the user from the user database based on its username
-    userDict = singleUser(username=username)
+    userDict = singleUser(username=username, userDB=userDB)
     # Create the user object from the output
     user = User(**userDict)
     # Verify the password and return it, if it is correct
@@ -347,7 +345,7 @@ def userAuthentication(username:str, password:str) -> User:
         raise authenticationError
 
 @userRouter.post("/authenticate", response_model=AccessToken)
-def authenticate(loginForm:OAuth2PasswordRequestForm=Depends()) -> dict[str, str]:
+def authenticate(loginForm:OAuth2PasswordRequestForm=Depends(), userDB:str=config.userDB) -> dict[str, str]:
     ''' The function allows a user to log in.
     
     Inputs:
@@ -358,7 +356,7 @@ def authenticate(loginForm:OAuth2PasswordRequestForm=Depends()) -> dict[str, str
     '''
 
     # Get the user from the user database and check, if the password is correct
-    thisUser = userAuthentication(username=loginForm.username, password=loginForm.password)
+    thisUser = userAuthentication(username=loginForm.username, password=loginForm.password, userDB=userDB)
     # Define the expiration time
     tokenExpiration = datetime.timedelta(minutes=config.tokenExpirationMin)
     # Get the access token for the user

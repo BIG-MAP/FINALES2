@@ -1,4 +1,3 @@
-from rsa import verify
 from FINALES2.test.filesForTests import test_config
 from FINALES2.schemas import User
 from FINALES2.userManagement import userManager
@@ -9,6 +8,10 @@ from sqlite3 import ProgrammingError
 from pytest import raises
 from uuid import UUID
 from passlib.context import CryptContext
+import datetime
+from jose import jwt
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.param_functions import Form
 
 
 def test_UserDB_init():
@@ -191,8 +194,27 @@ def test_allUsers():
     for usernameReference in usernames_ref:
         assert usernameReference in usernames_res, f"The entry {usernameReference} is not contained in the result dictionary {usernames_res}."
 
-# def test_getActiveUser():
-#     pass
+def test_getActiveUser():
+    db = userManager.UserDB(test_config.userDB)
+    referenceUser8 = User(username='testUser10', id=UUID('{12345678-1234-5678-1234-567812345678}'), password='thisIs_@testPW-10', usergroups=['1', '2', '3'])
+    db.addNewUser(referenceUser8)
+    db.closeConnection()
+
+    expiration = datetime.timedelta(minutes=23)
+    test_tokenData = {"sub": referenceUser8.username, "exp": datetime.datetime.now() + expiration}
+    keySecret = test_config.secretKey
+    algo = test_config.algorithm
+
+    tokenRefUser = jwt.encode(test_tokenData, keySecret, algorithm=algo)
+
+    activeUser = userManager.getActiveUser(token=tokenRefUser, userDB=test_config.userDB)
+
+    for attr in referenceUser8.allAttributes():
+        if attr == "password":
+            assert userManager.verifyPassword(password=referenceUser8.__getattribute__(attr), passwordHash=activeUser[attr]), f"The password of the user does not match the target."
+        else:
+            assert str(referenceUser8.__getattribute__(attr)) == activeUser[attr], f"The {attr} is {activeUser[attr]} instead of {str(referenceUser8.__getattribute__(attr))}."
+
 
 def test_hashPassword():
     testContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -210,11 +232,53 @@ def test_verifyPassword():
 
     assert (testContext.verify(password_test2, hashedPassword2) and userManager.verifyPassword(password=password_test2, passwordHash=hashedPassword2)), f"The password could not be verified correctly."
 
-# def test_getAccessToken():
-#     pass
+def test_getAccessToken():
+    db = userManager.UserDB(test_config.userDB)
+    referenceUser6 = User(username='testUser8', id=UUID('{12345678-1234-5678-1234-567812345678}'), password='thisIs_@testPW-8', usergroups=['1', '2', '3'])
+    db.addNewUser(referenceUser6)
+    db.closeConnection()
 
-# def test_userAuthentication():
-#     pass
+    expiration = datetime.timedelta(minutes=23)
+    test_tokenData = {"sub": referenceUser6.username, "exp": datetime.datetime.now() + expiration}
+    keySecret = test_config.secretKey
+    algo = test_config.algorithm
 
+    token_reference = jwt.encode(test_tokenData, keySecret, algorithm=algo)
+
+    token_result = userManager.getAccessToken(tokenData=test_tokenData, expirationMin=expiration)
+
+    assert token_result == token_reference, f"The resulting token is {token_result} instead of {token_reference}."
+
+def test_userAuthentication():
+    db = userManager.UserDB(test_config.userDB)
+    referenceUser5 = User(username='testUser7', id=UUID('{12345678-1234-5678-1234-567812345678}'), password='thisIs_@testPW-7', usergroups=['1', '2', '3'])
+    db.addNewUser(referenceUser5)
+    db.closeConnection()
+
+    user_result5 = userManager.userAuthentication(username=referenceUser5.username, password=referenceUser5.password, userDB=test_config.userDB)
+
+    for attr in referenceUser5.allAttributes():
+        if attr == "password":
+            assert userManager.verifyPassword(password=referenceUser5.__getattribute__(attr), passwordHash=user_result5.__getattribute__(attr)), f"The password of the user does not match the target."
+        else:
+            assert str(referenceUser5.__getattribute__(attr)) == user_result5.__getattribute__(attr), f"The {attr} is {user_result5.__getattribute__(attr)} instead of {str(referenceUser5.__getattribute__(attr))}."
+
+
+# TODO: How to test this?
 # def test_authenticate():
-#     pass
+#     db = userManager.UserDB(test_config.userDB)
+#     referenceUser7 = User(username='testUser9', id=UUID('{12345678-1234-5678-1234-567812345678}'), password='thisIs_@testPW-9', usergroups=['1', '2', '3'])
+#     db.addNewUser(referenceUser7)
+#     db.closeConnection()
+
+#     expiration = datetime.timedelta(minutes=23)
+#     test_tokenData = {"sub": referenceUser7.username, "exp": datetime.datetime.now() + expiration}
+#     keySecret = test_config.secretKey
+#     algo = test_config.algorithm
+
+#     token_reference = jwt.encode(test_tokenData, keySecret, algorithm=algo)
+
+#     LIForm = OAuth2PasswordRequestForm(username=referenceUser7.username, password=referenceUser7.password)
+#     access = userManager.authenticate(LIForm)
+
+#     assert access == {"access_token": token_reference, "token_type": "bearer"}
