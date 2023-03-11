@@ -1,7 +1,7 @@
-host = 'localhost'
+host = "localhost"
 port = 13371
 
-userDB:str = "src/FINALES2/userManagement/userDB.db"
+userDB: str = "src/FINALES2/userManagement/userDB.db"
 salt_userDB = "dcf832f0ec6a80dc36afdO"
 
 secretKey = "3e469b60dfb746971bdf440cd80306dca5c9469ab589aebbfaf213461b21e8cc"  # use openssl rand -hex 32 to get a random secret key
@@ -9,10 +9,9 @@ algorithm = "HS256"
 tokenExpirationMin = 2
 
 
-
-#----------------------------
+# ----------------------------
 # from FINALES
-#----------------------------
+# ----------------------------
 
 # #values
 # reset: bool = True
