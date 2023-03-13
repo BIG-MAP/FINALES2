@@ -14,6 +14,6 @@ RUN mkdir -p /root/.ssh
 RUN echo 'Host github.com' > /root/.ssh/config
 RUN echo '  HostName github.com' >> /root/.ssh/config
 RUN echo '  IdentityFile ~/data/ssh_keys/github_key' >> /root/.ssh/config
-#WORKDIR data
+# WORKDIR data
 #RUN git clone git@github.com:BIG-MAP/FINALES2.git
 CMD ["jupyter-lab","--ip=0.0.0.0","--no-browser","--allow-root"]
