@@ -1,9 +1,5 @@
-# import uuid
-
 from db.base_class import Base
 from sqlalchemy import Column, DateTime, String
-
-# from sqlalchemy.orm import relationship
 from sqlalchemy_utils import UUIDType
 
 
@@ -12,11 +8,7 @@ class Tenant(Base):
     Class defining the tenant table with the following columns:
     """
 
-    uuid = Column(
-        UUIDType(binary=False),
-        primary_key=True,
-        # default=uuid.uuid4
-    )
+    uuid = Column(UUIDType(binary=False), primary_key=True, nullable=False)
     name = Column(
         String(1000),
         nullable=False,

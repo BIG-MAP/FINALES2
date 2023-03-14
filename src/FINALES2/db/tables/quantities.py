@@ -1,9 +1,5 @@
-# import uuid
-
 from db.base_class import Base
 from sqlalchemy import Boolean, Column, DateTime, String
-
-# from sqlalchemy.orm import relationship
 from sqlalchemy_utils import UUIDType
 
 
@@ -21,25 +17,22 @@ class Quantity(Base):
                              is not active, until a new is_active=1 with newer load_time
                              is added.
         load_time (Datetime): Timestamp for when the row is added
+
+
+        TODO size of the json string
     """
 
     uuid = Column(
         UUIDType(binary=False),
         primary_key=True,
-        # index=True, Needed?
-        # default=uuid.uuid4  # should be function call right uuid4()?
     )
-    # TODO IS the default necessary???? Since it is created by us, server side...
-    quantity = Column(String(50), nullable=False)  # String(size)??
+    quantity = Column(String(50), nullable=False)  # TODO String(size)??
     specifications = Column(
         String(5000),
-        # ... JSON type, just string?
         nullable=False,
     )
     is_active = Column(Boolean(), default=True)
     load_time = Column(
         DateTime,
         nullable=False,
-        # default is not defined here, this would be time for load, and not addition of
-        # row!
     )

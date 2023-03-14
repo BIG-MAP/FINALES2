@@ -15,13 +15,13 @@ class Request(Base):
     uuid = Column(
         UUIDType(binary=False),
         primary_key=True,
-        # default=uuid.uuid4
+        nullable=False,
     )
     quantity = Column(String(50), nullable=False)
     tenant_uuid = Column(
         UUIDType(binary=False),
         ForeignKey("tenant.uuid"),
-        # default=uuid.uuid4
+        nullable=False,
     )
     """
     TODO
