@@ -1,7 +1,11 @@
+import pathlib
+
+scriptPath = pathlib.Path(__file__).parent.resolve()
+
 host = "localhost"
 port = 13371
 
-userDB: str = "test/filesForTests/session_testing.db"
+userDB: str = f"{scriptPath}/session_testing.db"
 salt_userDB = "dcf832f0ec6a80dc36afdO"
 
 # use openssl rand -hex 32 to generate the secret key
