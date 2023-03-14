@@ -21,3 +21,9 @@ class tenant:
 
     def from_dict(self):
         pass
+
+    def getRequests(self):
+        pass
+
+    def postResults(self):
+        pass
