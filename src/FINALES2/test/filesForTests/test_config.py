@@ -1,7 +1,7 @@
 host = "localhost"  # 'polstein1.polis.uni-ulm.de'#"stein.hiu-batteries.de"
 port = 13371  # 49157
 
-userDB: str = "filesForTests\\session_testing.db"
+userDB: str = "FINALES2\\test\\filesForTests\\session_testing.db"
 salt_userDB = "dcf832f0ec6a80dc36afdO"
 
 # use openssl rand -hex 32 to generate the secret key

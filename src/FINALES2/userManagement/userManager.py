@@ -61,7 +61,7 @@ class UserDB:
             # was last edited
             self.cursor.execute(
                 f"CREATE TABLE users ({columnNames}, timestamp_added"
-                f", timestamp_lastEdited"
+                ", timestamp_lastEdited)"
             )
             # Print an information, to inform about the newly created database
             print("Created new user database.")
