@@ -3,8 +3,8 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git vim
 RUN conda install \
-    xarray \ 
-    netCDF4 \ 
+    xarray \
+    netCDF4 \
     bottleneck \
     numpy \
     pandas \
