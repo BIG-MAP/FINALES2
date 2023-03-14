@@ -27,3 +27,17 @@ class User(BaseModel, ObjectBase):
 class AccessToken(BaseModel, ObjectBase):
     access_token: str
     token_type: str
+
+
+class generalMetaData(BaseModel):
+    def __init__(self, name: str, id: UUID, description: str):
+        self.name: str = name
+        self.description: str = description
+        self.id: UUID = id
+
+
+# class Capability(BaseModel):
+#     def __init__(quantity:):
+#         self.quantity =
+#         self.parameters
+#         self.limitations
