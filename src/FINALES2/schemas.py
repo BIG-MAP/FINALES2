@@ -5,6 +5,7 @@ import inspect
 from uuid import UUID, uuid4
 
 import strawberry
+from pydantic import BaseModel
 
 
 @strawberry.interface
@@ -38,3 +39,17 @@ class User(ObjectBase):
 class AccessToken(ObjectBase):
     access_token: str
     token_type: str
+
+
+class generalMetaData(BaseModel):
+    def __init__(self, name: str, id: UUID, description: str):
+        self.name: str = name
+        self.description: str = description
+        self.id: UUID = id
+
+
+# class Capability(BaseModel):
+#     def __init__(quantity:):
+#         self.quantity =
+#         self.parameters
+#         self.limitations
