@@ -62,8 +62,6 @@ class UserDB:
             f"CREATE TABLE IF NOT EXISTS users ({columnNames}, timestamp_added"
             ", timestamp_lastEdited)"
         )
-        # Print an information, to inform about the newly created database
-        print("Created new user database.")
 
     def closeConnection(self) -> None:
         """This function closes the connection to the user database.

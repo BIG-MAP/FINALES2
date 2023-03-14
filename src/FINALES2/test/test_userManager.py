@@ -15,10 +15,11 @@ from FINALES2.userManagement import userManager
 
 def test_UserDB_init():
     # Get the path to the folder, where the user database is stored from the config file
-    filepath = test_config.userDB.split("\\")[0]
+    filepath = "/".join(test_config.userDB.split("/")[0:-1])
+    print(filepath)
 
     # Delete potentially existing user databases
-    for file in glob(f"{filepath}\\*.db"):
+    for file in glob(f"{filepath}/*.db"):
         remove(file)
 
     # Test Case 1: New user database
