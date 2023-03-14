@@ -1,9 +1,8 @@
 import uvicorn
-from fastapi import FastAPI, Depends
-import requests
+from fastapi import Depends, FastAPI
 
-from FINALES2.server import config
 from FINALES2.schemas import User
+from FINALES2.server import config
 from FINALES2.userManagement import userManager
 
 app = FastAPI(

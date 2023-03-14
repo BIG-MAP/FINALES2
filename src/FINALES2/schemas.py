@@ -1,8 +1,10 @@
-""" This file collects all the schemas relevant in FINALES2. This file is subject to extension. """
-import strawberry
-import typing
-from uuid import UUID, uuid4
+""" This file collects all the schemas relevant in FINALES2.
+This file is subject to extension. """
+
 import inspect
+from uuid import UUID, uuid4
+
+import strawberry
 
 
 @strawberry.interface
@@ -22,7 +24,7 @@ class User(ObjectBase):
         self,
         username: str = "",
         password: str = "",
-        id: str = uuid4(),
+        id: UUID = uuid4(),
         usergroups: list[str] = [],
         **kwargs
     ):

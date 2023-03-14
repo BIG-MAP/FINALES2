@@ -1,5 +1,7 @@
-# ''' This file contains the definitions of reference tenants, which are currently implemented for FINALES2. If you do not find a tenant suitable for your application, please
-# create a new one and create a pull request in our repository to add it to the list of available tenants. '''
+# ''' This file contains the definitions of reference tenants, which are currently
+# implemented for FINALES2. If you do not find a tenant suitable for your application,
+# please create a new one and create a pull request in our repository to add it to the
+# list of available tenants. '''
 
 # from ontopy import get_ontology
 # from emmopy import get_emmo
@@ -11,10 +13,12 @@
 # import rdflib
 
 # #Load local copy of BattINFO
-# battinfo = get_ontology(r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\BattINFO\battinfo.ttl').load()
+# battinfo = get_ontology(r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\BattINFO
+# \battinfo.ttl').load()
 
 # # # Load ontology from the web
-# # battinfo = get_ontology('https://raw.githubusercontent.com/BIG-MAP/BattINFO/master/battinfo.ttl').load()
+# # battinfo = get_ontology('https://raw.githubusercontent.com/BIG-MAP/BattINFO/
+# master/battinfo.ttl').load()
 
 # emmo = get_emmo()
 
@@ -31,11 +35,13 @@
 #     print(p)
 
 # prop = rdflib.URIRef('http://www.w3.org/2000/01/rdf-schema#subClassOf')
-# for predicate in graph.predicate_objects(rdflib.term.URIRef('https://big-map.github.io/BattINFO/ontology/BattINFO#EMMO_17b3beaa_6f91_4f73_8a9a_d960eb542b7e')):
+# for predicate in graph.predicate_objects(rdflib.term.URIRef('https://big-map.github.
+# io/BattINFO/ontology/BattINFO#EMMO_17b3beaa_6f91_4f73_8a9a_d960eb542b7e')):
 #     print(predicate)
 # print('--------------------------------------')
 
-# for predicate in graph.subject_objects(rdflib.term.URIRef('http://www.w3.org/2004/02/skos/core#prefLabel')):
+# for predicate in graph.subject_objects(rdflib.term.URIRef
+# ('http://www.w3.org/2004/02/skos/core#prefLabel')):
 #     print(predicate)
 #     print(predicate[0].isprintable())
 # print('--------------------------------------')
@@ -69,7 +75,8 @@
 # from dlite.triplestore import Triplestore
 
 # HASPART = "http://emmo.info/emmo#EMMO_17e27c22_37e1_468c_9dd7_95e137f73e7f"
-# property = "https://big-map.github.io/BattINFO/ontology/BattINFO#EMMO_b7fdab58_6e91_4c84_b097_b06eff86a124"
+# property = "https://big-map.github.io/BattINFO/ontology/BattINFO#EMMO_b7fdab58_
+# 6e91_4c84_b097_b06eff86a124"
 
 # ts = Triplestore("rdflib")
 # ts.parse('Desktop/Ontology.ttl')
@@ -79,7 +86,8 @@
 # print(list(x))
 
 
-# # battinfo = get_ontology('https://raw.githubusercontent.com/BIG-MAP/FAIRBatteryData/main/examples/ontologies/battinfo-merged.ttl').load() # -> use Triplestore from DLite
+# # battinfo = get_ontology('https://raw.githubusercontent.com/BIG-MAP/FAIRBatteryData
+# /main/examples/ontologies/battinfo-merged.ttl').load() # -> use Triplestore from DLite
 
 
 # '''
@@ -94,7 +102,8 @@
 
 # def iri_to_preflabel(ts:Triplestore, iri:str)-> str:
 #     """
-#     Queries the triplestore for the IRI supplied, and retrievies its prefLabel if it exists.
+#     Queries the triplestore for the IRI supplied, and retrievies its
+#     prefLabel if it exists.
 
 #     ts: Triplestore
 #         Triplestore object.
@@ -110,7 +119,8 @@
 #         return prefLabel[0].value
 
 #     else:
-#         warnings.warn(f"""The supplied IRI {iri} has {len(list(prefLabel))} prefLabels: {list(prefLabel)}""")
+#         warnings.warn(f"""The supplied IRI {iri} has {len(list(prefLabel))}
+#         prefLabels: {list(prefLabel)}""")
 #         return ""
 
 
@@ -125,7 +135,9 @@
 # my_list = ts.subjects(predicate =HASPART, object = battery_electrode)
 
 # print(my_list)
-# > ["http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73", "http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73", "http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73"]
+# > ["http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73",
+# "http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73",
+# "http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73"]
 
 # for iri in my_list:
 #     labels = []

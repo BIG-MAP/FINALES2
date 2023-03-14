@@ -1,17 +1,16 @@
-from FINALES2.test.filesForTests import test_config
-from FINALES2.schemas import User
-from FINALES2.userManagement import userManager
-
+import datetime
 from glob import glob
 from os import remove
 from sqlite3 import ProgrammingError
-from pytest import raises
 from uuid import UUID
-from passlib.context import CryptContext
-import datetime
+
 from jose import jwt
-from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.param_functions import Form
+from passlib.context import CryptContext
+from pytest import raises
+
+from FINALES2.schemas import User
+from FINALES2.test.filesForTests import test_config
+from FINALES2.userManagement import userManager
 
 
 def test_UserDB_init():
@@ -22,7 +21,7 @@ def test_UserDB_init():
     for file in glob(f"{filepath}\\*.db"):
         remove(file)
 
-    ## Test Case 1: New user database
+    # Test Case 1: New user database
 
     # Create the user database
     db = userManager.UserDB(test_config.userDB)
@@ -39,14 +38,15 @@ def test_UserDB_init():
 
     # Check that all target column names are in the result column names
     for col in columns_target:
-        assert (
-            col in columns_result
-        ), f"The target column name {col} is not in the resulting column names for the new database."
+        assert col in columns_result, (
+            f"The target column name {col} is not in the resulting column names for "
+            f"the new database."
+        )
 
     # Close the connection to the database
     db.closeConnection()
 
-    ## Test Case 2: Work with existing database
+    # Test Case 2: Work with existing database
 
     # Reconnect to the existing database
     db = userManager.UserDB(test_config.userDB)
@@ -57,9 +57,10 @@ def test_UserDB_init():
 
     # Check that all target column names are in the result column names
     for col in columns_target:
-        assert (
-            col in columns_result
-        ), f"The target column name {col} is not in the resulting column names for the existing user database."
+        assert col in columns_result, (
+            f"The target column name {col} is not in the resulting column names for "
+            "the existing user database."
+        )
 
     # Close the connection to the database
     db.closeConnection()
@@ -94,10 +95,12 @@ def test_UserDB_addNewUser():
                 i
             ], f"The found data is {data_result[i]} instead of {data_target[i]}."
         else:
-            data_result[i] == userManager.hashPassword(
-                data_target[i]
-            ), f"The found data is {userManager.hashPassword(data_result[i])} instead of {data_target[i]}."
-    # TODO: check the timestamps#, '2023-01-14 17:06:17.416907', '2023-01-14 17:06:17.416907')]
+            data_result[i] == userManager.hashPassword(data_target[i]), (
+                f"The found data is {userManager.hashPassword(data_result[i])} "
+                f"instead of {data_target[i]}."
+            )
+    # TODO: check the timestamps#, '2023-01-14 17:06:17.416907'
+    # , '2023-01-14 17:06:17.416907')]
     db.closeConnection()
 
 
@@ -112,21 +115,23 @@ def test_UserDB_userFromRow():
     db.addNewUser(referenceUser)
 
     aUser = db.cursor.execute(
-        f"SELECT * FROM users WHERE username=(?)", (referenceUser.username,)
+        "SELECT * FROM users WHERE username=(?)", (referenceUser.username,)
     )
     row = aUser.fetchall()
 
     theUser = db.userFromRow(row[0])
 
-    assert isinstance(
-        theUser, User
-    ), f"The object obtained from the userFromRow method is of type {type(theUser)} instead of User."
+    assert isinstance(theUser, User), (
+        f"The object obtained from the userFromRow method is of "
+        f"type {type(theUser)}instead of User."
+    )
 
     for key in row[0].keys():
         if ("password" not in key) and ("timestamp" not in key):
-            assert (
-                getattr(theUser, key) == row[0][key]
-            ), f"The {key} of the object differs from the row. It is {getattr(theUser, key)} instead of {row[0][key]}."
+            assert getattr(theUser, key) == row[0][key], (
+                f"The {key} of the object differs from the row. It is "
+                f"{getattr(theUser, key)} instead of {row[0][key]}."
+            )
 
     db.closeConnection()
 
@@ -183,7 +188,7 @@ def test_UserDB_getAllUsers():
 
     assert all(
         [isinstance(u, User) for u in allUsers_result]
-    ), f"Not all objects in the obtained list of all users are of type User"
+    ), "Not all objects in the obtained list of all users are of type User"
 
     for user in allUsers_reference:
         assert (
@@ -211,13 +216,14 @@ def test_createUser():
             assert userManager.verifyPassword(
                 password=referenceUser2.__getattribute__(attr),
                 passwordHash=user_result2.__getattribute__(attr),
-            ), f"The password of the user does not match the target."
+            ), "The password of the user does not match the target."
         elif attr != "id":
             assert str(
                 referenceUser2.__getattribute__(attr)
-            ) == user_result2.__getattribute__(
-                attr
-            ), f"The {attr} is {str(referenceUser2.__getattribute__(attr))} instead of {user_result2.__getattribute__(attr)}."
+            ) == user_result2.__getattribute__(attr), (
+                f"The {attr} is {str(referenceUser2.__getattribute__(attr))} instead "
+                f"of {user_result2.__getattribute__(attr)}."
+            )
 
 
 def test_newUser():
@@ -244,13 +250,14 @@ def test_newUser():
             assert userManager.verifyPassword(
                 password=referenceUser3.__getattribute__(attr),
                 passwordHash=user_result3.__getattribute__(attr),
-            ), f"The password of the user does not match the target."
+            ), "The password of the user does not match the target."
         elif attr != "id":
             assert str(
                 referenceUser3.__getattribute__(attr)
-            ) == user_result3.__getattribute__(
-                attr
-            ), f"The {attr} is {str(referenceUser3.__getattribute__(attr))} instead of {user_result3.__getattribute__(attr)}."
+            ) == user_result3.__getattribute__(attr), (
+                f"The {attr} is {str(referenceUser3.__getattribute__(attr))} instead "
+                f"of {user_result3.__getattribute__(attr)}."
+            )
 
 
 def test_singleUser():
@@ -273,11 +280,12 @@ def test_singleUser():
             assert userManager.verifyPassword(
                 password=referenceUser4.__getattribute__(attr),
                 passwordHash=user_result4[attr],
-            ), f"The password of the user does not match the target."
+            ), "The password of the user does not match the target."
         elif attr != "id":
-            assert (
-                str(referenceUser4.__getattribute__(attr)) == user_result4[attr]
-            ), f"The {attr} is {user_result4[attr]} instead of {str(referenceUser4.__getattribute__(attr))}."
+            assert str(referenceUser4.__getattribute__(attr)) == user_result4[attr], (
+                f"The {attr} is {user_result4[attr]} instead of "
+                f"{str(referenceUser4.__getattribute__(attr))}."
+            )
 
 
 def test_allUsers():
@@ -324,7 +332,7 @@ def test_allUsers():
 
     assert all(
         [isinstance(u, dict) for u in allUsers_result2]
-    ), f"Not all objects in the obtained list of all users are of type User"
+    ), "Not all objects in the obtained list of all users are of type User"
 
     # remove all passwords
     usernames_ref = []
@@ -335,9 +343,10 @@ def test_allUsers():
         usernames_res.append(user_res["username"])
 
     for usernameReference in usernames_ref:
-        assert (
-            usernameReference in usernames_res
-        ), f"The entry {usernameReference} is not contained in the result dictionary {usernames_res}."
+        assert usernameReference in usernames_res, (
+            f"The entry {usernameReference} is not contained in the result "
+            f"dictionary {usernames_res}."
+        )
 
 
 def test_getActiveUser():
@@ -370,11 +379,12 @@ def test_getActiveUser():
             assert userManager.verifyPassword(
                 password=referenceUser8.__getattribute__(attr),
                 passwordHash=activeUser[attr],
-            ), f"The password of the user does not match the target."
+            ), "The password of the user does not match the target."
         else:
-            assert (
-                str(referenceUser8.__getattribute__(attr)) == activeUser[attr]
-            ), f"The {attr} is {activeUser[attr]} instead of {str(referenceUser8.__getattribute__(attr))}."
+            assert str(referenceUser8.__getattribute__(attr)) == activeUser[attr], (
+                f"The {attr} is {activeUser[attr]} instead of "
+                f"{str(referenceUser8.__getattribute__(attr))}."
+            )
 
 
 def test_hashPassword():
@@ -385,7 +395,7 @@ def test_hashPassword():
 
     assert testContext.verify(
         password_test, hashedPassword
-    ), f"The password could not be verified."
+    ), "The password could not be verified."
 
 
 def test_verifyPassword():
@@ -398,7 +408,7 @@ def test_verifyPassword():
         password_test2, hashedPassword2
     ) and userManager.verifyPassword(
         password=password_test2, passwordHash=hashedPassword2
-    ), f"The password could not be verified correctly."
+    ), "The password could not be verified correctly."
 
 
 def test_getAccessToken():
@@ -453,30 +463,11 @@ def test_userAuthentication():
             assert userManager.verifyPassword(
                 password=referenceUser5.__getattribute__(attr),
                 passwordHash=user_result5.__getattribute__(attr),
-            ), f"The password of the user does not match the target."
+            ), "The password of the user does not match the target."
         else:
             assert str(
                 referenceUser5.__getattribute__(attr)
-            ) == user_result5.__getattribute__(
-                attr
-            ), f"The {attr} is {user_result5.__getattribute__(attr)} instead of {str(referenceUser5.__getattribute__(attr))}."
-
-
-# TODO: How to test this?
-# def test_authenticate():
-#     db = userManager.UserDB(test_config.userDB)
-#     referenceUser7 = User(username='testUser9', id=UUID('{12345678-1234-5678-1234-567812345678}'), password='thisIs_@testPW-9', usergroups=['1', '2', '3'])
-#     db.addNewUser(referenceUser7)
-#     db.closeConnection()
-
-#     expiration = datetime.timedelta(minutes=23)
-#     test_tokenData = {"sub": referenceUser7.username, "exp": datetime.datetime.now() + expiration}
-#     keySecret = test_config.secretKey
-#     algo = test_config.algorithm
-
-#     token_reference = jwt.encode(test_tokenData, keySecret, algorithm=algo)
-
-#     LIForm = OAuth2PasswordRequestForm(username=referenceUser7.username, password=referenceUser7.password)
-#     access = userManager.authenticate(LIForm)
-
-#     assert access == {"access_token": token_reference, "token_type": "bearer"}
+            ) == user_result5.__getattribute__(attr), (
+                f"The {attr} is {user_result5.__getattribute__(attr)} instead of "
+                f"{str(referenceUser5.__getattribute__(attr))}."
+            )

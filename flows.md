@@ -94,7 +94,7 @@ flowchart LR
 
     setLimitation{{setLimitation}}
     style setLimitation fill:#bbf,setLimitation stroke-width:2px,stroke-dasharray: 5 5
-    
+
     getMeta{{getMeta}}
     style getMeta fill:#bbf,getMeta stroke-width:2px,stroke-dasharray: 5 5
 
@@ -162,12 +162,12 @@ flowchart LR
     archivatorTenant --> getData
     archivatorTenant --> getLimitation
     archivatorTenant --> getMeta
-    
+
 
     archivatorTenant --> Archive
 
     setLimitation --> TEN-DB
-    
+
     getLimitation --> TEN-DB
     setCapability --> TEN-DB
     setMeta --> TEN-DB
@@ -186,4 +186,3 @@ TBD in mermaid
 # FINALES2 Blocks & Interfaces
 
 TBD in mermaid
-
