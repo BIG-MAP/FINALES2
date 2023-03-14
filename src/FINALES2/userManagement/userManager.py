@@ -1,6 +1,5 @@
 import datetime
 import sqlite3
-from pathlib import Path
 from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -40,7 +39,7 @@ class UserDB:
         Inputs:
         savepath: a string specifying the path, where the user database shall be stored
 
-        Outpzt:
+        Output:
         This function has no output
         """
 
@@ -51,23 +50,20 @@ class UserDB:
         self.savepath: str = savepath
 
         # Only create the new table, if it does not already exist
-        if not Path(savepath).is_file():
-            # Deduce the column names from the fields in the User class (to allow for
-            # some flexibility in development; this could be hard-coded in a final
-            # version)
-            columnNames = ", ".join(User().allAttributes())
-            # Create a table called users with the fields of user as column names
-            # plus a timestamp for when the user was added and another for when it
-            # was last edited
-            self.cursor.execute(
-                f"CREATE TABLE users ({columnNames}, timestamp_added"
-                ", timestamp_lastEdited)"
-            )
-            # Print an information, to inform about the newly created database
-            print("Created new user database.")
-        else:
-            # Print an information, to inform about the use of an existing database
-            print("Working with existing user database.")
+
+        # Deduce the column names from the fields in the User class (to allow for
+        # some flexibility in development; this could be hard-coded in a final
+        # version)
+        columnNames = ", ".join(User().allAttributes())
+        # Create a table called users with the fields of user as column names
+        # plus a timestamp for when the user was added and another for when it
+        # was last edited
+        self.cursor.execute(
+            f"CREATE TABLE IF NOT EXISTS users ({columnNames}, timestamp_added"
+            ", timestamp_lastEdited)"
+        )
+        # Print an information, to inform about the newly created database
+        print("Created new user database.")
 
     def closeConnection(self) -> None:
         """This function closes the connection to the user database.
