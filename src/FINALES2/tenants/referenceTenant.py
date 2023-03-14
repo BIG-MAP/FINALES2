@@ -7,11 +7,17 @@ class tenant:
         generalMeta: generalMetaData,
         location: str,
         operator: User,
-        type: str,
+        tenantType: str,
         quantity: str,
     ):
         self.generalMeta: generalMetaData = generalMeta
-        self.location: str
-        self.operator: User
-        self.type: str
+        self.location: str = location
+        self.operator: User = operator
+        self.type: str = tenantType
         self.quantity: str
+
+    def to_dict(self):
+        pass
+
+    def from_dict(self):
+        pass
