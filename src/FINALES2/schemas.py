@@ -36,8 +36,8 @@ class generalMetaData(BaseModel):
         self.id: UUID = id
 
 
-# class Capability(BaseModel):
-#     def __init__(quantity:):
-#         self.quantity =
-#         self.parameters
-#         self.limitations
+class Capability(BaseModel):
+    def __init__(self, quantity: str, parameters: list, limitations: list):
+        self.quantity = quantity
+        self.parameters = parameters
+        self.limitations = limitations
