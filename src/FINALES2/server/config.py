@@ -1,13 +1,25 @@
+# get the root for the paths
+import pathlib
+
+scriptPath = pathlib.Path(__file__).parent.resolve()
+
+
+# Info about the FINALES2 server
 host = "localhost"
 port = 13371
 
-userDB: str = "src/FINALES2/userManagement/userDB.db"
+# Information regarding the user database
+userDB: str = f"{scriptPath}/userManagement/userDB.db"
 salt_userDB = "dcf832f0ec6a80dc36afdO"
 
+# Information regarding the authentication
 # use openssl rand -hex 32 to get a random secret key
 secretKey = "3e469b60dfb746971bdf440cd80306dca5c9469ab589aebbfaf213461b21e8cc"
 algorithm = "HS256"
 tokenExpirationMin = 2
+
+# Information regarding the operation of the MAP
+sleepTime_s = 5
 
 
 # ----------------------------
