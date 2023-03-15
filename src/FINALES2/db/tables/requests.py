@@ -1,5 +1,3 @@
-# import uuid
-
 from db.base_class import Base
 from sqlalchemy import Column, DateTime, ForeignKey, String
 
@@ -12,15 +10,15 @@ class Request(Base):
     Class defining the request table with the following columns:
     """
 
-    uuid = Column(
+    id = Column(
         UUIDType(binary=False),
         primary_key=True,
         nullable=False,
     )
     quantity = Column(String(50), nullable=False)
-    tenant_uuid = Column(
+    tenant_id = Column(
         UUIDType(binary=False),
-        ForeignKey("tenant.uuid"),
+        ForeignKey("tenant.id"),
         nullable=False,
     )
     """

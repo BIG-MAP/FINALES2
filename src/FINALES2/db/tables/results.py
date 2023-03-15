@@ -6,12 +6,12 @@ from sqlalchemy_utils import UUIDType
 class Result(Base):
     """
     Class defining the result table with the following columns:
-        uuid CHAR(32):                uuid of the posted result
-        request_uuid CHAR(32):        uuid of the original request requesting the data
+        id CHAR(32):                  id of the posted result
+        request_id CHAR(32):          id of the original request requesting the data
         quantity VARCHAR():           Quantity of the results
         parameters VARCHAR(5000):     JSON string of the parameters used for the result.
         data VARCHAR(5000):           JSON string of the posted data
-        posting_tenant_uuid CHAR(32): uuid of the tenant posting the result
+        posting_tenant_id CHAR(32):   id of the tenant posting the result
         posting_recieved_timestamp:   Timestamp of the TODO
         cost():  TODO....
         status VARCHAR(50):            List with status and timestamps of the entry,
@@ -21,14 +21,13 @@ class Result(Base):
         TODO size of the json string
     """
 
-    uuid = Column(
+    id = Column(
         UUIDType(binary=False),
         primary_key=True,
-        # default=uuid.uuid4
     )
-    request_uuid = Column(
+    request_id = Column(
         UUIDType(binary=False),
-        ForeignKey("request.uuid"),
+        ForeignKey("request.id"),
         nullable=False,
     )
     quantity = Column(String(50), nullable=False)
@@ -37,7 +36,7 @@ class Result(Base):
         nullable=False,
     )
     data = Column(String(5000), nullable=False)
-    posting_tenant_uuid = Column(
+    posting_tenant_id = Column(
         UUIDType(binary=False),
         nullable=False,
     )

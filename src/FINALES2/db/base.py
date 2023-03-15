@@ -5,6 +5,8 @@ from db.tables.requests import Request
 from db.tables.results import Result
 from db.tables.tenants import Tenant
 
+# Assert statements are somewhat a hack to avoid flake8 complaint about non used
+# imported packages
 assert Base
 assert Quantity
 assert Request
