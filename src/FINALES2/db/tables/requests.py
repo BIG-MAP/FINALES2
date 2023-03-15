@@ -1,7 +1,5 @@
 from db.base_class import Base
 from sqlalchemy import Column, DateTime, ForeignKey, String
-
-# from sqlalchemy.orm import relationship
 from sqlalchemy_utils import UUIDType
 
 

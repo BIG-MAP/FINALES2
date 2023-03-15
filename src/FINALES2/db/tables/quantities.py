@@ -8,6 +8,7 @@ class Quantity(Base):
     Class defining the quantity table with the following columns:
         uuid (UUIDType (32)):   uuid of the row quantity row entry
         quantity (String):      Type of quantity
+        method (String):        Type of method -  TODO include column below
         specification (String): Json string with the specifications of the measuremnet
                                 type, TODO
         is_active (Boolean):    1 - row is active when added. Row will remain active
