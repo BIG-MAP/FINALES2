@@ -35,21 +35,25 @@ class GeneralMetaData(BaseModel):
     uuid: UUID
 
 
-class Capability(BaseModel):
-    quantity: str
-    parameters: list[str]
-    limitations: list
-
-
 class Quantity(BaseModel):
     name: str
-    method: list[str]
+    methods: list[str]
     specifications: dict
     is_active: bool
     uuid: Optional[UUID]
     load_time: Optional[datetime]
 
 
-class Server(BaseModel):
-    def __init__(self):
-        pass
+class ServerConfig(BaseModel):
+    app_title: str
+    app_description: str
+    app_version: str
+    host: str
+    port: int
+
+
+class Method(BaseModel):
+    name: str
+    quantity: str
+    parameters: dict
+    limitations: list

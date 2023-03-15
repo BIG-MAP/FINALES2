@@ -3,14 +3,12 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
-# import jsons
 import requests
 import uvicorn
-from fastapi import FastAPI
 from pydantic import BaseModel
 
 import FINALES2.server.config as config
-from FINALES2.schemas import GeneralMetaData, Quantity, User
+from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
 
 
 class tenant(BaseModel):
@@ -20,23 +18,27 @@ class tenant(BaseModel):
     generalMeta: GeneralMetaData
     operator: User
     quantities: list[Quantity]
-    tenantServerConfig: uvicorn.Config
-    FINALESServerConfig: uvicorn.Config
+    tenantServerConfig: ServerConfig
+    FINALESServerConfig: ServerConfig
     endRuntime: Optional[datetime]
     tenantUser: User
 
-    def serialize(self):
-        pass
-        # tenantSerialized = jsons.dump(
-        #     self,
-        #     key_transformer=jsons.KEY_TRANSFORMER_PASCALCASE
-        #     )
-        # return tenantSerialized
+    # def to_dict(self):
+    #     tenantDict = self.__dict__
+    #     for k in thisDict.keys():
+    #         if type(thisDict[k]) not in [str, list, dict, int, float]:
+    #             thisDict[k] = thisDict[k].__dict__
 
-    def deserialize(self):
+    def from_dict(self):
         pass
 
     def _get_requests(self):
+        pass
+
+    def _post_request(self):
+        pass
+
+    def _get_results(self):
         pass
 
     def _post_results(self):
@@ -99,7 +101,7 @@ if __name__ == "__main__":
 
     quant = Quantity(
         name="density",
-        method=["rollingBall"],
+        methods=["rollingBall"],
         specifications={"composition": {"a": 5, "b": 0.7}, "temperature": 273.15},
         is_active=True,
         uuid=uuid4(),
@@ -108,21 +110,19 @@ if __name__ == "__main__":
 
     quantities = [quant]
 
-    tenantServerConfig = uvicorn.Config(
-        app=FastAPI(
-            title="testTenant", description="A tenant for testing", version="0.0.1"
-        ),
+    tenantServerConfig = ServerConfig(
+        app_title="testTenant",
+        app_description="A tenant for testing",
+        app_version="0.0.1",
         host="0.0.0.0",
         port=1337,
     )
 
-    FINALESServerConfig = uvicorn.Config(
-        app=FastAPI(
-            title="FINALES2",
-            description="FINALES2 accepting requests, "
-            "managing queues and serving queries",
-            version="0.0.1",
-        ),
+    FINALESServerConfig = ServerConfig(
+        app_title="FINALES2",
+        app_description="FINALES2 accepting requests, "
+        "managing queues and serving queries",
+        app_version="0.0.1",
         host="0.0.0.0",
         port=5678,
     )
@@ -146,5 +146,5 @@ if __name__ == "__main__":
         tenantUser=tenantUser,
     )
 
-    ts = t.serialize()
-    print(type(ts), ts)
+    print(dir(t))
+    print(vars(t))
