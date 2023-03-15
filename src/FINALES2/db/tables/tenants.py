@@ -1,6 +1,7 @@
-from db.base_class import Base
 from sqlalchemy import Column, DateTime, String
 from sqlalchemy_utils import UUIDType
+
+from FINALES2.db.base_class import Base
 
 
 class Tenant(Base):

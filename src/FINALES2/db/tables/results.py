@@ -1,6 +1,7 @@
-from db.base_class import Base
 from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy_utils import UUIDType
+
+from FINALES2.db.base_class import Base
 
 
 class Result(Base):
@@ -24,6 +25,7 @@ class Result(Base):
     uuid = Column(
         UUIDType(binary=False),
         primary_key=True,
+        nullable=False,
     )
     request_uuid = Column(
         UUIDType(binary=False),

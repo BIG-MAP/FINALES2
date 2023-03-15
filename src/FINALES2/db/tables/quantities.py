@@ -1,6 +1,7 @@
-from db.base_class import Base
 from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy_utils import UUIDType
+
+from FINALES2.db.base_class import Base
 
 
 class Quantity(Base):
@@ -26,6 +27,7 @@ class Quantity(Base):
     uuid = Column(
         UUIDType(binary=False),
         primary_key=True,
+        nullable=False,
     )
     quantity = Column(String(50), nullable=False)  # TODO String(size)??
     specifications = Column(
