@@ -80,7 +80,7 @@ def test_UserDB_addNewUser():
     db = userManager.UserDB(test_config.userDB)
     user = User(
         username="testUser",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-",
         usergroups=["1", "2", "3"],
     )
@@ -109,7 +109,7 @@ def test_UserDB_userFromRow():
     db = userManager.UserDB(test_config.userDB)
     referenceUser = User(
         username="testUser2",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-2",
         usergroups=["1", "2", "3"],
     )
@@ -141,7 +141,7 @@ def test_UserDB_getSingleUser():
     db = userManager.UserDB(test_config.userDB)
     referenceUser = User(
         username="testUser3",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-3",
         usergroups=["1", "2", "3"],
     )
@@ -169,19 +169,19 @@ def test_UserDB_getAllUsers():
     allUsers_reference = [
         User(
             username="testUser",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-",
             usergroups=["1", "2", "3"],
         ),
         User(
             username="testUser2",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-2",
             usergroups=["1", "2", "3"],
         ),
         User(
             username="testUser3",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-3",
             usergroups=["1", "2", "3"],
         ),
@@ -200,7 +200,7 @@ def test_UserDB_getAllUsers():
 def test_createUser():
     referenceUser2 = User(
         username="testUser4",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-4",
         usergroups=["1", "2", "3"],
     )
@@ -230,7 +230,7 @@ def test_createUser():
 def test_newUser():
     referenceUser3 = User(
         username="testUser5",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-5",
         usergroups=["1", "2", "3"],
     )
@@ -265,7 +265,7 @@ def test_singleUser():
     db = userManager.UserDB(test_config.userDB)
     referenceUser4 = User(
         username="testUser6",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-6",
         usergroups=["1", "2", "3"],
     )
@@ -293,37 +293,37 @@ def test_allUsers():
     allUsers_reference2 = [
         User(
             username="testUser",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser2",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-2",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser3",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-3",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser4",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-4",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser5",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-5",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser6",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-6",
             usergroups=["1", "2", "3"],
         ).to_dict(),
@@ -354,7 +354,7 @@ def test_getActiveUser():
     db = userManager.UserDB(test_config.userDB)
     referenceUser8 = User(
         username="testUser10",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-10",
         usergroups=["1", "2", "3"],
     )
@@ -416,7 +416,7 @@ def test_getAccessToken():
     db = userManager.UserDB(test_config.userDB)
     referenceUser6 = User(
         username="testUser8",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-8",
         usergroups=["1", "2", "3"],
     )
@@ -446,7 +446,7 @@ def test_userAuthentication():
     db = userManager.UserDB(test_config.userDB)
     referenceUser5 = User(
         username="testUser7",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-7",
         usergroups=["1", "2", "3"],
     )

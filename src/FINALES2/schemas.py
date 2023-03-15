@@ -2,6 +2,8 @@
 This file is subject to extension. """
 
 import inspect
+from datetime import datetime
+from typing import Optional
 from uuid import UUID, uuid4
 
 import strawberry
@@ -25,12 +27,12 @@ class User(ObjectBase):
         self,
         username: str = "",
         password: str = "",
-        id: UUID = uuid4(),
+        uuid: UUID = uuid4(),
         usergroups: list[str] = [],
         **kwargs
     ):
         self.username: str = username
-        self.id: UUID = id
+        self.id: UUID = uuid
         self.password: str = password
         self.usergroups: list[str] = usergroups
 
@@ -41,15 +43,27 @@ class AccessToken(ObjectBase):
     token_type: str
 
 
-class generalMetaData(BaseModel):
-    def __init__(self, name: str, id: UUID, description: str):
-        self.name: str = name
-        self.description: str = description
-        self.id: UUID = id
+class GeneralMetaData(BaseModel):
+    name: str
+    description: Optional[str]
+    uuid: UUID
 
 
 class Capability(BaseModel):
-    def __init__(self, quantity: str, parameters: list, limitations: list):
-        self.quantity = quantity
-        self.parameters = parameters
-        self.limitations = limitations
+    quantity: str
+    parameters: list[str]
+    limitations: list
+
+
+class Quantity(BaseModel):
+    name: str
+    method: list[str]
+    specifications: dict
+    is_active: bool
+    uuid: Optional[UUID]
+    load_time: Optional[datetime]
+
+
+class Server(BaseModel):
+    def __init__(self):
+        pass
