@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class Request(BaseModel):
     quantity: str
+    methods: str
     parameters: dict
     tenant_uuid: str
 
@@ -19,8 +20,10 @@ class RequestInfo(BaseModel):
 class Result(BaseModel):
     data: dict
     quantity: str
+    method: str
     parameters: dict
     tenant_uuid: str
+    request_uuid: str
 
 
 class ResultInfo(BaseModel):
@@ -30,6 +33,7 @@ class ResultInfo(BaseModel):
     result: Result
 
 
-class QuantityInfo(BaseModel):
-    name: str
+class CapabilityInfo(BaseModel):
+    quantity: str
+    method: str
     json_schema: dict
