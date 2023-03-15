@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, echo=True
+    SQLALCHEMY_DATABASE_URL, echo=True, connect_args={"check_same_thread": False}
 )
 # connect_args articular connection in a thread which is not the one in which it was
 # created
