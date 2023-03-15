@@ -10,15 +10,15 @@ class Request(Base):
     Class defining the request table with the following columns:
     """
 
-    id = Column(
+    uuid = Column(
         UUIDType(binary=False),
         primary_key=True,
         nullable=False,
     )
     quantity = Column(String(50), nullable=False)
-    tenant_id = Column(
+    tenant_uuid = Column(
         UUIDType(binary=False),
-        ForeignKey("tenant.id"),
+        ForeignKey("tenant.uuid"),
         nullable=False,
     )
     """

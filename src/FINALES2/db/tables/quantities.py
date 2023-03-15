@@ -6,7 +6,7 @@ from sqlalchemy_utils import UUIDType
 class Quantity(Base):
     """
     Class defining the quantity table with the following columns:
-        id (UUIDType (32)):     id of the row quantity row entry
+        uuid (UUIDType (32)):   uuid of the row quantity row entry
         quantity (String):      Type of quantity
         specification (String): Json string with the specifications of the measuremnet
                                 type, TODO
@@ -22,7 +22,7 @@ class Quantity(Base):
         TODO size of the json string
     """
 
-    id = Column(
+    uuid = Column(
         UUIDType(binary=False),
         primary_key=True,
     )

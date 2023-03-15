@@ -8,7 +8,7 @@ class Tenant(Base):
     Class defining the tenant table with the following columns:
     """
 
-    id = Column(UUIDType(binary=False), primary_key=True, nullable=False)
+    uuid = Column(UUIDType(binary=False), primary_key=True, nullable=False)
     name = Column(
         String(1000),
         nullable=False,
