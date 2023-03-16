@@ -1,7 +1,8 @@
+import json
 import time
 from datetime import datetime
 from typing import Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import requests
 import uvicorn
@@ -11,7 +12,7 @@ import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
 
 
-class tenant(BaseModel):
+class Tenant(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
@@ -23,14 +24,50 @@ class tenant(BaseModel):
     endRuntime: Optional[datetime]
     tenantUser: User
 
-    # def to_dict(self):
-    #     tenantDict = self.__dict__
-    #     for k in thisDict.keys():
-    #         if type(thisDict[k]) not in [str, list, dict, int, float]:
-    #             thisDict[k] = thisDict[k].__dict__
+    def to_json(self) -> str:
+        # jsonCompatibleTypes = [str, list, dict, int, float]
+        tenantDict = self.__dict__
+        for attr in vars(self):
+            if "__" not in attr:
+                attrObj = getattr(self, attr)
+                if type(attrObj) in [GeneralMetaData, ServerConfig]:
+                    tenantDict[attr] = attrObj.__dict__
+                elif isinstance(attrObj, list) and isinstance(attrObj[0], Quantity):
+                    tenantDict[attr] = [e.__dict__ for e in attrObj if "__" not in e]
+                elif isinstance(attrObj, User):
+                    tenantDict[attr] = vars(attrObj)
+                    print(tenantDict[attr])
+                    attrDict = tenantDict[attr].copy()
+                    for element in tenantDict[attr].keys():
+                        if "__" not in element:
+                            if isinstance(attrDict[element], UUID):
+                                attrDict[element] = str(tenantDict[attr][element])
+                        else:
+                            del attrDict[element]
+                    print(attrDict)
+                    tenantDict[attr] = attrDict
+                elif isinstance(attrObj, datetime):
+                    tenantDict[attr] = attrObj.isoformat()
+        return json.dumps(tenantDict)
 
-    def from_dict(self):
-        pass
+    def from_json(attrsDict: str):
+        attrsJSON = json.loads(attrsDict)
+        attrsKeys = vars(Tenant)["__fields__"].keys()
+        for k in attrsKeys:
+            attr = attrsJSON[k]
+            if k == "generalMeta":
+                attrsJSON[k] = GeneralMetaData(**attr)
+            if k in ["operator", "tenantUser"]:
+                print(attr)
+                attrsJSON[k] == User(**attr)
+            if k == "quantities":
+                attrsJSON[k] = [Quantity(**q) for q in attr]
+            if k == "tenantServerConfig":
+                attrsJSON[k] = ServerConfig(**attr)
+            if k == "endRuntime":
+                attrsJSON[k] = datetime.fromisoformat(attr)
+        tenantObj = Tenant(**attrsJSON)
+        return tenantObj
 
     def _get_requests(self):
         pass
@@ -88,14 +125,11 @@ class tenant(BaseModel):
 
 
 if __name__ == "__main__":
-    meta = GeneralMetaData(
-        name="testTenant", uuid=uuid4(), description="This is a great tenant."
-    )
+    meta = GeneralMetaData(name="testTenant", description="This is a great tenant.")
 
     operator = User(
         username="operator1",
         password="password1",
-        uuid=uuid4(),
         usergroups=["Project_A"],
     )
 
@@ -104,8 +138,6 @@ if __name__ == "__main__":
         methods=["rollingBall"],
         specifications={"composition": {"a": 5, "b": 0.7}, "temperature": 273.15},
         is_active=True,
-        uuid=uuid4(),
-        load_time=datetime.now(),
     )
 
     quantities = [quant]
@@ -136,7 +168,7 @@ if __name__ == "__main__":
         usergroups=["Project_A"],
     )
 
-    t = tenant(
+    t = Tenant(
         generalMeta=meta,
         operator=operator,
         quantities=quantities,
@@ -146,5 +178,7 @@ if __name__ == "__main__":
         tenantUser=tenantUser,
     )
 
-    print(dir(t))
-    print(vars(t))
+    a = t.to_json()
+    # b = Tenant.from_json(a)
+    # print(b)
+    print(Tenant.from_json(a))
