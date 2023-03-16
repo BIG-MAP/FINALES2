@@ -10,6 +10,8 @@ from pydantic import BaseModel
 # import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
 
+# TODO: Import the RestAPI schemas
+
 
 class Tenant(BaseModel):
     """A class to represent a tenant for a FINALES run.
@@ -157,6 +159,14 @@ class Tenant(BaseModel):
     #         ).json()
     #         # TODO: Which endpoint to use? What is the return value?
 
+    #         # get the relevant requests
+    #         tenantQueue = []
     #         for pendingItem in pendingRequests.items:
-    #             pass
+    #             # create the Request object from the json string
+    #             requestDict = json.loads(pendingItem)
+    #             request = Request(**requestDict)
     #             # check, if the pending request fits with the tenant
+    #             quantityOK = request.quantity in [q.name for q in self.quantities]
+    #             methodOK = request.method in [q.method for q in self.quantities]
+    #             if quantityOK and methodOK:
+    #                 tenantQueue.append(request)
