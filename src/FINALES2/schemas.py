@@ -32,7 +32,6 @@ class AccessToken(BaseModel, ObjectBase):
 class GeneralMetaData(BaseModel):
     name: str
     description: Optional[str]
-    uuid: UUID
 
 
 class Quantity(BaseModel):
@@ -40,8 +39,6 @@ class Quantity(BaseModel):
     methods: list[str]
     specifications: dict
     is_active: bool
-    uuid: Optional[UUID]
-    load_time: Optional[datetime]
 
 
 class ServerConfig(BaseModel):
