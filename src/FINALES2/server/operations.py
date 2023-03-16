@@ -1,3 +1,14 @@
+"""This module named operations.py defines an API router for various data
+operations using FastAPI.
+
+It provides API endpoints to perform CRUD operations on requests and results,
+as well as retrieving the capabilities of the system. The operations include
+getting a request or result by its object_id, posting new requests and results,
+fetching all pending requests, and obtaining the capabilities of the system.
+
+The module uses FastAPI's APIRouter to define the routes and handle the requests.
+"""
+
 from typing import List, Optional
 
 from fastapi import APIRouter
