@@ -80,7 +80,7 @@ def test_UserDB_addNewUser():
     db = userManager.UserDB(test_config.userDB)
     user = User(
         username="testUser",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-",
         usergroups=["1", "2", "3"],
     )
@@ -109,7 +109,7 @@ def test_UserDB_userFromRow():
     db = userManager.UserDB(test_config.userDB)
     referenceUser = User(
         username="testUser2",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-2",
         usergroups=["1", "2", "3"],
     )
@@ -129,7 +129,7 @@ def test_UserDB_userFromRow():
 
     for key in row[0].keys():
         if ("password" not in key) and ("timestamp" not in key):
-            assert getattr(theUser, key) == row[0][key], (
+            assert str(getattr(theUser, key)) == row[0][key], (
                 f"The {key} of the object differs from the row. It is "
                 f"{getattr(theUser, key)} instead of {row[0][key]}."
             )
@@ -141,7 +141,7 @@ def test_UserDB_getSingleUser():
     db = userManager.UserDB(test_config.userDB)
     referenceUser = User(
         username="testUser3",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-3",
         usergroups=["1", "2", "3"],
     )
@@ -158,9 +158,9 @@ def test_UserDB_getSingleUser():
                 passwordHash=user_result.__getattribute__(attr),
             )
         else:
-            assert str(
-                referenceUser.__getattribute__(attr)
-            ) == user_result.__getattribute__(attr)
+            assert referenceUser.__getattribute__(attr) == user_result.__getattribute__(
+                attr
+            )
 
 
 def test_UserDB_getAllUsers():
@@ -169,19 +169,19 @@ def test_UserDB_getAllUsers():
     allUsers_reference = [
         User(
             username="testUser",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-",
             usergroups=["1", "2", "3"],
         ),
         User(
             username="testUser2",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-2",
             usergroups=["1", "2", "3"],
         ),
         User(
             username="testUser3",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-3",
             usergroups=["1", "2", "3"],
         ),
@@ -191,16 +191,27 @@ def test_UserDB_getAllUsers():
         [isinstance(u, User) for u in allUsers_result]
     ), "Not all objects in the obtained list of all users are of type User"
 
-    for user in allUsers_reference:
+    print(allUsers_result)
+    print(allUsers_reference)
+
+    for i in range(len(allUsers_reference)):
         assert (
-            user in allUsers_result
-        ), f"The user {user.username} is not contained in the obtained all users."
+            allUsers_reference[i].username == allUsers_result[i].username
+        ), f"The username is {allUsers_result[i].username} "
+        "instead of {allUsers_reference[i].username}."
+        assert (
+            allUsers_reference[i].uuid == allUsers_result[i].uuid
+        ), f"The uuid is {allUsers_result[i].uuid} instead "
+        "of {allUsers_reference[i].uuid}."
+        assert userManager.verifyPassword(
+            allUsers_reference[i].password, allUsers_result[i].password
+        ), "The passwords to not match."
 
 
 def test_createUser():
     referenceUser2 = User(
         username="testUser4",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-4",
         usergroups=["1", "2", "3"],
     )
@@ -218,10 +229,10 @@ def test_createUser():
                 password=referenceUser2.__getattribute__(attr),
                 passwordHash=user_result2.__getattribute__(attr),
             ), "The password of the user does not match the target."
-        elif attr != "id":
-            assert str(
-                referenceUser2.__getattribute__(attr)
-            ) == user_result2.__getattribute__(attr), (
+        elif attr != "uuid":
+            assert str(referenceUser2.__getattribute__(attr)) == str(
+                user_result2.__getattribute__(attr)
+            ), (
                 f"The {attr} is {str(referenceUser2.__getattribute__(attr))} instead "
                 f"of {user_result2.__getattribute__(attr)}."
             )
@@ -230,7 +241,7 @@ def test_createUser():
 def test_newUser():
     referenceUser3 = User(
         username="testUser5",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-5",
         usergroups=["1", "2", "3"],
     )
@@ -252,10 +263,10 @@ def test_newUser():
                 password=referenceUser3.__getattribute__(attr),
                 passwordHash=user_result3.__getattribute__(attr),
             ), "The password of the user does not match the target."
-        elif attr != "id":
-            assert str(
-                referenceUser3.__getattribute__(attr)
-            ) == user_result3.__getattribute__(attr), (
+        elif attr != "uuid":
+            assert str(referenceUser3.__getattribute__(attr)) == str(
+                user_result3.__getattribute__(attr)
+            ), (
                 f"The {attr} is {str(referenceUser3.__getattribute__(attr))} instead "
                 f"of {user_result3.__getattribute__(attr)}."
             )
@@ -265,7 +276,7 @@ def test_singleUser():
     db = userManager.UserDB(test_config.userDB)
     referenceUser4 = User(
         username="testUser6",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-6",
         usergroups=["1", "2", "3"],
     )
@@ -283,7 +294,7 @@ def test_singleUser():
                 passwordHash=user_result4[attr],
             ), "The password of the user does not match the target."
         elif attr != "id":
-            assert str(referenceUser4.__getattribute__(attr)) == user_result4[attr], (
+            assert referenceUser4.__getattribute__(attr) == user_result4[attr], (
                 f"The {attr} is {user_result4[attr]} instead of "
                 f"{str(referenceUser4.__getattribute__(attr))}."
             )
@@ -293,37 +304,37 @@ def test_allUsers():
     allUsers_reference2 = [
         User(
             username="testUser",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser2",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-2",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser3",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-3",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser4",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-4",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser5",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-5",
             usergroups=["1", "2", "3"],
         ).to_dict(),
         User(
             username="testUser6",
-            id=UUID("{12345678-1234-5678-1234-567812345678}"),
+            uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-6",
             usergroups=["1", "2", "3"],
         ).to_dict(),
@@ -354,7 +365,7 @@ def test_getActiveUser():
     db = userManager.UserDB(test_config.userDB)
     referenceUser8 = User(
         username="testUser10",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-10",
         usergroups=["1", "2", "3"],
     )
@@ -382,7 +393,7 @@ def test_getActiveUser():
                 passwordHash=activeUser[attr],
             ), "The password of the user does not match the target."
         else:
-            assert str(referenceUser8.__getattribute__(attr)) == activeUser[attr], (
+            assert referenceUser8.__getattribute__(attr) == activeUser[attr], (
                 f"The {attr} is {activeUser[attr]} instead of "
                 f"{str(referenceUser8.__getattribute__(attr))}."
             )
@@ -416,7 +427,7 @@ def test_getAccessToken():
     db = userManager.UserDB(test_config.userDB)
     referenceUser6 = User(
         username="testUser8",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-8",
         usergroups=["1", "2", "3"],
     )
@@ -446,7 +457,7 @@ def test_userAuthentication():
     db = userManager.UserDB(test_config.userDB)
     referenceUser5 = User(
         username="testUser7",
-        id=UUID("{12345678-1234-5678-1234-567812345678}"),
+        uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         password="thisIs_@testPW-7",
         usergroups=["1", "2", "3"],
     )
@@ -466,8 +477,8 @@ def test_userAuthentication():
                 passwordHash=user_result5.__getattribute__(attr),
             ), "The password of the user does not match the target."
         else:
-            assert str(
-                referenceUser5.__getattribute__(attr)
+            assert referenceUser5.__getattribute__(
+                attr
             ) == user_result5.__getattribute__(attr), (
                 f"The {attr} is {user_result5.__getattribute__(attr)} instead of "
                 f"{str(referenceUser5.__getattribute__(attr))}."
