@@ -17,8 +17,6 @@ class Tenant(Base):
 
     """
 
-    CONTACT_PERSON_STRING_SIZE = 100
-
     uuid = Column(UUIDType(binary=False), primary_key=True, nullable=False)
     name = Column(
         String(Base.TENANT_NAME_STRING_SIZE),
@@ -33,7 +31,7 @@ class Tenant(Base):
         nullable=False,
     )
     contact_person = Column(
-        String(CONTACT_PERSON_STRING_SIZE),
+        String(Base.CONTACT_PERSON_STRING_SIZE),
         nullable=False,
     )
     load_time = Column(
