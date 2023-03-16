@@ -14,9 +14,10 @@ from FINALES2.server.schemas import CapabilityInfo, Request, RequestInfo, Result
 
 
 class Engine:
+    """This class is the outermost manager of the functionalities of finales."""
+
     def get_request(self, object_id: str) -> Optional[Request]:
         """Retrieve a request entry from the database by id."""
-        # Temporarily, this just stores the requests in memory
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(object_id))
         with get_db() as session:
             query_out = session.execute(query_inp).all()
@@ -29,7 +30,6 @@ class Engine:
 
     def get_result(self, object_id: str) -> Optional[Result]:
         """Retrieve a result entry from the database by id."""
-        # Temporarily, this just stores the results in memory
         query_inp = select(DbResult).where(DbResult.uuid == uuid.UUID(object_id))
         with get_db() as session:
             query_out = session.execute(query_inp).all()
@@ -49,7 +49,6 @@ class Engine:
 
         When creating the request object, it assigns a new uuid (and returns it).
         """
-        # Obviously temporary fake validation, but to test jsonschema.validate
         query_inp = select(DbQuantity).where(
             DbQuantity.quantity == request_data.quantity
         )
@@ -92,7 +91,6 @@ class Engine:
 
         When creating the result object, it assigns a new uuid (and returns it).
         """
-        # Obviously temporary fake validation, but to test jsonschema.validate
         query_inp = select(DbQuantity).where(
             DbQuantity.quantity == received_data.quantity
         )
