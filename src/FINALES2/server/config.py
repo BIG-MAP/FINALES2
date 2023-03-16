@@ -19,7 +19,7 @@ algorithm = "HS256"
 tokenExpirationMin = 2
 
 # Information regarding the operation of the MAP
-sleepTime_s = 5
+sleepTime_s = 1
 
 
 # ----------------------------
