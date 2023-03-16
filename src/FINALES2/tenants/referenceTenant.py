@@ -3,14 +3,22 @@ from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
 
-# import requests
-# import uvicorn
 from pydantic import BaseModel
 
-# import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
 
-# TODO: Import the RestAPI schemas
+# import time
+# import requests
+# import uvicorn
+# import FINALES2.server.config as config
+
+
+# TODO: Import the RestAPI schemas -> remove this once the real schemas are available
+class Request(BaseModel):
+    quantity: str
+    methods: str
+    parameters: dict
+    tenant_uuid: str
 
 
 class Tenant(BaseModel):
@@ -26,11 +34,12 @@ class Tenant(BaseModel):
         arbitrary_types_allowed = True
 
     generalMeta: GeneralMetaData
-    operator: User
     quantities: list[Quantity]
+    queue: Optional[list] = []
     tenantConfig: Any
     FINALESServerConfig: ServerConfig
     endRuntime: Optional[datetime]
+    operator: User
     tenantUser: User
 
     # TODO: add tenantConfig object
@@ -144,9 +153,9 @@ class Tenant(BaseModel):
     #         )
     #         print("Looking for tasks...")
 
-    #         # collect the quantity names and methods in a list
-    #         quantityNames = [q.name for q in quantities]
-    #         quantityMethods = [q.method for q in quantities]
+    #         # # collect the quantity names and methods in a list
+    #         # quantityNames = [q.name for q in quantities]
+    #         # quantityMethods = [q.method for q in quantities]
     #         # get the pending requests from the FINALES server
     #         pendingRequests = requests.get(
     #             f"http://{self.FINALESServer.config.host}"
@@ -159,14 +168,41 @@ class Tenant(BaseModel):
     #         ).json()
     #         # TODO: Which endpoint to use? What is the return value?
 
+    #         # update the queue of the tenant
+
     #         # get the relevant requests
-    #         tenantQueue = []
     #         for pendingItem in pendingRequests.items:
     #             # create the Request object from the json string
     #             requestDict = json.loads(pendingItem)
     #             request = Request(**requestDict)
     #             # check, if the pending request fits with the tenant
+    #             # check the quantity matches
     #             quantityOK = request.quantity in [q.name for q in self.quantities]
-    #             methodOK = request.method in [q.method for q in self.quantities]
-    #             if quantityOK and methodOK:
-    #                 tenantQueue.append(request)
+    #             if quantityOK:
+    #                 # check methods
+    #                 # TODO: There is a limitation to one method per quantity for
+    #                 # the tenant at the momen
+    #                 tenantMethods = [q.methods.name for q in self.quantities]
+    #                 methodOK = any([m in tenantMethods for m in request.methods])
+    #                 if methodOK:
+    #                     # check parameters
+    #                     parametersCheck = []
+    #                     requestParameters = request.parameters
+    #                     for p in requestParameters.keys():
+    #                         tenantMin = self.limitations[p]["minimum"]
+    #                         tenantMax = self.limitations[p]["maximum"]
+    #                         minimumOK = requestParameters[p] > tenantMin
+    #                         maximumOK = requestParameters[p] < tenantMax
+    #                         parametersCheck.append(minimumOK and maximumOK)
+    #                     parametersOK = all(parametersCheck)
+    #             # summarize the checks
+    #             requestOK = quantityOK and methodOK and parametersOK
+    #             # if the request is ok and it is not yet in the tenant's queue
+    #             # add it
+    #             if requestOK and request not in self.queue:
+    #                 self.queue.append(request)
+
+    #         # get the first request in the queue to work on -> first in - first out
+    #         # activeRequest = self.queue[0]
+
+    #         # TODO: Add the way how you
