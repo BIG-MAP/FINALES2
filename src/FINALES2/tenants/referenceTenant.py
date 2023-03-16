@@ -1,148 +1,208 @@
-# ''' This file contains the definitions of reference tenants, which are currently
-# implemented for FINALES2. If you do not find a tenant suitable for your application,
-# please create a new one and create a pull request in our repository to add it to the
-# list of available tenants. '''
+import json
+from datetime import datetime
+from typing import Any, Optional
+from uuid import UUID
 
-# from ontopy import get_ontology
-# from emmopy import get_emmo
+from pydantic import BaseModel
 
-# from dlite.triplestore import (
-#     en, Literal, Triplestore,
-#     EMMO, OWL, RDF, RDFS, SKOS, XSD,
-# )
-# import rdflib
+from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
 
-# #Load local copy of BattINFO
-# battinfo = get_ontology(r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\BattINFO
-# \battinfo.ttl').load()
-
-# # # Load ontology from the web
-# # battinfo = get_ontology('https://raw.githubusercontent.com/BIG-MAP/BattINFO/
-# master/battinfo.ttl').load()
-
-# emmo = get_emmo()
-
-# triplestore = Triplestore("rdflib")
-# triplestore.parse(r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\BattINFO\battery.ttl')
-
-# graph = rdflib.Graph()
-# graph.parse(r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\BattINFO\battery.ttl')
-# print(len(graph))
-
-# graph.serialize(format='turtle')
-
-# for p in graph.predicates():
-#     print(p)
-
-# prop = rdflib.URIRef('http://www.w3.org/2000/01/rdf-schema#subClassOf')
-# for predicate in graph.predicate_objects(rdflib.term.URIRef('https://big-map.github.
-# io/BattINFO/ontology/BattINFO#EMMO_17b3beaa_6f91_4f73_8a9a_d960eb542b7e')):
-#     print(predicate)
-# print('--------------------------------------')
-
-# for predicate in graph.subject_objects(rdflib.term.URIRef
-# ('http://www.w3.org/2004/02/skos/core#prefLabel')):
-#     print(predicate)
-#     print(predicate[0].isprintable())
-# print('--------------------------------------')
-
-# # print(BI)
-# g = rdflib.Graph()
-# g.parse(r'C:\Users\MonikaVogler\Documents\BIG-MAP\FINALES2\BattINFO\battinfo.ttl')
-# print(len(g))
-
-# for s, p, o in g:
-#     print(s,'\t', p, '\t', o, '\n')
-
-# print(g.serialize(format="turtle"))
-# predicate = rdflib.URIRef("http://purl.org/dc/terms/creator")
-# for p in g.objects(predicate=predicate):
-#     print(p)
+# import time
+# import requests
+# import uvicorn
+# import FINALES2.server.config as config
 
 
-# # TG = rdflib.Graph(triplestore)
-# # print(TG.serialize(format='turtle'))
-
-# batteryGraph = rdflib.Graph(triplestore)
-# SO = triplestore.subject_objects(predicate="Battery")
-
-# type(g)
-
-# battinfo.ElectrolyteSolution
+# TODO: Import the RestAPI schemas -> remove this once the real schemas are available
+class Request(BaseModel):
+    quantity: str
+    methods: str
+    parameters: dict
+    tenant_uuid: str
 
 
-# '''-----------------------------------------------'''
-# from dlite.triplestore import Triplestore
+class Tenant(BaseModel):
+    """A class to represent a tenant for a FINALES run.
 
-# HASPART = "http://emmo.info/emmo#EMMO_17e27c22_37e1_468c_9dd7_95e137f73e7f"
-# property = "https://big-map.github.io/BattINFO/ontology/BattINFO#EMMO_b7fdab58_
-# 6e91_4c84_b097_b06eff86a124"
+    :param BaseModel: The BaseModel of pydantic is used to provide type checking
+    :type BaseModel: pydantic.BaseModel
+    :return: The instatiation returns an tenant object
+    :rtype: Tenant
+    """
 
-# ts = Triplestore("rdflib")
-# ts.parse('Desktop/Ontology.ttl')
-# print(len(list(ts.subjects())))
+    class Config:
+        arbitrary_types_allowed = True
 
-# x = ts.predicate_objects(subject=property)
-# print(list(x))
+    generalMeta: GeneralMetaData
+    quantities: list[Quantity]
+    queue: Optional[list] = []
+    tenantConfig: Any
+    FINALESServerConfig: ServerConfig
+    endRuntime: Optional[datetime]
+    operator: User
+    tenantUser: User
 
+    # TODO: add tenantConfig object
+    def to_json(self) -> str:
+        """A function to create a JSON string from a tenant object
 
-# # battinfo = get_ontology('https://raw.githubusercontent.com/BIG-MAP/FAIRBatteryData
-# /main/examples/ontologies/battinfo-merged.ttl').load() # -> use Triplestore from DLite
+        :return: A JSON string containing all the information in the fields of the
+                 tenant object
+        :rtype: str
+        """
+        # get the dictionary of the tenant object to know the top level keys
+        tenantDict = self.__dict__
+        # go through all the attributes of the tenant object
+        for attr in tenantDict.keys():
+            # get the attribute
+            attrObj = getattr(self, attr)
+            # if it is of type GeneralMetaData or ServerConfig
+            if type(attrObj) in [GeneralMetaData, ServerConfig]:
+                # using the dictionary is possible
+                tenantDict[attr] = attrObj.__dict__
+            # if it is a list of Quantity objects
+            elif isinstance(attrObj, list) and isinstance(attrObj[0], Quantity):
+                # convert each element in the list to a dictionary seperately
+                tenantDict[attr] = [e.__dict__ for e in attrObj]
+            # if it is a user
+            elif isinstance(attrObj, User):
+                # get the top level keys by casting to a dictionary
+                tenantDict[attr] = attrObj.__dict__
+                # copy this dictionary
+                attrDict = tenantDict[attr].copy()
+                # iterate over the keys
+                for element in tenantDict[attr].keys():
+                    # if a UUID is found
+                    if isinstance(attrDict[element], UUID):
+                        # cast it to a string
+                        attrDict[element] = str(tenantDict[attr][element])
+                # assign the resulting dictionary to the tenantDict
+                tenantDict[attr] = attrDict
+            # if it is a datetime object
+            elif isinstance(attrObj, datetime):
+                # cast the datetime object to a string in iso format
+                tenantDict[attr] = attrObj.isoformat()
+        # format the tenantDict as a JSON string
+        return json.dumps(tenantDict)
 
+    def from_json(attrsStr: str):
+        """A function to obtain a tenant object from a JSON string
 
-# '''
-# Find IRI:
-# 1) open Protege
-# 2) open BattINFO
-# 3) search option
-# 4) enter desired thing
-# 5) right click "copy IRI" or at the top
-# '''
+        :param attrsStr: The JSON string, which shall be converted to a tenant object
+        :type attrsStr: str
+        :return: The tenant object based on the entries of the input JSON string
+        :rtype: Tenant
+        """
+        # load the JSON string into a JSON object
+        attrsJSON = json.loads(attrsStr)
+        # get the attributes of the tenant object (in this case, no instance of the
+        # class is available and the class definition is used)
+        attrsKeys = vars(Tenant)["__fields__"].keys()
+        # iterate through the list of attributes
+        for k in attrsKeys:
+            # get the corresponding entry in the JSON object
+            attr = attrsJSON[k]
+            # check for each attribute and create the respective object from the
+            # dictionary in the JSON object
+            if k == "generalMeta":
+                attrsJSON[k] = GeneralMetaData(**attr)
+            if k in ["operator", "tenantUser"]:
+                attrsJSON[k] == User(**attr)
+            if k == "quantities":
+                attrsJSON[k] = [Quantity(**q) for q in attr]
+            if k == "endRuntime":
+                attrsJSON[k] = datetime.fromisoformat(attr)
+        # instatiate a tenant bbject based on the resulting dictionary
+        tenantObj = Tenant(**attrsJSON)
+        # return the tenant object
+        return tenantObj
 
+    def _get_requests(self):
+        pass
 
-# def iri_to_preflabel(ts:Triplestore, iri:str)-> str:
-#     """
-#     Queries the triplestore for the IRI supplied, and retrievies its
-#     prefLabel if it exists.
+    def _post_request(self):
+        pass
 
-#     ts: Triplestore
-#         Triplestore object.
-#     iri: str
-#         IRI of the enetity.
+    def _get_results(self):
+        pass
 
-#     Eibar Flores, 2022, SINTEF Industry
-#     """
+    def _post_results(self):
+        pass
 
-#     prefLabel = list(ts.objects(subject=iri, predicate=SKOS.prefLabel))
+    # def run(self):
+    #     # instantiate the FINALES server
+    #     FINALESServer = uvicorn.Server(self.FINALESServerConfig)
 
-#     if len(prefLabel) == 1:
-#         return prefLabel[0].value
+    #     # run until the endRuntime is exceeded
+    #     # this is intended for maintenance like refilling consumables,
+    #     # for which a time can roughly be estimated
+    #     while datetime.now() < self.endRuntime:
+    #         # wait in between two requests to the server
+    #         time.sleep(config.sleepTime_s)
+    #         # login to the server
+    #         print("Logging in ...")
+    #         accessInfo = requests.post(
+    #             f"http://{FINALESServer.config.host}:"
+    #             "{FINALESServer.port}/userManagement/authenticate",
+    #             data={
+    #                 "username": tenantUser.username,
+    #                 "password": tenantUser.password,
+    #                 "grant_type": "password",
+    #             },
+    #             headers={"content-type": "application/x-www-form-urlencoded"},
+    #         )
+    #         print("Looking for tasks...")
 
-#     else:
-#         warnings.warn(f"""The supplied IRI {iri} has {len(list(prefLabel))}
-#         prefLabels: {list(prefLabel)}""")
-#         return ""
+    #         # # collect the quantity names and methods in a list
+    #         # quantityNames = [q.name for q in quantities]
+    #         # quantityMethods = [q.method for q in quantities]
+    #         # get the pending requests from the FINALES server
+    #         pendingRequests = requests.get(
+    #             f"http://{self.FINALESServer.config.host}"
+    #             ":{self.FINALESServer.config.host}/???",
+    #             params={
+    #                 "quantityNames": quantityNames,
+    #                 "quantityMethods": quantityMethods,
+    #             },
+    #             headers=accessInfo,
+    #         ).json()
+    #         # TODO: Which endpoint to use? What is the return value?
 
+    #         # update the queue of the tenant
 
-# from dlite.triplestore import Triplestore
+    #         # get the relevant requests
+    #         for pendingItem in pendingRequests.items:
+    #             # create the Request object from the json string
+    #             requestDict = json.loads(pendingItem)
+    #             request = Request(**requestDict)
+    #             # check, if the pending request fits with the tenant
+    #             # check the quantity matches
+    #             quantityOK = request.quantity in [q.name for q in self.quantities]
+    #             if quantityOK:
+    #                 # check methods
+    #                 # TODO: There is a limitation to one method per quantity for
+    #                 # the tenant at the momen
+    #                 tenantMethods = [q.methods.name for q in self.quantities]
+    #                 methodOK = any([m in tenantMethods for m in request.methods])
+    #                 if methodOK:
+    #                     # check parameters
+    #                     parametersCheck = []
+    #                     requestParameters = request.parameters
+    #                     for p in requestParameters.keys():
+    #                         tenantMin = self.limitations[p]["minimum"]
+    #                         tenantMax = self.limitations[p]["maximum"]
+    #                         minimumOK = requestParameters[p] > tenantMin
+    #                         maximumOK = requestParameters[p] < tenantMax
+    #                         parametersCheck.append(minimumOK and maximumOK)
+    #                     parametersOK = all(parametersCheck)
+    #             # summarize the checks
+    #             requestOK = quantityOK and methodOK and parametersOK
+    #             # if the request is ok and it is not yet in the tenant's queue
+    #             # add it
+    #             if requestOK and request not in self.queue:
+    #                 self.queue.append(request)
 
-# HASPART = "http://emmo.info/emmo#EMMO_17e27c22_37e1_468c_9dd7_95e137f73e7f"
-# battery_electrode = "http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73"
+    #         # get the first request in the queue to work on -> first in - first out
+    #         # activeRequest = self.queue[0]
 
-# ts = Triplestore("rdflib")
-# ts.parse(path_to_battinfo)
-
-# my_list = ts.subjects(predicate =HASPART, object = battery_electrode)
-
-# print(my_list)
-# > ["http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73",
-# "http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73",
-# "http://emmo.info/emmo#EMMO_17e27c22_37e1_44335_54337f73"]
-
-# for iri in my_list:
-#     labels = []
-#     label = get_label(iri)
-#     labels.append(label)
-
-# print(labels)
-# > ["PrismaticCell", "CoinCell", "CylindricalCell"]
+    #         # TODO: Add the way how you
