@@ -106,7 +106,7 @@ class Engine:
         submitted_params = received_data.parameters
         validate(instance=submitted_params, schema=dummy_schema)
 
-        dbobj = DbResult(
+        db_obj = DbResult(
             **{
                 "uuid": str(uuid.uuid4()),
                 "request_uuid": str(uuid.uuid4()),  # get from received data and check
@@ -123,11 +123,11 @@ class Engine:
         )
 
         with get_db() as session:
-            session.add(dbobj)
+            session.add(db_obj)
             session.commit()
-            session.refresh(dbobj)
+            session.refresh(db_obj)
 
-        return str(dbobj.uuid)
+        return str(db_obj.uuid)
 
     def get_pending_requests(self) -> List[RequestInfo]:
         """Return all pending requests."""
