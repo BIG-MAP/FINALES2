@@ -55,7 +55,7 @@ class Engine:
         )
         return api_response
 
-    def put_request(self, request_data: Request) -> str:
+    def create_request(self, request_data: Request) -> str:
         """Create a new request entry in the database.
 
         This method will first validate the parameters of the request with
@@ -94,7 +94,7 @@ class Engine:
 
         return str(request_obj.uuid)
 
-    def put_result(self, received_data: Result) -> str:
+    def create_result(self, received_data: Result) -> str:
         """Create a new result entry in the database.
 
         This method will first validate the parameters of the request with
