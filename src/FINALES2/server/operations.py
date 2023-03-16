@@ -37,14 +37,14 @@ def get_result(object_id: str) -> Optional[Result]:
 def post_request(request_data: Request) -> str:
     """API endpoint to post a new request."""
     engine = Engine()
-    return engine.put_request(request_data)
+    return engine.create_request(request_data)
 
 
 @operations_router.post("/post/result/")
 def post_result(result_data: Result) -> str:
     """API endpoint to post a new result."""
     engine = Engine()
-    return engine.put_result(result_data)
+    return engine.create_result(result_data)
 
 
 @operations_router.get("/get/pending_requests/")
