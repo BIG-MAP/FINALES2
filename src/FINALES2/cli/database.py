@@ -47,7 +47,7 @@ def db_populate():
         **{
             "uuid": str(uuid.uuid4()),
             "quantity": "DummyQuantity",
-            #        "method": "DummyMethod",
+            "method": "DummyMethod",
             "specifications": json.dumps(dummy_schema),
             "is_active": True,
             "load_time": datetime.now(),

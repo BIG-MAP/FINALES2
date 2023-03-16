@@ -25,12 +25,7 @@ class Engine:
             return None
 
         db_request = query_out[0][0]
-        api_response = Request(
-            quantity=db_request.quantity,
-            methods="Currently not implemented in DB.",
-            parameters={"info": "Currently not implemented in DB."},
-            tenant_uuid=str(db_request.tenant_uuid),
-        )
+        api_response = Request.from_db_request(db_request)
         return api_response
 
     def get_result(self, object_id: str) -> Optional[Result]:
@@ -45,14 +40,7 @@ class Engine:
 
         db_result = query_out[0][0]
 
-        api_response = Result(
-            data=json.loads(db_result.data),
-            quantity=db_result.quantity,
-            method="Currently not implemented in DB.",
-            parameters=json.loads(db_result.parameters),
-            tenant_uuid=str(db_result.posting_tenant_uuid),
-            request_uuid=str(db_result.request_uuid),
-        )
+        api_response = Result.from_db_result(db_result)
         return api_response
 
     def create_request(self, request_data: Request) -> str:
@@ -82,8 +70,12 @@ class Engine:
             **{
                 "uuid": str(uuid.uuid4()),
                 "quantity": request_data.quantity,
-                "tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
-                "load_time": datetime.now(),  # temporary until update DB stuff
+                "method": request_data.methods,
+                "parameters": json.dumps(request_data.parameters),
+                "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
+                "requesting_recieved_timestamp": datetime.now(),
+                "budget": "not currently implemented in the API",
+                "status": "not currently implemented in the API",
             }
         )
 
@@ -145,20 +137,8 @@ class Engine:
 
         api_response = []
         for (request_info,) in query_out:
-            print("hellooooo")
-            request_obj = Request(
-                quantity=request_info.quantity,
-                methods="standin...",
-                parameters={"info": "still not implemented"},
-                tenant_uuid=str(request_info.tenant_uuid),
-            )
-            request_info = RequestInfo(
-                uuid=str(request_info.uuid),
-                ctime=request_info.load_time,
-                status="not implemented yet",
-                request=request_obj,
-            )
-            api_response.append(request_info)
+            request_obj = RequestInfo.from_db_request(request_info)
+            api_response.append(request_obj)
 
         return api_response
 
@@ -175,11 +155,7 @@ class Engine:
 
         api_response = []
         for (capability,) in query_out:
-            new_object = CapabilityInfo(
-                quantity=capability.quantity,
-                method="This is not on the DB yet",
-                json_schema=json.loads(capability.specifications),
-            )
+            new_object = CapabilityInfo.from_db_quantity(capability)
             api_response.append(new_object)
 
         return api_response
