@@ -19,7 +19,7 @@ class Request(BaseModel):
         """Initializes the object from the data of an orm object"""
         init_params = {
             "quantity": db_request.quantity,
-            "methods": json.loads(db_request.method),
+            "methods": json.loads(db_request.methods),
             "parameters": json.loads(db_request.parameters),
             "tenant_uuid": str(db_request.requesting_tenant_uuid),
         }

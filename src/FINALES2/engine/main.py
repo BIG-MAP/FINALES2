@@ -24,8 +24,7 @@ class Engine:
         if len(query_out) == 0:
             return None
 
-        db_request = query_out[0][0]
-        api_response = Request.from_db_request(db_request)
+        api_response = Request.from_db_request(query_out[0][0])
         return api_response
 
     def get_result(self, object_id: str) -> Optional[Result]:
@@ -38,9 +37,7 @@ class Engine:
         if len(query_out) == 0:
             return None
 
-        db_result = query_out[0][0]
-
-        api_response = Result.from_db_result(db_result)
+        api_response = Result.from_db_result(query_out[0][0])
         return api_response
 
     def create_request(self, request_data: Request) -> str:
@@ -70,7 +67,7 @@ class Engine:
             **{
                 "uuid": str(uuid.uuid4()),
                 "quantity": request_data.quantity,
-                "method": request_data.methods,
+                "methods": json.dumps(request_data.methods),
                 "parameters": json.dumps(request_data.parameters),
                 "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "requesting_recieved_timestamp": datetime.now(),
@@ -111,12 +108,16 @@ class Engine:
 
         dbobj = DbResult(
             **{
-                "data": json.dumps(received_data.data),
                 "uuid": str(uuid.uuid4()),
                 "request_uuid": str(uuid.uuid4()),  # get from received data and check
                 "quantity": received_data.quantity,
+                "method": received_data.method,
                 "parameters": json.dumps(received_data.parameters),
+                "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
+                "cost": "Not implemented in the API yet",
+                "status": "Not implemented in the API yet",
+                "posting_recieved_timestamp": datetime.now(),
                 "load_time": datetime.now(),
             }
         )
