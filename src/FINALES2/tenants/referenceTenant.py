@@ -117,17 +117,69 @@ class Tenant(BaseModel):
         # return the tenant object
         return tenantObj
 
-    def _get_requests(self):
-        pass
+    # def _updateQueue(self) -> None:
+    #     # get the pending requests from the FINALES server
+    #     pendingRequests = self._get_requests()
+    #     # TODO: Which endpoint to use? What is the return value?
 
-    def _post_request(self):
-        pass
+    #     # update the queue of the tenant
 
-    def _get_results(self):
-        pass
+    #     # get the relevant requests
+    #     for pendingItem in pendingRequests.items:
+    #         # create the Request object from the json string
+    #         requestDict = json.loads(pendingItem)
+    #         request = Request(**requestDict)
+    #         # check, if the pending request fits with the tenant
+    #         # check the quantity matches
+    #         quantityOK = request.quantity in [q.name for q in self.quantities]
+    #         if quantityOK:
+    #             # check methods
+    #             # TODO: There is a limitation to one method per quantity for
+    #             # the tenant at the momen
+    #             tenantMethods = [q.methods.name for q in self.quantities]
+    #             methodOK = any([m in tenantMethods for m in request.methods])
+    #             if methodOK:
+    #                 # check parameters
+    #                 parametersCheck = []
+    #                 requestParameters = request.parameters
+    #                 for p in requestParameters.keys():
+    #                     tenantMin = self.limitations[p]["minimum"]
+    #                     tenantMax = self.limitations[p]["maximum"]
+    #                     minimumOK = requestParameters[p] > tenantMin
+    #                     maximumOK = requestParameters[p] < tenantMax
+    #                     parametersCheck.append(minimumOK and maximumOK)
+    #                 parametersOK = all(parametersCheck)
+    #         # summarize the checks
+    #         requestOK = quantityOK and methodOK and parametersOK
+    #         # if the request is ok and it is not yet in the tenant's queue
+    #         # add it
+    #         if requestOK and request not in self.queue:
+    #             self.queue.append(request)
 
-    def _post_results(self):
-        pass
+    # def _get_requests(self) -> list[Request]:
+    #     # # collect the quantity names and methods in a list
+    #     # quantityNames = [q.name for q in quantities]
+    #     # quantityMethods = [q.method for q in quantities]
+    #     # get the pending requests from the FINALES server
+    #     pendingRequests = requests.get(
+    #         f"http://{self.FINALESServer.config.host}"
+    #         ":{self.FINALESServer.config.host}/???",
+    #         params={
+    #             "quantityNames": quantityNames,
+    #             "quantityMethods": quantityMethods,
+    #         },
+    #         headers=accessInfo,
+    #     ).json()
+    #     # TODO: Which endpoint to use? What is the return value?
+
+    # def _post_request(self):
+    #     pass
+
+    # def _get_results(self):
+    #     pass
+
+    # def _post_results(self):
+    #     pass
 
     # def run(self):
     #     # instantiate the FINALES server
@@ -153,56 +205,8 @@ class Tenant(BaseModel):
     #         )
     #         print("Looking for tasks...")
 
-    #         # # collect the quantity names and methods in a list
-    #         # quantityNames = [q.name for q in quantities]
-    #         # quantityMethods = [q.method for q in quantities]
-    #         # get the pending requests from the FINALES server
-    #         pendingRequests = requests.get(
-    #             f"http://{self.FINALESServer.config.host}"
-    #             ":{self.FINALESServer.config.host}/???",
-    #             params={
-    #                 "quantityNames": quantityNames,
-    #                 "quantityMethods": quantityMethods,
-    #             },
-    #             headers=accessInfo,
-    #         ).json()
-    #         # TODO: Which endpoint to use? What is the return value?
-
-    #         # update the queue of the tenant
-
-    #         # get the relevant requests
-    #         for pendingItem in pendingRequests.items:
-    #             # create the Request object from the json string
-    #             requestDict = json.loads(pendingItem)
-    #             request = Request(**requestDict)
-    #             # check, if the pending request fits with the tenant
-    #             # check the quantity matches
-    #             quantityOK = request.quantity in [q.name for q in self.quantities]
-    #             if quantityOK:
-    #                 # check methods
-    #                 # TODO: There is a limitation to one method per quantity for
-    #                 # the tenant at the momen
-    #                 tenantMethods = [q.methods.name for q in self.quantities]
-    #                 methodOK = any([m in tenantMethods for m in request.methods])
-    #                 if methodOK:
-    #                     # check parameters
-    #                     parametersCheck = []
-    #                     requestParameters = request.parameters
-    #                     for p in requestParameters.keys():
-    #                         tenantMin = self.limitations[p]["minimum"]
-    #                         tenantMax = self.limitations[p]["maximum"]
-    #                         minimumOK = requestParameters[p] > tenantMin
-    #                         maximumOK = requestParameters[p] < tenantMax
-    #                         parametersCheck.append(minimumOK and maximumOK)
-    #                     parametersOK = all(parametersCheck)
-    #             # summarize the checks
-    #             requestOK = quantityOK and methodOK and parametersOK
-    #             # if the request is ok and it is not yet in the tenant's queue
-    #             # add it
-    #             if requestOK and request not in self.queue:
-    #                 self.queue.append(request)
-
     #         # get the first request in the queue to work on -> first in - first out
-    #         # activeRequest = self.queue[0]
+    #         activeRequest = self.queue[0]
 
-    #         # TODO: Add the way how you
+    #         # TODO: Add the way how you process the input
+    #         resultData =
