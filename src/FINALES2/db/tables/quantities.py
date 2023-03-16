@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, DateTime, String
+from sqlalchemy import TIMESTAMP, Boolean, Column, String
+from sqlalchemy.sql import func
 from sqlalchemy_utils import UUIDType
 
 from FINALES2.db.base_class import Base
@@ -37,6 +38,5 @@ class Quantity(Base):
     )
     is_active = Column(Boolean(), default=True)
     load_time = Column(
-        DateTime,
-        nullable=False,
+        TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )

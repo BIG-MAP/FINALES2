@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import TIMESTAMP, Column, DateTime, ForeignKey, String
+from sqlalchemy.sql import func
 from sqlalchemy_utils import UUIDType
 
 from FINALES2.db.base_class import Base
@@ -14,11 +15,10 @@ class Result(Base):
         data VARCHAR:               JSON string of the posted data
         posting_tenant_uuid CHAR:   uuid of the tenant posting the result
         posting_recieved_timestamp: Timestamp of the when the posting was recieved
-        cost VARCHAR:
+        cost VARCHAR:               Cost associated with the result...
         status VARCHAR:             List with status and timestamps of the entry,
                                     with the last list entry being the current status
-    load_time(DateTime):            Timestamp for when the row is added
-        TODO size of the json string
+        load_time(DateTime):        Timestamp for when the row is added
     """
 
     uuid = Column(
@@ -41,13 +41,13 @@ class Result(Base):
         UUIDType(binary=False),
         nullable=False,
     )
-    # posting_recieved_timestamp = Column(
-    #     Datetime,
-    #     nullable=False,
-    # )
+
     cost = Column(String(Base.COST_STRING_SIZE), nullable=True)
     status = Column(String(Base.STATUS_STRING_SIZE), nullable=False)
-    load_time = Column(
+    posting_recieved_timestamp = Column(
         DateTime,
         nullable=False,
+    )
+    load_time = Column(
+        TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )

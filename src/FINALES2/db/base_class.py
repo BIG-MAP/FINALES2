@@ -13,16 +13,20 @@ class Base:
     id: Any
     __name__: str
 
+    # Small string requirements
     TENANT_NAME_STRING_SIZE = 100
     METHOD_STRING_SIZE = 100
     QUANTITY_STRING_SIZE = 100
+    COST_STRING_SIZE = 100
+    BUDGET_STRING_SIZE = COST_STRING_SIZE
+    STATUS_STRING_SIZE = 100
+
+    # Large string requirements
     CAPABILITIES_STRING_SIZE = 5000
     LIMITATIONS_STRING_SIZE = 5000
     SPECIFICATIONS_STRING_SIZE = 5000
     PARAMETERS_STRING_SIZE = 5000
     DATA_STRING_SIZE = 5000
-    COST_STRING_SIZE = 100
-    STATUS_STRING_SIZE = 100
 
     # to generate tablename from classname
     @declared_attr
