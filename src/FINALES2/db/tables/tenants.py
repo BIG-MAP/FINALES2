@@ -9,19 +9,25 @@ class Tenant(Base):
     Class defining the tenant table with the following columns:
     """
 
+    CONTACT_PERSON_STRING_SIZE = 100
+
     uuid = Column(UUIDType(binary=False), primary_key=True, nullable=False)
     name = Column(
-        String(1000),
+        String(Base.TENANT_NAME_STRING_SIZE),
         nullable=False,
     )
-
-    """
-    TODO
-    THE REMANING COLUMNS SPECIFIED
-    capabilities,
-    limitations,
-    config...(From the board, unsure what...)
-    """
+    capabilities = Column(
+        String(Base.CAPABILITIES_STRING_SIZE),
+        nullable=False,
+    )
+    limitations = Column(
+        String(Base.LIMITATIONS_STRING_SIZE),
+        nullable=False,
+    )
+    contact_person = Column(
+        String(CONTACT_PERSON_STRING_SIZE),
+        nullable=False,
+    )
     load_time = Column(
         DateTime,
         nullable=False,

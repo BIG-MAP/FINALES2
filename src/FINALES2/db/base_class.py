@@ -13,6 +13,17 @@ class Base:
     id: Any
     __name__: str
 
+    TENANT_NAME_STRING_SIZE = 100
+    METHOD_STRING_SIZE = 100
+    QUANTITY_STRING_SIZE = 100
+    CAPABILITIES_STRING_SIZE = 5000
+    LIMITATIONS_STRING_SIZE = 5000
+    SPECIFICATIONS_STRING_SIZE = 5000
+    PARAMETERS_STRING_SIZE = 5000
+    DATA_STRING_SIZE = 5000
+    COST_STRING_SIZE = 100
+    STATUS_STRING_SIZE = 100
+
     # to generate tablename from classname
     @declared_attr
     def __tablename__(cls) -> str:

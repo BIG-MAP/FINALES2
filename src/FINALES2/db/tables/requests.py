@@ -14,16 +14,17 @@ class Request(Base):
         primary_key=True,
         nullable=False,
     )
-    quantity = Column(String(50), nullable=False)
-    tenant_uuid = Column(
+    quantity = Column(String(Base.QUANTITY_STRING_SIZE), nullable=False)
+    method = Column(String(Base.METHOD_STRING_SIZE), nullable=False)
+    parameters = Column()
+
+    requesting_tenant_uuid = Column(
         UUIDType(binary=False),
         ForeignKey("tenant.uuid"),
         nullable=False,
     )
-    """
-    TODO
-    THE REMANING COLUMNS SPECIFIED
-    """
+    requesting_recieved_timestamp = Column()
+
     load_time = Column(
         DateTime,
         nullable=False,
