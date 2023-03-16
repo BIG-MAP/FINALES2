@@ -1,16 +1,15 @@
 import json
+import time
 from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
 
+import requests
+import uvicorn
 from pydantic import BaseModel
 
+import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
-
-# import time
-# import requests
-# import uvicorn
-# import FINALES2.server.config as config
 
 
 # TODO: Import the RestAPI schemas -> remove this once the real schemas are available
@@ -30,12 +29,9 @@ class Tenant(BaseModel):
     :rtype: Tenant
     """
 
-    class Config:
-        arbitrary_types_allowed = True
-
     generalMeta: GeneralMetaData
     quantities: list[Quantity]
-    queue: Optional[list] = []
+    queue: list = []
     tenantConfig: Any
     FINALESServerConfig: ServerConfig
     endRuntime: Optional[datetime]
@@ -117,96 +113,116 @@ class Tenant(BaseModel):
         # return the tenant object
         return tenantObj
 
-    # def _updateQueue(self) -> None:
-    #     # get the pending requests from the FINALES server
-    #     pendingRequests = self._get_requests()
-    #     # TODO: Which endpoint to use? What is the return value?
+    def _update_queue(self) -> None:
+        # get the pending requests from the FINALES server
+        pendingRequests = self._get_requests()
+        # TODO: Which endpoint to use? What is the return value?
 
-    #     # update the queue of the tenant
+        # update the queue of the tenant
 
-    #     # get the relevant requests
-    #     for pendingItem in pendingRequests.items:
-    #         # create the Request object from the json string
-    #         requestDict = json.loads(pendingItem)
-    #         request = Request(**requestDict)
-    #         # check, if the pending request fits with the tenant
-    #         # check the quantity matches
-    #         quantityOK = request.quantity in [q.name for q in self.quantities]
-    #         if quantityOK:
-    #             # check methods
-    #             # TODO: There is a limitation to one method per quantity for
-    #             # the tenant at the momen
-    #             tenantMethods = [q.methods.name for q in self.quantities]
-    #             methodOK = any([m in tenantMethods for m in request.methods])
-    #             if methodOK:
-    #                 # check parameters
-    #                 parametersCheck = []
-    #                 requestParameters = request.parameters
-    #                 for p in requestParameters.keys():
-    #                     tenantMin = self.limitations[p]["minimum"]
-    #                     tenantMax = self.limitations[p]["maximum"]
-    #                     minimumOK = requestParameters[p] > tenantMin
-    #                     maximumOK = requestParameters[p] < tenantMax
-    #                     parametersCheck.append(minimumOK and maximumOK)
-    #                 parametersOK = all(parametersCheck)
-    #         # summarize the checks
-    #         requestOK = quantityOK and methodOK and parametersOK
-    #         # if the request is ok and it is not yet in the tenant's queue
-    #         # add it
-    #         if requestOK and request not in self.queue:
-    #             self.queue.append(request)
+        # get the relevant requests
+        for pendingItem in pendingRequests:
+            # create the Request object from the json string
+            requestDict = json.loads(pendingItem)
+            request = Request(**requestDict)
+            # check, if the pending request fits with the tenant
+            # check the quantity matches
+            quantityOK = request.quantity in [q.name for q in self.quantities]
+            if quantityOK:
+                # check methods
+                # TODO: There is a limitation to one method per quantity for
+                # the tenant at the moment
+                tenantMethods = []
+                for q in self.quantities:
+                    tenantMethods.extend(q.methods)
+                for method in tenantMethods:
+                    if method in request.methods:
+                        request.methods = method[0]
+                        methodOK = True
+                    else:
+                        methodOK = False
+                if methodOK:
+                    # check parameters
+                    parametersCheck = []
+                    requestParameters = request.parameters[method]
+                    for p in requestParameters.keys():
+                        tenantMin = self.limitations[p]["minimum"]
+                        tenantMax = self.limitations[p]["maximum"]
+                        minimumOK = requestParameters[p] > tenantMin
+                        maximumOK = requestParameters[p] < tenantMax
+                        parametersCheck.append(minimumOK and maximumOK)
+                    parametersOK = all(parametersCheck)
+            # summarize the checks
+            requestOK = quantityOK and methodOK and parametersOK
+            # if the request is ok and it is not yet in the tenant's queue
+            # add it
+            if requestOK and request not in self.queue:
+                self.queue.append(request)
 
-    # def _get_requests(self) -> list[Request]:
-    #     # # collect the quantity names and methods in a list
-    #     # quantityNames = [q.name for q in quantities]
-    #     # quantityMethods = [q.method for q in quantities]
-    #     # get the pending requests from the FINALES server
-    #     pendingRequests = requests.get(
-    #         f"http://{self.FINALESServer.config.host}"
-    #         ":{self.FINALESServer.config.host}/???",
-    #         params={
-    #             "quantityNames": quantityNames,
-    #             "quantityMethods": quantityMethods,
-    #         },
-    #         headers=accessInfo,
-    #     ).json()
-    #     # TODO: Which endpoint to use? What is the return value?
+    def _get_requests(self) -> list[Request]:
+        # instantiate the FINALES server
+        FINALESServer = uvicorn.Server(self.FINALESServerConfig)
 
-    # def _post_request(self):
-    #     pass
+        # login to the server
+        print("Logging in ...")
+        accessInfo = requests.post(
+            f"http://{FINALESServer.config.host}:"
+            "{FINALESServer.port}/userManagement/authenticate",
+            data={
+                "username": self.tenantUser.username,
+                "password": self.tenantUser.password,
+                "grant_type": "password",
+            },
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        print("Looking for tasks...")
 
-    # def _get_results(self):
-    #     pass
+        # collect the quantity names and methods in a list
+        quantityNames = [q.name for q in self.quantities]
+        quantityMethods = [q.method for q in self.quantities]
+        # get the pending requests from the FINALES server
+        pendingRequests = requests.get(
+            f"http://{self.FINALESServer.config.host}"
+            ":{self.FINALESServer.config.host}/???",
+            params={
+                "quantityNames": quantityNames,
+                "quantityMethods": quantityMethods,
+            },
+            headers=accessInfo.json(),
+        ).json()
+        # TODO: Which endpoint to use? What is the return value?
+        return pendingRequests
 
-    # def _post_results(self):
-    #     pass
+    def _post_request(self, data):
+        pass
 
-    # def run(self):
-    #     # instantiate the FINALES server
-    #     FINALESServer = uvicorn.Server(self.FINALESServerConfig)
+    def _get_results(self):
+        pass
 
-    #     # run until the endRuntime is exceeded
-    #     # this is intended for maintenance like refilling consumables,
-    #     # for which a time can roughly be estimated
-    #     while datetime.now() < self.endRuntime:
-    #         # wait in between two requests to the server
-    #         time.sleep(config.sleepTime_s)
-    #         # login to the server
-    #         print("Logging in ...")
-    #         accessInfo = requests.post(
-    #             f"http://{FINALESServer.config.host}:"
-    #             "{FINALESServer.port}/userManagement/authenticate",
-    #             data={
-    #                 "username": tenantUser.username,
-    #                 "password": tenantUser.password,
-    #                 "grant_type": "password",
-    #             },
-    #             headers={"content-type": "application/x-www-form-urlencoded"},
-    #         )
-    #         print("Looking for tasks...")
+    def _post_result(self):
+        pass
 
-    #         # get the first request in the queue to work on -> first in - first out
-    #         activeRequest = self.queue[0]
+    def _run_method(self, method: str):
+        # TODO: Add the way how you process the input
+        pass
 
-    #         # TODO: Add the way how you process the input
-    #         resultData =
+    def run(self):
+        # run until the endRuntime is exceeded
+        # this is intended for maintenance like refilling consumables,
+        # for which a time can roughly be estimated
+        while datetime.now() < self.endRuntime:
+            # wait in between two requests to the server
+            time.sleep(config.sleepTime_s)
+
+            self._update_queue()
+
+            # get the first request in the queue to work on -> first in - first out
+            activeRequest = self.queue[0]
+
+            # get the method, which matches
+            resultData = self._run_method(method=activeRequest.methods[0])
+
+            # assemble the result
+
+            # post the result
+            self._post_result(data=resultData)
