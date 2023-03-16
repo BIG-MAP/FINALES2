@@ -3,6 +3,7 @@ from fastapi import Depends, FastAPI
 
 from FINALES2.schemas import User
 from FINALES2.server import config
+from FINALES2.server.operations import operations_router
 from FINALES2.userManagement import userManager
 
 app = FastAPI(
@@ -12,6 +13,7 @@ app = FastAPI(
 )
 
 app.include_router(router=userManager.userRouter)
+app.include_router(router=operations_router)
 
 
 @app.get("/")

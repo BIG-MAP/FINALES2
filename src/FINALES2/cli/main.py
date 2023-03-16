@@ -1,6 +1,7 @@
 import click
 
 from FINALES2.cli.database import cli_db
+from FINALES2.cli.devtest import cli_devtest
 from FINALES2.cli.server import cli_server
 
 
@@ -11,3 +12,4 @@ def finales_cli():
 
 finales_cli.add_command(cli_server)
 finales_cli.add_command(cli_db)
+finales_cli.add_command(cli_devtest)
