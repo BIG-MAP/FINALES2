@@ -5,7 +5,7 @@ scriptPath = pathlib.Path(__file__).parent.resolve()
 
 
 # Info about the FINALES2 server
-host = "localhost"
+host = "0.0.0.0"
 port = 13371
 
 # Information regarding the user database
