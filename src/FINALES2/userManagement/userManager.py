@@ -120,7 +120,14 @@ class UserDB:
               entries in the row parameter
         """
 
-        return User(**row)
+        row_update = {}
+        for key in row.keys():
+            if key == "usergroups":
+                row_update["usergroups"] = eval(row["usergroups"])
+            else:
+                row_update[key] = row[key]
+
+        return User(**row_update)
 
     def getSingleUser(self, username: str) -> User:
         """This function finds a user in the user database by its username. It raises

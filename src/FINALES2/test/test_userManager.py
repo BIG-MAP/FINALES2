@@ -129,7 +129,7 @@ def test_UserDB_userFromRow():
 
     for key in row[0].keys():
         if ("password" not in key) and ("timestamp" not in key):
-            assert getattr(theUser, key) == row[0][key], (
+            assert str(getattr(theUser, key)) == row[0][key], (
                 f"The {key} of the object differs from the row. It is "
                 f"{getattr(theUser, key)} instead of {row[0][key]}."
             )
@@ -158,9 +158,9 @@ def test_UserDB_getSingleUser():
                 passwordHash=user_result.__getattribute__(attr),
             )
         else:
-            assert str(
-                referenceUser.__getattribute__(attr)
-            ) == user_result.__getattribute__(attr)
+            assert referenceUser.__getattribute__(attr) == user_result.__getattribute__(
+                attr
+            )
 
 
 def test_UserDB_getAllUsers():
@@ -191,10 +191,21 @@ def test_UserDB_getAllUsers():
         [isinstance(u, User) for u in allUsers_result]
     ), "Not all objects in the obtained list of all users are of type User"
 
-    for user in allUsers_reference:
+    print(allUsers_result)
+    print(allUsers_reference)
+
+    for i in range(len(allUsers_reference)):
         assert (
-            user in allUsers_result
-        ), f"The user {user.username} is not contained in the obtained all users."
+            allUsers_reference[i].username == allUsers_result[i].username
+        ), f"The username is {allUsers_result[i].username} "
+        "instead of {allUsers_reference[i].username}."
+        assert (
+            allUsers_reference[i].uuid == allUsers_result[i].uuid
+        ), f"The uuid is {allUsers_result[i].uuid} instead "
+        "of {allUsers_reference[i].uuid}."
+        assert userManager.verifyPassword(
+            allUsers_reference[i].password, allUsers_result[i].password
+        ), "The passwords to not match."
 
 
 def test_createUser():
@@ -219,9 +230,9 @@ def test_createUser():
                 passwordHash=user_result2.__getattribute__(attr),
             ), "The password of the user does not match the target."
         elif attr != "uuid":
-            assert str(
-                referenceUser2.__getattribute__(attr)
-            ) == user_result2.__getattribute__(attr), (
+            assert str(referenceUser2.__getattribute__(attr)) == str(
+                user_result2.__getattribute__(attr)
+            ), (
                 f"The {attr} is {str(referenceUser2.__getattribute__(attr))} instead "
                 f"of {user_result2.__getattribute__(attr)}."
             )
@@ -253,9 +264,9 @@ def test_newUser():
                 passwordHash=user_result3.__getattribute__(attr),
             ), "The password of the user does not match the target."
         elif attr != "uuid":
-            assert str(
-                referenceUser3.__getattribute__(attr)
-            ) == user_result3.__getattribute__(attr), (
+            assert str(referenceUser3.__getattribute__(attr)) == str(
+                user_result3.__getattribute__(attr)
+            ), (
                 f"The {attr} is {str(referenceUser3.__getattribute__(attr))} instead "
                 f"of {user_result3.__getattribute__(attr)}."
             )
@@ -283,7 +294,7 @@ def test_singleUser():
                 passwordHash=user_result4[attr],
             ), "The password of the user does not match the target."
         elif attr != "id":
-            assert str(referenceUser4.__getattribute__(attr)) == user_result4[attr], (
+            assert referenceUser4.__getattribute__(attr) == user_result4[attr], (
                 f"The {attr} is {user_result4[attr]} instead of "
                 f"{str(referenceUser4.__getattribute__(attr))}."
             )
@@ -382,7 +393,7 @@ def test_getActiveUser():
                 passwordHash=activeUser[attr],
             ), "The password of the user does not match the target."
         else:
-            assert str(referenceUser8.__getattribute__(attr)) == activeUser[attr], (
+            assert referenceUser8.__getattribute__(attr) == activeUser[attr], (
                 f"The {attr} is {activeUser[attr]} instead of "
                 f"{str(referenceUser8.__getattribute__(attr))}."
             )
@@ -466,8 +477,8 @@ def test_userAuthentication():
                 passwordHash=user_result5.__getattribute__(attr),
             ), "The password of the user does not match the target."
         else:
-            assert str(
-                referenceUser5.__getattribute__(attr)
+            assert referenceUser5.__getattribute__(
+                attr
             ) == user_result5.__getattribute__(attr), (
                 f"The {attr} is {user_result5.__getattribute__(attr)} instead of "
                 f"{str(referenceUser5.__getattribute__(attr))}."
