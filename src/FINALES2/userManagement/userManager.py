@@ -120,7 +120,14 @@ class UserDB:
               entries in the row parameter
         """
 
-        return User(**row)
+        row_update = {}
+        for key in row.keys():
+            if key == "usergroups":
+                row_update["usergroups"] = eval(row["usergroups"])
+            else:
+                row_update[key] = row[key]
+
+        return User(**row_update)
 
     def getSingleUser(self, username: str) -> User:
         """This function finds a user in the user database by its username. It raises
@@ -214,7 +221,7 @@ def createUser(
     userDB_db.addNewUser(new_user)
     # Print an information to the operator
     print(
-        f"New user with ID {new_user.id} created and added to the user "
+        f"New user with ID {new_user.uuid} created and added to the user "
         f"database ({userDB_db.savepath})."
     )
     # Get the just added user from the user database and return it.
