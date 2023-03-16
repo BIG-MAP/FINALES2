@@ -2,6 +2,7 @@ import click
 import uvicorn
 from fastapi import FastAPI
 
+from FINALES2.server.operations import operations_router
 from FINALES2.userManagement import userManager
 
 
@@ -37,4 +38,5 @@ def server_start(ip, port):
         version="0.0.1",
     )
     app.include_router(router=userManager.userRouter)
+    app.include_router(router=operations_router)
     uvicorn.run(app=app, host=ip, port=port)
