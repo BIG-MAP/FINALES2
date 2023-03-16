@@ -214,7 +214,7 @@ def createUser(
     userDB_db.addNewUser(new_user)
     # Print an information to the operator
     print(
-        f"New user with ID {new_user.id} created and added to the user "
+        f"New user with ID {new_user.uuid} created and added to the user "
         f"database ({userDB_db.savepath})."
     )
     # Get the just added user from the user database and return it.

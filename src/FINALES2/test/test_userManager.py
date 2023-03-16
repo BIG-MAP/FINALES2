@@ -218,7 +218,7 @@ def test_createUser():
                 password=referenceUser2.__getattribute__(attr),
                 passwordHash=user_result2.__getattribute__(attr),
             ), "The password of the user does not match the target."
-        elif attr != "id":
+        elif attr != "uuid":
             assert str(
                 referenceUser2.__getattribute__(attr)
             ) == user_result2.__getattribute__(attr), (
@@ -252,7 +252,7 @@ def test_newUser():
                 password=referenceUser3.__getattribute__(attr),
                 passwordHash=user_result3.__getattribute__(attr),
             ), "The password of the user does not match the target."
-        elif attr != "id":
+        elif attr != "uuid":
             assert str(
                 referenceUser3.__getattribute__(attr)
             ) == user_result3.__getattribute__(attr), (

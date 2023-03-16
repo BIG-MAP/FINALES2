@@ -2,7 +2,8 @@
 This file is subject to extension. """
 
 import inspect
-from datetime import datetime
+
+# from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -32,7 +33,7 @@ class User(ObjectBase):
         **kwargs
     ):
         self.username: str = username
-        self.id: UUID = uuid
+        self.uuid: UUID = uuid
         self.password: str = password
         self.usergroups: list[str] = usergroups
 
@@ -46,7 +47,6 @@ class AccessToken(ObjectBase):
 class GeneralMetaData(BaseModel):
     name: str
     description: Optional[str]
-    uuid: UUID
 
 
 class Quantity(BaseModel):
@@ -54,8 +54,6 @@ class Quantity(BaseModel):
     methods: list[str]
     specifications: dict
     is_active: bool
-    uuid: Optional[UUID]
-    load_time: Optional[datetime]
 
 
 class ServerConfig(BaseModel):
