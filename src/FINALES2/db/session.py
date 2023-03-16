@@ -1,4 +1,5 @@
 import pathlib
+from contextlib import contextmanager
 from typing import Generator
 
 from sqlalchemy import create_engine
@@ -19,6 +20,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+@contextmanager
 def get_db() -> Generator:
     try:
         db = SessionLocal()
