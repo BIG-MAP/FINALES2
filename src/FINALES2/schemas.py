@@ -53,4 +53,7 @@ class Method(BaseModel):
     name: str
     quantity: str
     parameters: dict
-    limitations: list
+    limitations: dict
+
+
+# TODO: add tenantConfig object

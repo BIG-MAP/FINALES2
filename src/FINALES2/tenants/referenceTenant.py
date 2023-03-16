@@ -1,7 +1,7 @@
 import json
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID, uuid4
 
 import requests
@@ -13,60 +13,98 @@ from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
 
 
 class Tenant(BaseModel):
+    """A class to represent a tenant for a FINALES run.
+
+    :param BaseModel: The BaseModel of pydantic is used to provide type checking
+    :type BaseModel: pydantic.BaseModel
+    :return: The instatiation returns an tenant object
+    :rtype: Tenant
+    """
+
     class Config:
         arbitrary_types_allowed = True
 
     generalMeta: GeneralMetaData
     operator: User
     quantities: list[Quantity]
-    tenantServerConfig: ServerConfig
+    tenantConfig: Any
     FINALESServerConfig: ServerConfig
     endRuntime: Optional[datetime]
     tenantUser: User
 
+    # TODO: add tenantConfig object
     def to_json(self) -> str:
-        # jsonCompatibleTypes = [str, list, dict, int, float]
+        """A function to create a JSON string from a tenant object
+
+        :return: A JSON string containing all the information in the fields of the
+                 tenant object
+        :rtype: str
+        """
+        # get the dictionary of the tenant object to know the top level keys
         tenantDict = self.__dict__
-        for attr in vars(self):
-            if "__" not in attr:
-                attrObj = getattr(self, attr)
-                if type(attrObj) in [GeneralMetaData, ServerConfig]:
-                    tenantDict[attr] = attrObj.__dict__
-                elif isinstance(attrObj, list) and isinstance(attrObj[0], Quantity):
-                    tenantDict[attr] = [e.__dict__ for e in attrObj if "__" not in e]
-                elif isinstance(attrObj, User):
-                    tenantDict[attr] = vars(attrObj)
-                    print(tenantDict[attr])
-                    attrDict = tenantDict[attr].copy()
-                    for element in tenantDict[attr].keys():
-                        if "__" not in element:
-                            if isinstance(attrDict[element], UUID):
-                                attrDict[element] = str(tenantDict[attr][element])
-                        else:
-                            del attrDict[element]
-                    print(attrDict)
-                    tenantDict[attr] = attrDict
-                elif isinstance(attrObj, datetime):
-                    tenantDict[attr] = attrObj.isoformat()
+        # go through all the attributes of the tenant object
+        for attr in tenantDict.keys():
+            # get the attribute
+            attrObj = getattr(self, attr)
+            # if it is of type GeneralMetaData or ServerConfig
+            if type(attrObj) in [GeneralMetaData, ServerConfig]:
+                # using the dictionary is possible
+                tenantDict[attr] = attrObj.__dict__
+            # if it is a list of Quantity objects
+            elif isinstance(attrObj, list) and isinstance(attrObj[0], Quantity):
+                # convert each element in the list to a dictionary seperately
+                tenantDict[attr] = [e.__dict__ for e in attrObj]
+            # if it is a user
+            elif isinstance(attrObj, User):
+                # get the top level keys by casting to a dictionary
+                tenantDict[attr] = attrObj.__dict__
+                # copy this dictionary
+                attrDict = tenantDict[attr].copy()
+                # iterate over the keys
+                for element in tenantDict[attr].keys():
+                    # if a UUID is found
+                    if isinstance(attrDict[element], UUID):
+                        # cast it to a string
+                        attrDict[element] = str(tenantDict[attr][element])
+                # assign the resulting dictionary to the tenantDict
+                tenantDict[attr] = attrDict
+            # if it is a datetime object
+            elif isinstance(attrObj, datetime):
+                # cast the datetime object to a string in iso format
+                tenantDict[attr] = attrObj.isoformat()
+        # format the tenantDict as a JSON string
         return json.dumps(tenantDict)
 
-    def from_json(attrsDict: str):
-        attrsJSON = json.loads(attrsDict)
+    def from_json(attrsStr: str):
+        """A function to obtain a tenant object from a JSON string
+
+        :param attrsStr: The JSON string, which shall be converted to a tenant object
+        :type attrsStr: str
+        :return: The tenant object based on the entries of the input JSON string
+        :rtype: Tenant
+        """
+        # load the JSON string into a JSON object
+        attrsJSON = json.loads(attrsStr)
+        # get the attributes of the tenant object (in this case, no instance of the
+        # class is available and the class definition is used)
         attrsKeys = vars(Tenant)["__fields__"].keys()
+        # iterate through the list of attributes
         for k in attrsKeys:
+            # get the corresponding entry in the JSON object
             attr = attrsJSON[k]
+            # check for each attribute and create the respective object from the
+            # dictionary in the JSON object
             if k == "generalMeta":
                 attrsJSON[k] = GeneralMetaData(**attr)
             if k in ["operator", "tenantUser"]:
-                print(attr)
                 attrsJSON[k] == User(**attr)
             if k == "quantities":
                 attrsJSON[k] = [Quantity(**q) for q in attr]
-            if k == "tenantServerConfig":
-                attrsJSON[k] = ServerConfig(**attr)
             if k == "endRuntime":
                 attrsJSON[k] = datetime.fromisoformat(attr)
+        # instatiate a tenant bbject based on the resulting dictionary
         tenantObj = Tenant(**attrsJSON)
+        # return the tenant object
         return tenantObj
 
     def _get_requests(self):
@@ -178,7 +216,5 @@ if __name__ == "__main__":
         tenantUser=tenantUser,
     )
 
-    a = t.to_json()
-    # b = Tenant.from_json(a)
-    # print(b)
-    print(Tenant.from_json(a))
+    print(t.to_json())
+    print(UUID("{12345678-1234-5678-1234-567812345678}"))
