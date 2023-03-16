@@ -5,19 +5,20 @@ from typing import Any, Optional
 from uuid import UUID
 
 import requests
-import uvicorn
+
+# import uvicorn
 from pydantic import BaseModel
 
 import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
+from FINALES2.server.schemas import Request
 
-
-# TODO: Import the RestAPI schemas -> remove this once the real schemas are available
-class Request(BaseModel):
-    quantity: str
-    methods: str
-    parameters: dict
-    tenant_uuid: str
+# # TODO: Import the RestAPI schemas -> remove this once the real schemas are available
+# class Request(BaseModel):
+#     quantity: str
+#     methods: str
+#     parameters: dict
+#     tenant_uuid: str
 
 
 class Tenant(BaseModel):
@@ -57,9 +58,15 @@ class Tenant(BaseModel):
                 # using the dictionary is possible
                 tenantDict[attr] = attrObj.__dict__
             # if it is a list of Quantity objects
-            elif isinstance(attrObj, list) and isinstance(attrObj[0], Quantity):
-                # convert each element in the list to a dictionary seperately
-                tenantDict[attr] = [e.__dict__ for e in attrObj]
+            elif isinstance(attrObj, list):
+                if len(attrObj) > 0:
+                    if isinstance(attrObj[0], Quantity):
+                        # convert each element in the list to a dictionary seperately
+                        tenantDict[attr] = [e.__dict__ for e in attrObj]
+                    else:
+                        tenantDict[attr] = str(attrObj)
+                else:
+                    tenantDict[attr] = str(attrObj)
             # if it is a user
             elif isinstance(attrObj, User):
                 # get the top level keys by casting to a dictionary
@@ -78,6 +85,9 @@ class Tenant(BaseModel):
             elif isinstance(attrObj, datetime):
                 # cast the datetime object to a string in iso format
                 tenantDict[attr] = attrObj.isoformat()
+            elif isinstance(attrObj, list) and not isinstance(attrObj[0], Quantity):
+                # cast the list object to a string
+                tenantDict[attr] = str(attrObj)
         # format the tenantDict as a JSON string
         return json.dumps(tenantDict)
 
@@ -108,6 +118,8 @@ class Tenant(BaseModel):
                 attrsJSON[k] = [Quantity(**q) for q in attr]
             if k == "endRuntime":
                 attrsJSON[k] = datetime.fromisoformat(attr)
+            if k == "queue":
+                attrsJSON[k] = eval(attr)
         # instatiate a tenant bbject based on the resulting dictionary
         tenantObj = Tenant(**attrsJSON)
         # return the tenant object
@@ -116,42 +128,42 @@ class Tenant(BaseModel):
     def _update_queue(self) -> None:
         # get the pending requests from the FINALES server
         pendingRequests = self._get_requests()
-        # TODO: Which endpoint to use? What is the return value?
 
         # update the queue of the tenant
 
         # get the relevant requests
         for pendingItem in pendingRequests:
             # create the Request object from the json string
-            requestDict = json.loads(pendingItem)
+            requestDict = pendingItem["request"]
             request = Request(**requestDict)
             # check, if the pending request fits with the tenant
             # check the quantity matches
             quantityOK = request.quantity in [q.name for q in self.quantities]
             if quantityOK:
                 # check methods
-                # TODO: There is a limitation to one method per quantity for
                 # the tenant at the moment
                 tenantMethods = []
                 for q in self.quantities:
                     tenantMethods.extend(q.methods)
                 for method in tenantMethods:
                     if method in request.methods:
-                        request.methods = method[0]
+                        request.methods = method
                         methodOK = True
                     else:
                         methodOK = False
                 if methodOK:
                     # check parameters
-                    parametersCheck = []
+                    parametersCheck: list = []
                     requestParameters = request.parameters[method]
+                    print(requestParameters)
+                    continue
                     for p in requestParameters.keys():
                         tenantMin = self.limitations[p]["minimum"]
                         tenantMax = self.limitations[p]["maximum"]
                         minimumOK = requestParameters[p] > tenantMin
                         maximumOK = requestParameters[p] < tenantMax
                         parametersCheck.append(minimumOK and maximumOK)
-                    parametersOK = all(parametersCheck)
+                    parametersOK: bool = all(parametersCheck)
             # summarize the checks
             requestOK = quantityOK and methodOK and parametersOK
             # if the request is ok and it is not yet in the tenant's queue
@@ -160,37 +172,30 @@ class Tenant(BaseModel):
                 self.queue.append(request)
 
     def _get_requests(self) -> list[Request]:
-        # instantiate the FINALES server
-        FINALESServer = uvicorn.Server(self.FINALESServerConfig)
-
         # login to the server
         print("Logging in ...")
-        accessInfo = requests.post(
-            f"http://{FINALESServer.config.host}:"
-            "{FINALESServer.port}/userManagement/authenticate",
-            data={
-                "username": self.tenantUser.username,
-                "password": self.tenantUser.password,
-                "grant_type": "password",
-            },
-            headers={"content-type": "application/x-www-form-urlencoded"},
-        )
+        # accessInfo = requests.post(
+        #     f"http://{self.FINALESServerConfig.host}:"
+        #     f"{self.FINALESServerConfig.port}/userManagement/authenticate",
+        #     data={},
+        #     headers={}
+        #     # data={
+        #     #     "username": self.tenantUser.username,
+        #     #     "password": self.tenantUser.password,
+        #     #     "grant_type": "password",
+        #     # },
+        #     # headers={"content-type": "application/x-www-form-urlencoded"},
+        # )
         print("Looking for tasks...")
 
-        # collect the quantity names and methods in a list
-        quantityNames = [q.name for q in self.quantities]
-        quantityMethods = [q.method for q in self.quantities]
         # get the pending requests from the FINALES server
         pendingRequests = requests.get(
-            f"http://{self.FINALESServer.config.host}"
-            ":{self.FINALESServer.config.host}/???",
-            params={
-                "quantityNames": quantityNames,
-                "quantityMethods": quantityMethods,
-            },
-            headers=accessInfo.json(),
+            f"http://{self.FINALESServerConfig.host}"
+            f":{self.FINALESServerConfig.port}/get/pending_requests/",
+            params={},
+            headers={}
+            # headers=accessInfo.json(),
         ).json()
-        # TODO: Which endpoint to use? What is the return value?
         return pendingRequests
 
     def _post_request(self, data):
@@ -213,14 +218,15 @@ class Tenant(BaseModel):
         while datetime.now() < self.endRuntime:
             # wait in between two requests to the server
             time.sleep(config.sleepTime_s)
-
             self._update_queue()
-
+            continue
             # get the first request in the queue to work on -> first in - first out
             activeRequest = self.queue[0]
 
             # get the method, which matches
-            resultData = self._run_method(method=activeRequest.methods[0])
+            resultData = self._run_method(
+                method=activeRequest.methods[0], parameters={}
+            )
 
             # assemble the result
 
