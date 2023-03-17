@@ -17,6 +17,18 @@ def cli_devtest():
 def devtest_populate_db():
     "Populates the database with initial data for testing"
 
+    dummy_capability_populate()
+
+
+def session_commit(input):
+    with get_db() as session:
+        session.add(input)
+        session.commit()
+        session.refresh(input)
+    return
+
+
+def dummy_capability_populate():
     dummy_schema = {
         "type": "object",
         "properties": {
@@ -42,7 +54,4 @@ def devtest_populate_db():
         }
     )
 
-    with get_db() as session:
-        session.add(new_capability)
-        session.commit()
-        session.refresh(new_capability)
+    session_commit(new_capability)
