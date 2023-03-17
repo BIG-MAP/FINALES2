@@ -51,8 +51,8 @@ class RequestInfo(BaseModel):
 class Result(BaseModel):
     data: dict
     quantity: str
-    method: str
-    parameters: dict
+    method: List[str]
+    parameters: Dict[str, dict]
     tenant_uuid: str
     request_uuid: str
 
@@ -62,7 +62,7 @@ class Result(BaseModel):
         init_params = {
             "data": json.loads(db_result.data),
             "quantity": db_result.quantity,
-            "method": "none",
+            "method": json.loads(db_result.method),
             "parameters": json.loads(db_result.parameters),
             "tenant_uuid": str(db_result.posting_tenant_uuid),
             "request_uuid": str(db_result.posting_tenant_uuid),
