@@ -45,6 +45,7 @@ def prepare_my_result(request: dict, data: Any) -> Result:
 
 def prepare_data_from_dummy_method(request: dict, data: Any):
     data1 = data
+    print(data1)
     postResult = Result(
         data={data1["quantity"]: data1["quantityValue"]},
         quantity=data1["quantity"],
