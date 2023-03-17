@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import List
 
 from pydantic import BaseModel
 
@@ -10,16 +11,17 @@ from FINALES2.db import Result as DbResult
 
 class Request(BaseModel):
     quantity: str
-    methods: str
+    methods: List[str]
     parameters: dict
     tenant_uuid: str
 
     @classmethod
     def from_db_request(cls, db_request: DbRequest):
         """Initializes the object from the data of an orm object"""
+        print(db_request.methods)
         init_params = {
             "quantity": db_request.quantity,
-            "methods": json.loads(db_request.methods),
+            "methods": db_request.methods,  # json.loads(db_request.methods),
             "parameters": json.loads(db_request.parameters),
             "tenant_uuid": str(db_request.requesting_tenant_uuid),
         }
