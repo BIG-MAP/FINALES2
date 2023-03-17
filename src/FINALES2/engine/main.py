@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from jsonschema import validate
 from sqlalchemy import select
@@ -49,18 +49,9 @@ class Engine:
 
         When creating the request object, it assigns a new uuid (and returns it).
         """
-        query_inp = select(DbQuantity).where(
-            DbQuantity.quantity == request_data.quantity
+        self.validate_submission(
+            request_data.quantity, request_data.methods, request_data.parameters
         )
-        with get_db() as session:
-            query_out = session.execute(query_inp).all()
-
-        if len(query_out) == 0:
-            raise ValueError(f"No records for this quantity: {request_data.quantity}")
-
-        dummy_schema = json.loads(query_out[0][0].specifications)
-        submitted_params = request_data.parameters
-        validate(instance=submitted_params, schema=dummy_schema)
 
         request_obj = DbRequest(
             **{
@@ -91,25 +82,21 @@ class Engine:
 
         When creating the result object, it assigns a new uuid (and returns it).
         """
-        query_inp = select(DbQuantity).where(
-            DbQuantity.quantity == received_data.quantity
+        # Note: for the results we are currently using a similar structure
+        # than the request, so the method is a list with a single entry and
+        # the parameters is a dict with a single key, named the same as the
+        # method.
+        wrapped_params = received_data.parameters
+        self.validate_submission(
+            received_data.quantity, received_data.method, wrapped_params
         )
-        with get_db() as session:
-            query_out = session.execute(query_inp).all()
-
-        if len(query_out) == 0:
-            raise ValueError(f"No records for this quantity: {received_data.quantity}")
-
-        dummy_schema = json.loads(query_out[0][0].specifications)
-        submitted_params = received_data.parameters
-        validate(instance=submitted_params, schema=dummy_schema)
 
         db_obj = DbResult(
             **{
                 "uuid": str(uuid.uuid4()),
                 "request_uuid": str(uuid.uuid4()),  # get from received data and check
                 "quantity": received_data.quantity,
-                "method": received_data.method,
+                "method": json.dumps(received_data.method),
                 "parameters": json.dumps(received_data.parameters),
                 "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
@@ -158,3 +145,37 @@ class Engine:
             api_response.append(new_object)
 
         return api_response
+
+    def validate_submission(
+        self, quantity: str, methods: List[str], parameters: Dict[str, dict]
+    ):
+        """Validates"""
+        query_inp = select(DbQuantity).where(DbQuantity.quantity == quantity)
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        if len(query_out) == 0:
+            raise ValueError(f"No records for this quantity: {quantity}")
+
+        for method in parameters.keys():
+            if method not in methods:
+                raise ValueError(
+                    f"Method for params with key {method} not found in list: {methods}"
+                )
+
+        for method in methods:
+            if method not in parameters:
+                raise ValueError(
+                    f"Method {method} not found in parameters: {parameters.keys()}"
+                )
+
+            match_found = False
+            specific_params = parameters[method]
+            for (quantity_dbobj,) in query_out:
+                schema_specs = json.loads(quantity_dbobj.specifications)
+                if method == quantity_dbobj.method:
+                    validate(instance=specific_params, schema=schema_specs)
+                    match_found = True
+                    break
+            if not match_found:
+                raise ValueError(f"No records for this method: {method}")
