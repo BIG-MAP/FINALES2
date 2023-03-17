@@ -50,7 +50,7 @@ def prepare_data_from_dummy_method(request: dict, data: Any):
         data={data1["quantity"]: data1["quantityValue"]},
         quantity=data1["quantity"],
         method=[data1["method"]],
-        parameters=data1["actualParameters"],
+        parameters={data1["method"]: data1["actualParameters"]},
         request_uuid=request["uuid"],
         tenant_uuid="1ecd8115-5506-4b1e-b745-fc08fb2bcaee",
     )

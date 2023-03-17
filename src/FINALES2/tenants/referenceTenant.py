@@ -210,18 +210,18 @@ class Tenant(BaseModel):
     def _post_result(self, request: Request, data: Any):
         # transfer the output of your method to a postable result
         result_formatted = prepare_my_result(request=request, data=data)
-        print(result_formatted)
 
         # post the result
-        _postedResult = requests.get(
+        _postedResult = requests.post(
             f"http://{self.FINALESServerConfig.host}"
             f":{self.FINALESServerConfig.port}/post/result/",
-            data={result_formatted},
+            json=result_formatted,
             params={},
             headers={}
             # headers=accessInfo.json(),
-        ).json()
-        print(f"Result is posted {_postedResult}!")
+        )
+        _postedResult.raise_for_status()
+        print(f"Result is posted {_postedResult.json()}!")
 
         # delete the request from the queue
         self.queue.remove(request)
