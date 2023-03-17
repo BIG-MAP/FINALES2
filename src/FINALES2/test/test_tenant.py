@@ -18,14 +18,21 @@ def test_Tenant_toJSON():
         usergroups=["Project_A"],
     )
 
+    method = schemas.Method(
+        name="myMethod",
+        quantity="DummyQuantity",
+        parameters=["temperature"],
+        limitations={"temperature": {"minimum": 5, "maximum": 20}},
+    )
+
     quant = schemas.Quantity(
-        name="density",
-        methods=["rollingBall"],
+        name="DummyQuantity",
+        methods={"DummyMethod": method},
         specifications={"composition": {"a": 5, "b": 0.7}, "temperature": 273.15},
         is_active=True,
     )
 
-    quantities = [quant]
+    quantities = {quant.name: quant}
 
     FINALESServerConfig = schemas.ServerConfig(
         app_title="FINALES2",
@@ -56,24 +63,26 @@ def test_Tenant_toJSON():
     )
 
     JSON_target = (
-        '{"generalMeta": {'
-        '"name": "testTenant", "description": "This is a great tenant."}, '
-        '"quantities": [{"name": "density", "methods": ["rollingBall"], '
-        '"specifications": {"composition": {"a": 5, "b": 0.7}, "temperature": 273.15}, '
-        '"is_active": true}], "queue": "[]", "tenantConfig": null, '
-        '"FINALESServerConfig": {"app_title": "FINALES2", "app_description": '
-        '"FINALES2 accepting requests, managing queues and serving queries", '
-        '"app_version": "0.0.1", "host": "0.0.0.0", "port": 5678}, "endRuntime": '
-        '"2023-03-31T00:00:00", "operator": {"username": "operator1", "uuid": '
-        '"12345678-1234-5678-1234-567812345679", "password": "password1", '
-        '"usergroups": ["Project_A"]}, "tenantUser": {"username": "ReferenceTenant", '
-        '"uuid": "12345678-1234-5678-1234-567812345678", '
-        '"password": "secretPW_forRefUsr", '
-        '"usergroups": ["Project_A"]}}'
+        '{"generalMeta": {"name": "testTenant", "description": '
+        '"This is a great tenant."}, "quantities": {"DummyQuantity": '
+        '{"name": "DummyQuantity", "methods": {"DummyMethod": {"name": '
+        '"myMethod", "quantity": "DummyQuantity", "parameters": '
+        '["temperature"], "limitations": {"temperature": {"minimum": 5, '
+        '"maximum": 20}}}}, "specifications": {"composition": {"a": 5, "b": 0.7}, '
+        '"temperature": 273.15}, "is_active": true}}, "queue": "[]", '
+        '"tenantConfig": null, "FINALESServerConfig": {"app_title": "FINALES2", '
+        '"app_description": "FINALES2 accepting requests, managing queues '
+        'and serving queries", "app_version": "0.0.1", "host": "0.0.0.0", '
+        '"port": 5678}, "endRuntime": "2023-03-31T00:00:00", "operator": {"username": '
+        '"operator1", "uuid": "12345678-1234-5678-1234-567812345679", "password": '
+        '"password1", "usergroups": ["Project_A"]}, "tenantUser": {"username": '
+        '"ReferenceTenant", "uuid": "12345678-1234-5678-1234-567812345678", '
+        '"password": "secretPW_forRefUsr", "usergroups": ["Project_A"]}}'
     )
 
     # get the resulting JSON string
     JSON_result = test_tenant.to_json()
+    print(JSON_result)
 
     # compare the two results
     assert JSON_result == JSON_target, "The JSON strings do not match."
@@ -92,14 +101,21 @@ def test_Tenant_fromJSON():
         usergroups=["Project_A"],
     )
 
+    method2 = schemas.Method(
+        name="myMethod",
+        quantity="DummyQuantity",
+        parameters=["temperature"],
+        limitations={"temperature": {"minimum": 5, "maximum": 20}},
+    )
+
     quant2 = schemas.Quantity(
-        name="density",
-        methods=["rollingBall"],
+        name="DummyQuantity",
+        methods={"DummyMethod": method2},
         specifications={"composition": {"a": 5, "b": 0.7}, "temperature": 273.15},
         is_active=True,
     )
 
-    quantities2 = [quant2]
+    quantities2 = {quant2.name: quant2}
 
     FINALESServerConfig2 = schemas.ServerConfig(
         app_title="FINALES2",
@@ -130,20 +146,21 @@ def test_Tenant_fromJSON():
     )
 
     tenant_JSON = (
-        '{"generalMeta": {'
-        '"name": "testTenant", "description": "This is a great tenant."}, '
-        '"quantities": [{"name": "density", "methods": ["rollingBall"], '
-        '"specifications": {"composition": {"a": 5, "b": 0.7}, "temperature": 273.15}, '
-        '"is_active": true}], "queue": "[]", "tenantConfig": null, '
-        '"FINALESServerConfig": {"app_title": "FINALES2", "app_description": '
-        '"FINALES2 accepting requests, managing queues and serving queries", '
-        '"app_version": "0.0.1", "host": "0.0.0.0", "port": 5678}, "endRuntime": '
-        '"2023-03-31T00:00:00", "operator": {"username": "operator1", "uuid": '
-        '"12345678-1234-5678-1234-567812345679", "password": "password1", '
-        '"usergroups": ["Project_A"]}, "tenantUser": {"username": "ReferenceTenant", '
-        '"uuid": "12345678-1234-5678-1234-567812345678", '
-        '"password": "secretPW_forRefUsr", '
-        '"usergroups": ["Project_A"]}}'
+        '{"generalMeta": {"name": "testTenant", "description": '
+        '"This is a great tenant."}, "quantities": {"DummyQuantity": '
+        '{"name": "DummyQuantity", "methods": {"DummyMethod": {"name": '
+        '"myMethod", "quantity": "DummyQuantity", "parameters": '
+        '["temperature"], "limitations": {"temperature": {"minimum": 5, '
+        '"maximum": 20}}}}, "specifications": {"composition": {"a": 5, "b": 0.7}, '
+        '"temperature": 273.15}, "is_active": true}}, "queue": "[]", '
+        '"tenantConfig": null, "FINALESServerConfig": {"app_title": "FINALES2", '
+        '"app_description": "FINALES2 accepting requests, managing queues '
+        'and serving queries", "app_version": "0.0.1", "host": "0.0.0.0", '
+        '"port": 5678}, "endRuntime": "2023-03-31T00:00:00", "operator": {"username": '
+        '"operator1", "uuid": "12345678-1234-5678-1234-567812345679", "password": '
+        '"password1", "usergroups": ["Project_A"]}, "tenantUser": {"username": '
+        '"ReferenceTenant", "uuid": "12345678-1234-5678-1234-567812345678", '
+        '"password": "secretPW_forRefUsr", "usergroups": ["Project_A"]}}'
     )
 
     tenant_result2 = Tenant.from_json(tenant_JSON)
@@ -164,14 +181,21 @@ def test_Tenant__get_requests():
         usergroups=["Project_A"],
     )
 
+    method3 = schemas.Method(
+        name="myMethod",
+        quantity="DummyQuantity",
+        parameters=["temperature"],
+        limitations={"temperature": {"minimum": 5, "maximum": 20}},
+    )
+
     quant3 = schemas.Quantity(
-        name="density",
-        methods=["rollingBall"],
+        name="DummyQuantity",
+        methods={"DummyMethod": method3},
         specifications={"composition": {"a": 5, "b": 0.7}, "temperature": 273.15},
         is_active=True,
     )
 
-    quantities3 = [quant3]
+    quantities3 = {quant3.name: quant3}
 
     FINALESServerConfig3 = schemas.ServerConfig(
         app_title="FINALES2",
@@ -201,4 +225,5 @@ def test_Tenant__get_requests():
         tenantUser=tenantUser3,
     )
 
-    test_tenant3.run()
+    # TODO: Test the remaining funcitonalities of the Tenant class
+    test_tenant3

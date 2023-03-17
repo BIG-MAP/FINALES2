@@ -5,12 +5,10 @@ from typing import Any, Optional
 from uuid import UUID
 
 import requests
-
-# import uvicorn
 from pydantic import BaseModel
 
 import FINALES2.server.config as config
-from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
+from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig, User
 from FINALES2.server.schemas import Request
 from FINALES2.tenants.referenceMethod import prepare_my_result, run_my_method
 
@@ -53,17 +51,16 @@ class Tenant(BaseModel):
                 # using the dictionary is possible
                 tenantDict[attr] = attrObj.__dict__
             # if it is a list of Quantity objects
-            elif isinstance(attrObj, list):
-                if len(attrObj) > 0:
-                    if isinstance(attrObj[0], Quantity):
-                        # convert each element in the list to a dictionary seperately
-                        tenantDict[attr] = [e.__dict__ for e in attrObj]
-                        methodsDict = tenantDict[attr]["methods"].copy()
+            elif isinstance(attrObj, dict):
+                if isinstance(attrObj[list(attrObj.keys())[0]], Quantity):
+                    # convert each element in the list to a dictionary seperately
+                    for quantityKey in attrObj.keys():
+                        quantityDict = attrObj[quantityKey].__dict__
+                        methodsDict = quantityDict["methods"].copy()
                         for method in methodsDict.keys():
                             methodsDict[method] = methodsDict[method].__dict__
-                        tenantDict[attr]["methods"] = methodsDict
-                    else:
-                        tenantDict[attr] = str(attrObj)
+                        quantityDict["methods"] = methodsDict
+                        tenantDict[attr][quantityKey] = quantityDict
                 else:
                     tenantDict[attr] = str(attrObj)
             # if it is a user
@@ -84,7 +81,7 @@ class Tenant(BaseModel):
             elif isinstance(attrObj, datetime):
                 # cast the datetime object to a string in iso format
                 tenantDict[attr] = attrObj.isoformat()
-            elif isinstance(attrObj, list) and not isinstance(attrObj[0], Quantity):
+            elif isinstance(attrObj, list):
                 # cast the list object to a string
                 tenantDict[attr] = str(attrObj)
         # format the tenantDict as a JSON string
@@ -115,7 +112,12 @@ class Tenant(BaseModel):
                 attrsJSON[k] == User(**attr)
             if k == "quantities":
                 # TODO: properly deserialize the methods
-                attrsJSON[k] = [Quantity(**q) for q in attr]
+                for qKey in attr.keys():
+                    methods = {}
+                    for key in attr[qKey]["methods"]:
+                        methods[key] = Method(**attr[qKey]["methods"][key])
+                    attr[qKey]["methods"] = methods
+                    attrsJSON[k][qKey] = Quantity(**attr[qKey])
             if k == "endRuntime":
                 attrsJSON[k] = datetime.fromisoformat(attr)
             if k == "queue":
