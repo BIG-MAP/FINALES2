@@ -12,13 +12,7 @@ from pydantic import BaseModel
 import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig, User
 from FINALES2.server.schemas import Request
-
-# # TODO: Import the RestAPI schemas -> remove this once the real schemas are available
-# class Request(BaseModel):
-#     quantity: str
-#     methods: str
-#     parameters: dict
-#     tenant_uuid: str
+from FINALES2.tenants.referenceMethod import prepare_my_result, run_my_method
 
 
 class Tenant(BaseModel):
@@ -31,7 +25,7 @@ class Tenant(BaseModel):
     """
 
     generalMeta: GeneralMetaData
-    quantities: list[Quantity]
+    quantities: dict[str, Quantity]
     queue: list = []
     tenantConfig: Any
     FINALESServerConfig: ServerConfig
@@ -39,6 +33,7 @@ class Tenant(BaseModel):
     operator: User
     tenantUser: User
 
+    # TODO: fix for new types of attributes (methods and quantities)
     # TODO: add tenantConfig object
     def to_json(self) -> str:
         """A function to create a JSON string from a tenant object
@@ -63,6 +58,10 @@ class Tenant(BaseModel):
                     if isinstance(attrObj[0], Quantity):
                         # convert each element in the list to a dictionary seperately
                         tenantDict[attr] = [e.__dict__ for e in attrObj]
+                        methodsDict = tenantDict[attr]["methods"].copy()
+                        for method in methodsDict.keys():
+                            methodsDict[method] = methodsDict[method].__dict__
+                        tenantDict[attr]["methods"] = methodsDict
                     else:
                         tenantDict[attr] = str(attrObj)
                 else:
@@ -115,6 +114,7 @@ class Tenant(BaseModel):
             if k in ["operator", "tenantUser"]:
                 attrsJSON[k] == User(**attr)
             if k == "quantities":
+                # TODO: properly deserialize the methods
                 attrsJSON[k] = [Quantity(**q) for q in attr]
             if k == "endRuntime":
                 attrsJSON[k] = datetime.fromisoformat(attr)
@@ -136,18 +136,19 @@ class Tenant(BaseModel):
             # create the Request object from the json string
             requestDict = pendingItem["request"]
             request = Request(**requestDict)
+
             # check, if the pending request fits with the tenant
             # check the quantity matches
-            quantityOK = request.quantity in [q.name for q in self.quantities]
+            quantityOK = request.quantity in [q for q in self.quantities.keys()]
             if quantityOK:
                 # check methods
                 # the tenant at the moment
-                tenantMethods = []
-                for q in self.quantities:
-                    tenantMethods.extend(q.methods)
+                tenantMethods: list = []
+                for q in self.quantities.keys():
+                    tenantMethods.extend(self.quantities[q].methods.keys())
                 for method in tenantMethods:
                     if method in request.methods:
-                        request.methods = method
+                        request.methods = [method]
                         methodOK = True
                     else:
                         methodOK = False
@@ -155,11 +156,12 @@ class Tenant(BaseModel):
                     # check parameters
                     parametersCheck: list = []
                     requestParameters = request.parameters[method]
-                    print(requestParameters)
-                    continue
+                    methodForQuantity = self.quantities[request.quantity].methods[
+                        request.methods[0]
+                    ]
                     for p in requestParameters.keys():
-                        tenantMin = self.limitations[p]["minimum"]
-                        tenantMax = self.limitations[p]["maximum"]
+                        tenantMin = methodForQuantity.limitations[p]["minimum"]
+                        tenantMax = methodForQuantity.limitations[p]["maximum"]
                         minimumOK = requestParameters[p] > tenantMin
                         maximumOK = requestParameters[p] < tenantMax
                         parametersCheck.append(minimumOK and maximumOK)
@@ -169,7 +171,8 @@ class Tenant(BaseModel):
             # if the request is ok and it is not yet in the tenant's queue
             # add it
             if requestOK and request not in self.queue:
-                self.queue.append(request)
+                pendingItem["request"] = request.__dict__
+                self.queue.append(pendingItem)
 
     def _get_requests(self) -> list[Request]:
         # login to the server
@@ -198,18 +201,33 @@ class Tenant(BaseModel):
         ).json()
         return pendingRequests
 
-    def _post_request(self, data):
+    def _post_request(self):
         pass
 
     def _get_results(self):
         pass
 
-    def _post_result(self):
-        pass
+    def _post_result(self, request: Request, data: Any):
+        # transfer the output of your method to a postable result
+        result_formatted = prepare_my_result(request=request, data=data)
+        print(result_formatted)
 
-    def _run_method(self, method: str):
+        # post the result
+        _postedResult = requests.get(
+            f"http://{self.FINALESServerConfig.host}"
+            f":{self.FINALESServerConfig.port}/post/result/",
+            data={result_formatted},
+            params={},
+            headers={}
+            # headers=accessInfo.json(),
+        ).json()
+
+        print(f"Result is posted {_postedResult}!")
+
+    def _run_method(self, method: str, parameters: dict):
         # TODO: Add the way how you process the input
-        pass
+        result = run_my_method(method=method, parameters=parameters)
+        return result
 
     def run(self):
         # run until the endRuntime is exceeded
@@ -219,16 +237,18 @@ class Tenant(BaseModel):
             # wait in between two requests to the server
             time.sleep(config.sleepTime_s)
             self._update_queue()
-            continue
             # get the first request in the queue to work on -> first in - first out
             activeRequest = self.queue[0]
+            # strip the metadata from the request
+            activeRequest_technical = activeRequest["request"]
+
+            # extract the method and the parameters from the request
+            reqMethod = activeRequest_technical.methods[0]
+            reqParameters = activeRequest_technical.parameters[reqMethod]
 
             # get the method, which matches
-            resultData = self._run_method(
-                method=activeRequest.methods[0], parameters={}
-            )
-
-            # assemble the result
+            resultData = self._run_method(method=reqMethod, parameters=reqParameters)
 
             # post the result
-            self._post_result(data=resultData)
+            self._post_result(request=activeRequest, data=resultData)
+            continue
