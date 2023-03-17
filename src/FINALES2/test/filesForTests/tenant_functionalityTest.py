@@ -16,14 +16,21 @@ operator3 = schemas.User(
     usergroups=["Project_A"],
 )
 
+method3 = schemas.Method(
+    name="myMethod",
+    quantity="DummyQuantity",
+    parameters=["temperature"],
+    limitations={"temperature": {"minimum": 5, "maximum": 20}},
+)
+
 quant3 = schemas.Quantity(
     name="DummyQuantity",
-    methods=["DummyMethod"],
+    methods={"DummyMethod": method3},
     specifications={"composition": {"a": 5, "b": 0.7}, "temperature": 273.15},
     is_active=True,
 )
 
-quantities3 = [quant3]
+quantities3 = {"DummyQuantity": quant3}
 
 FINALESServerConfig3 = schemas.ServerConfig(
     app_title="FINALES2",
@@ -42,6 +49,7 @@ tenantUser3 = schemas.User(
     uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
     usergroups=["Project_A"],
 )
+
 
 test_tenant3 = Tenant(
     generalMeta=meta3,

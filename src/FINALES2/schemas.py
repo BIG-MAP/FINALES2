@@ -34,9 +34,16 @@ class GeneralMetaData(BaseModel):
     description: Optional[str]
 
 
+class Method(BaseModel):
+    name: str
+    quantity: str
+    parameters: list  # e.g. ["temperature", "composition"]
+    limitations: dict  # e.g. {"temperature": {"minimum": 10, "maximum": 40}}
+
+
 class Quantity(BaseModel):
     name: str
-    methods: list[str]
+    methods: dict[str, Method]
     specifications: Optional[dict]
     is_active: bool
 
@@ -47,13 +54,6 @@ class ServerConfig(BaseModel):
     app_version: str
     host: str
     port: int
-
-
-class Method(BaseModel):
-    name: str
-    quantity: str
-    parameters: list  # e.g. ["temperature", "composition"]
-    limitations: dict  # e.g. {"temperature": {"minimum": 10, "maximumg": 40}}
 
 
 # TODO: add tenantConfig object
