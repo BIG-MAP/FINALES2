@@ -82,9 +82,13 @@ class Engine:
 
         When creating the result object, it assigns a new uuid (and returns it).
         """
-        wrapped_params = {received_data.method: received_data.parameters}
+        # Note: for the results we are currently using a similar structure
+        # than the request, so the method is a list with a single entry and
+        # the parameters is a dict with a single key, named the same as the
+        # method.
+        wrapped_params = received_data.parameters
         self.validate_submission(
-            received_data.quantity, [received_data.method], wrapped_params
+            received_data.quantity, received_data.method, wrapped_params
         )
 
         db_obj = DbResult(
@@ -92,7 +96,7 @@ class Engine:
                 "uuid": str(uuid.uuid4()),
                 "request_uuid": str(uuid.uuid4()),  # get from received data and check
                 "quantity": received_data.quantity,
-                "method": received_data.method,
+                "method": json.dumps(received_data.method),
                 "parameters": json.dumps(received_data.parameters),
                 "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
