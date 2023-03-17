@@ -1,6 +1,7 @@
 import json
 import uuid
 from datetime import datetime
+from enum import Enum
 from typing import Dict, List, Optional
 
 from jsonschema import validate
@@ -11,6 +12,13 @@ from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
 from FINALES2.db.session import get_db
 from FINALES2.server.schemas import CapabilityInfo, Request, RequestInfo, Result
+
+
+class RequestStatus(Enum):
+    PENDING = "pending"
+    RESERVED = "reserved"
+    RESOLVED = "resolved"
+    RETRACTED = "retracted"
 
 
 class Engine:
@@ -62,7 +70,7 @@ class Engine:
                 "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "requesting_recieved_timestamp": datetime.now(),
                 "budget": "not currently implemented in the API",
-                "status": "not currently implemented in the API",
+                "status": RequestStatus.PENDING.value,
             }
         )
 
@@ -91,10 +99,13 @@ class Engine:
             received_data.quantity, received_data.method, wrapped_params
         )
 
+        request_uuid = str(received_data.request_uuid)
+        query_inp = select(DbRequest).where(DbRequest.uuid == request_uuid)
+
         db_obj = DbResult(
             **{
                 "uuid": str(uuid.uuid4()),
-                "request_uuid": str(uuid.uuid4()),  # get from received data and check
+                "request_uuid": request_uuid,
                 "quantity": received_data.quantity,
                 "method": json.dumps(received_data.method),
                 "parameters": json.dumps(received_data.parameters),
@@ -108,16 +119,24 @@ class Engine:
         )
 
         with get_db() as session:
+            query_out = session.execute(query_inp).all()
+            if len(query_out) == 0:
+                raise ValueError(f"Submitted result has no request: {request_uuid}")
+            original_request = query_out[0][0]
+            original_request.status = RequestStatus.RESOLVED.value
             session.add(db_obj)
             session.commit()
             session.refresh(db_obj)
+            session.refresh(original_request)
 
         return str(db_obj.uuid)
 
     def get_pending_requests(self) -> List[RequestInfo]:
         """Return all pending requests."""
         # Currently it just gets all requests, status check pending
-        query_inp = select(DbRequest)  # .where(status is pending)
+        query_inp = select(DbRequest).where(
+            DbRequest.status == RequestStatus.PENDING.value
+        )
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
