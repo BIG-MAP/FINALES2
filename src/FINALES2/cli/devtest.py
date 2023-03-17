@@ -64,7 +64,7 @@ def dummy_request_populate():
     dummy_parameters_schema = {
         "type": "object",
         "DummyMethod1": {
-            "interna_temperature": {
+            "internal_temperature": {
                 "value": 42,
                 "type": "number",
                 "description": (
@@ -103,9 +103,35 @@ def dummy_request_populate():
 
 
 def dummy_result_populate():
-    pass
-    # dummy_parameters_schema = {}
-    # dummy_data_schema = {}
+    dummy_parameters_schema = {
+        "type": "object",
+        "DummyMethod1": {
+            "internal_temperature": {
+                "value": 42,
+                "type": "number",
+                "description": (
+                    "the internal temperature used for the posted Method1 result"
+                    " (this is just a temporary stand in)"
+                ),
+            },
+            "voltage_setting": {
+                "value": 2,
+                "type": "number",
+                "description": (
+                    "the voltage setting used for the posted Method1 result"
+                    " (this is just a temporary stand in)"
+                ),
+            },
+        },
+    }
+
+    dummy_data_schema = {
+        "type": "object",
+        "density(method1)": {
+            "type": "number",
+            "value": 33,
+        },
+    }
 
     new_result = Result(
         **{
@@ -113,17 +139,17 @@ def dummy_result_populate():
             "request_uuid": str(uuid.uuid4()),
             "quantity": "DummyQuantity",
             "method": str(["DummyMethod1"]),
-            # "parameters": json.dumps(dummy_parameters_schema),
-            # "data": json.dumps(dummy_data_schema),
+            "parameters": json.dumps(dummy_parameters_schema),
+            "data": json.dumps(dummy_data_schema),
             "posting_tenant_uuid": str(uuid.uuid4()),
             "cost": None,
             "status": str([datetime.now(), 3]),
-            # "posting_recieved_timestamp":
+            "posting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
             "load_time": datetime.now(),
         }
     )
 
-    assert new_result
+    session_commit(new_result)
 
 
 # def dummy_tenant_populate():
