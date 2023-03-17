@@ -221,8 +221,12 @@ class Tenant(BaseModel):
             headers={}
             # headers=accessInfo.json(),
         ).json()
-
         print(f"Result is posted {_postedResult}!")
+
+        # delete the request from the queue
+        self.queue.remove(request)
+        requestUUID = request["uuid"]
+        print(f"Removed request with UUID {requestUUID} from the queue.")
 
     def _run_method(self, method: str, parameters: dict):
         # TODO: Add the way how you process the input
@@ -240,7 +244,7 @@ class Tenant(BaseModel):
             # get the first request in the queue to work on -> first in - first out
             activeRequest = self.queue[0]
             # strip the metadata from the request
-            activeRequest_technical = activeRequest["request"]
+            activeRequest_technical = Request(**activeRequest["request"])
 
             # extract the method and the parameters from the request
             reqMethod = activeRequest_technical.methods[0]
