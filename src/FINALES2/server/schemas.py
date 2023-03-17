@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -10,8 +11,8 @@ from FINALES2.db import Result as DbResult
 
 class Request(BaseModel):
     quantity: str
-    methods: str
-    parameters: dict
+    methods: List[str]
+    parameters: Dict[str, dict]
     tenant_uuid: str
 
     @classmethod
