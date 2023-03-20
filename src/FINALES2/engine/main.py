@@ -60,7 +60,7 @@ class Engine:
         self.validate_submission(
             request_data.quantity, request_data.methods, request_data.parameters
         )
-
+        ctime = datetime.now()
         request_obj = DbRequest(
             **{
                 "uuid": str(uuid.uuid4()),
@@ -68,9 +68,11 @@ class Engine:
                 "methods": json.dumps(request_data.methods),
                 "parameters": json.dumps(request_data.parameters),
                 "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
-                "requesting_recieved_timestamp": datetime.now(),
+                "requesting_recieved_timestamp": ctime,
                 "budget": "not currently implemented in the API",
-                "status": RequestStatus.PENDING.value,
+                "status": json.dumps(
+                    [(ctime, RequestStatus.PENDING.value)], default=str
+                ),
             }
         )
 
@@ -94,7 +96,8 @@ class Engine:
         # than the request, so the method is a list with a single entry and
         # the parameters is a dict with a single key, named the same as the
         # method.
-        wrapped_params = received_data.parameters
+        method_name = received_data.method[0]
+        wrapped_params = {method_name: received_data.parameters[method_name]}
         self.validate_submission(
             received_data.quantity, received_data.method, wrapped_params
         )
@@ -102,6 +105,7 @@ class Engine:
         request_uuid = str(received_data.request_uuid)
         query_inp = select(DbRequest).where(DbRequest.uuid == request_uuid)
 
+        ctime = datetime.now()
         db_obj = DbResult(
             **{
                 "uuid": str(uuid.uuid4()),
@@ -113,8 +117,7 @@ class Engine:
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "cost": "Not implemented in the API yet",
                 "status": "Not implemented in the API yet",
-                "posting_recieved_timestamp": datetime.now(),
-                "load_time": datetime.now(),
+                "posting_recieved_timestamp": ctime,
             }
         )
 
@@ -123,7 +126,9 @@ class Engine:
             if len(query_out) == 0:
                 raise ValueError(f"Submitted result has no request: {request_uuid}")
             original_request = query_out[0][0]
-            original_request.status = RequestStatus.RESOLVED.value
+            status_list = json.loads(original_request.status)
+            status_list.append((ctime, RequestStatus.RESOLVED.value))
+            original_request.status = json.dumps(status_list, default=str)
             session.add(db_obj)
             session.commit()
             session.refresh(db_obj)
@@ -135,7 +140,7 @@ class Engine:
         """Return all pending requests."""
         # Currently it just gets all requests, status check pending
         query_inp = select(DbRequest).where(
-            DbRequest.status == RequestStatus.PENDING.value
+            DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]')
         )
         with get_db() as session:
             query_out = session.execute(query_inp).all()
