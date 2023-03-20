@@ -62,7 +62,7 @@ class Result(BaseModel):
         init_params = {
             "data": json.loads(db_result.data),
             "quantity": db_result.quantity,
-            "method": json.loads(db_result.method),
+            "method": eval(db_result.method),
             "parameters": json.loads(db_result.parameters),
             "tenant_uuid": str(db_result.posting_tenant_uuid),
             "request_uuid": str(db_result.posting_tenant_uuid),

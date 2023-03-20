@@ -85,6 +85,11 @@ def dummy_request_populate():
         },
     }
 
+    dummy_parameters_schema = {
+        # "type": "object",
+        "test": {"method1": "a"}
+    }
+
     new_request = Request(
         **{
             "uuid": str(uuid.uuid4()),
@@ -104,7 +109,6 @@ def dummy_request_populate():
 
 def dummy_result_populate():
     dummy_parameters_schema = {
-        "type": "object",
         "DummyMethod1": {
             "internal_temperature": {
                 "value": 42,
@@ -126,7 +130,6 @@ def dummy_result_populate():
     }
 
     dummy_data_schema = {
-        "type": "object",
         "density(method1)": {
             "type": "number",
             "value": 33,

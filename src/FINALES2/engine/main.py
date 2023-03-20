@@ -36,7 +36,7 @@ class Engine:
 
         if len(query_out) == 0:
             return None
-
+        print(query_out)
         api_response = Result.from_db_result(query_out[0][0])
         return api_response
 
