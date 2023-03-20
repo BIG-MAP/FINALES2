@@ -62,7 +62,7 @@ def dummy_capability_populate():
 
 def dummy_request_populate():
     dummy_parameters_schema = {
-        "type": "object",
+        # "type": "object",
         "DummyMethod1": {
             "internal_temperature": {
                 "value": 42,
@@ -85,10 +85,10 @@ def dummy_request_populate():
         },
     }
 
-    dummy_parameters_schema = {
-        # "type": "object",
-        "test": {"method1": "a"}
-    }
+    # dummy_parameters_schema = {
+    #     # "type": "object",
+    #     "test": {"method1": "a"}
+    # }
 
     new_request = Request(
         **{
