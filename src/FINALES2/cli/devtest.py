@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import click
 
-from FINALES2.db import Quantity, Request, Result
+from FINALES2.db import Quantity, Request, Result, Tenant
 from FINALES2.db.session import get_db
 
 
@@ -20,7 +20,7 @@ def devtest_populate_db():
     dummy_capability_populate()
     dummy_request_populate()
     dummy_result_populate()
-    # dummy_tenant_populate()
+    dummy_tenant_populate()
 
 
 def session_commit(input):
@@ -33,7 +33,6 @@ def session_commit(input):
 
 def dummy_capability_populate():
     dummy_specification_schema = {
-        "type": "object",
         "properties": {
             "temperature": {
                 "type": "number",
@@ -62,7 +61,6 @@ def dummy_capability_populate():
 
 def dummy_request_populate():
     dummy_parameters_schema = {
-        # "type": "object",
         "DummyMethod1": {
             "internal_temperature": {
                 "value": 42,
@@ -84,11 +82,6 @@ def dummy_request_populate():
             }
         },
     }
-
-    # dummy_parameters_schema = {
-    #     # "type": "object",
-    #     "test": {"method1": "a"}
-    # }
 
     new_request = Request(
         **{
@@ -155,6 +148,96 @@ def dummy_result_populate():
     session_commit(new_result)
 
 
-# def dummy_tenant_populate():
-#     assert Tenant
-#     pass
+def dummy_tenant_populate():
+    dummy_capabilities_schema = {
+        "quantity1": {
+            "method1": {
+                "unit_of_measurement": "Dummy_unit1",
+                "necessary_input_for_method": {
+                    "voltage": {
+                        "type": "number",
+                        "unit": "mV",
+                        "description": "Description of the voltage needed",
+                    },
+                    "temperature": {
+                        "type": "number",
+                        "unit": "K",
+                        "description": "Description of the temp. needed",
+                    },
+                },
+            },
+            "method2": {
+                "unit_of_measurement": "Dummy_unit2",
+                "necessary_input_for_method": {
+                    "internal_temperature": {
+                        "type": "number",
+                        "unit": "K",
+                        "description": "Description of the internal temp. needed",
+                    }
+                },
+            },
+        },
+        "quantity2": {
+            "method3": {
+                "unit_of_measurement": "Dummy_unit3",
+                "necessary_input_for_method": {
+                    "functional": {
+                        "type": "str",
+                        "input_str": "PBE",
+                        "description": (
+                            "Description of the functional needed (simulation)"
+                        ),
+                    },
+                },
+            },
+        },
+    }
+    # type string for an input will not be accompanied by a unit...
+    #  TODO for tenant reference
+
+    dummy_limitations_schema = {
+        "quantity1": {
+            "method1": {
+                "range_for_measurement": {"from": 0.1, "to": 10, "unit": "Dummy_unit1"},
+                "range_for_parameters": {
+                    "voltage": {"from": 0.1, "to": 1000, "unit": "mV"},
+                    "temperature": {"from": 100, "to": 400, "unit": "K"},
+                },
+            },
+            "method2": {
+                "range_for_measurement": {
+                    "from": 11,
+                    "to": 12,
+                    "unit": "Dummy_unit2",
+                },
+                "range_for_parameters": {
+                    "internal_temperature": {"from": 100, "to": 200, "unit": "K"}
+                },
+            },
+        },
+        "quantity2": {
+            "method3": {
+                "range_for_measurement": {
+                    "from": 0,
+                    "to": 10000,
+                    "unit": "Dummy_unit3",
+                },
+                "range_for_parameters": {
+                    "functional": {"possible_input_str": ["PBE", "B3LYP"]}
+                },
+            },
+        },
+    }
+
+    new_tenant = Tenant(
+        **{
+            "uuid": str(uuid.uuid4()),
+            "name": "DTU - Dummy Technical University name",
+            "capabilities": dummy_capabilities_schema,
+            "limitations": dummy_limitations_schema,
+            "contact_person": "Firstname Lastname, email_of_dummy@dtu.dk",
+            "load_time": datetime.now(),
+        }
+    )
+
+    session_commit(new_tenant)
