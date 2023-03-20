@@ -92,7 +92,7 @@ def dummy_request_populate():
             "requesting_tenant_uuid": str(uuid.uuid4()),
             "requesting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
             "budget": None,
-            "status": str([[datetime.now(), 3]]),
+            "status": str([[datetime.now(), "pending"]]),
             "load_time": datetime.now(),
         }
     )
