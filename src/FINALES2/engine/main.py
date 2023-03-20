@@ -96,7 +96,6 @@ class Engine:
         # than the request, so the method is a list with a single entry and
         # the parameters is a dict with a single key, named the same as the
         # method.
-        wrapped_params = received_data.parameters
         method_name = received_data.method[0]
         wrapped_params = {method_name: received_data.parameters[method_name]}
         self.validate_submission(
@@ -111,7 +110,7 @@ class Engine:
         db_obj = DbResult(
             **{
                 "uuid": str(uuid.uuid4()),
-                "request_uuid": str(uuid.uuid4()),  # get from received data and check
+                "request_uuid": request_uuid,  # get from received data and check
                 "quantity": received_data.quantity,
                 "method": json.dumps(received_data.method),
                 "parameters": json.dumps(received_data.parameters),
