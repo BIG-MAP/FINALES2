@@ -92,7 +92,7 @@ def dummy_request_populate():
             "requesting_tenant_uuid": str(uuid.uuid4()),
             "requesting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
             "budget": None,
-            "status": str([datetime.now(), 3]),
+            "status": str([[datetime.now(), 3]]),
             "load_time": datetime.now(),
         }
     )
@@ -233,8 +233,8 @@ def dummy_tenant_populate():
         **{
             "uuid": str(uuid.uuid4()),
             "name": "DTU - Dummy Technical University name",
-            "capabilities": dummy_capabilities_schema,
-            "limitations": dummy_limitations_schema,
+            "capabilities": json.dumps(dummy_capabilities_schema),
+            "limitations": json.dumps(dummy_limitations_schema),
             "contact_person": "Firstname Lastname, email_of_dummy@dtu.dk",
             "load_time": datetime.now(),
         }

@@ -87,6 +87,12 @@ class Engine:
         # the parameters is a dict with a single key, named the same as the
         # method.
         wrapped_params = received_data.parameters
+        # Note: for the results we are currently using a similar structure
+        # than the request, so the method is a list with a single entry and
+        # the parameters is a dict with a single key, named the same as the
+        # method.
+        method_name = received_data.method[0]
+        wrapped_params = {method_name: received_data.parameters[method_name]}
         self.validate_submission(
             received_data.quantity, received_data.method, wrapped_params
         )
