@@ -203,3 +203,17 @@ class Engine:
                     break
             if not match_found:
                 raise ValueError(f"No records for this method: {method}")
+
+    def get_result_by_request(self, request_id: str) -> Optional[Result]:
+        """Return the result corresponding to a given request ID."""
+        query_inp = select(DbResult).where(
+            DbResult.request_uuid == uuid.UUID(request_id)
+        )
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        if len(query_out) == 0:
+            return None
+
+        api_response = Result.from_db_result(query_out[0][0])
+        return api_response
