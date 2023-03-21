@@ -1,7 +1,7 @@
 import json
 import time
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from uuid import UUID
 
 import requests
@@ -10,7 +10,8 @@ from pydantic import BaseModel
 import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig, User
 from FINALES2.server.schemas import Request
-from FINALES2.tenants.referenceMethod import prepare_my_result, run_my_method
+
+# from FINALES2.tenants.referenceMethod import prepare_my_result, run_my_method
 
 
 class Tenant(BaseModel):
@@ -18,7 +19,7 @@ class Tenant(BaseModel):
 
     :param BaseModel: The BaseModel of pydantic is used to provide type checking
     :type BaseModel: pydantic.BaseModel
-    :return: The instatiation returns an tenant object
+    :return: An instance of a tenant object
     :rtype: Tenant
     """
 
@@ -26,6 +27,8 @@ class Tenant(BaseModel):
     quantities: dict[str, Quantity]
     queue: list = []
     tenantConfig: Any
+    _run_method: Callable
+    _prepare_results: Callable
     FINALESServerConfig: ServerConfig
     endRuntime: Optional[datetime]
     operator: User
@@ -211,7 +214,7 @@ class Tenant(BaseModel):
 
     def _post_result(self, request: Request, data: Any):
         # transfer the output of your method to a postable result
-        result_formatted = prepare_my_result(request=request, data=data)
+        result_formatted = self._prepare_results(request=request, data=data)
 
         # post the result
         _postedResult = requests.post(
@@ -229,11 +232,6 @@ class Tenant(BaseModel):
         self.queue.remove(request)
         requestUUID = request["uuid"]
         print(f"Removed request with UUID {requestUUID} from the queue.")
-
-    def _run_method(self, method: str, parameters: dict):
-        # TODO: Add the way how you process the input
-        result = run_my_method(method=method, parameters=parameters)
-        return result
 
     def run(self):
         # run until the endRuntime is exceeded
