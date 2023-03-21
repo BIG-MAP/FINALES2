@@ -82,7 +82,6 @@ def test_Tenant_toJSON():
 
     # get the resulting JSON string
     JSON_result = test_tenant.to_json()
-    print(JSON_result)
 
     # compare the two results
     assert JSON_result == JSON_target, "The JSON strings do not match."
