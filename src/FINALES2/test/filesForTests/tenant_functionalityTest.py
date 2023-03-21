@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from FINALES2 import schemas
+from FINALES2.tenants.referenceMethod import prepare_my_result, run_my_method
 from FINALES2.tenants.referenceTenant import Tenant
 
 # get the tenant for testing
@@ -56,10 +57,13 @@ test_tenant3 = Tenant(
     operator=operator3,
     queue=[],
     quantities=quantities3,
+    run_method=run_my_method,
+    prepare_results=prepare_my_result,
     FINALESServerConfig=FINALESServerConfig3,
     endRuntime=endRuntime3,
     tenantUser=tenantUser3,
 )
+
 
 a = test_tenant3.to_json()
 b = Tenant.from_json(a)
