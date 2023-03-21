@@ -11,8 +11,6 @@ import FINALES2.server.config as config
 from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig, User
 from FINALES2.server.schemas import Request
 
-# from FINALES2.tenants.referenceMethod import prepare_my_result, run_my_method
-
 
 class Tenant(BaseModel):
     """A class to represent a tenant for a FINALES run.
