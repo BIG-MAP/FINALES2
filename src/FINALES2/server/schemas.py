@@ -62,7 +62,7 @@ class Request(BaseModel):
         """Initializes the object from the data of an orm object"""
         init_params = {
             "quantity": db_request.quantity,
-            "methods": eval(db_request.methods),
+            "methods": json.loads(db_request.methods),
             "parameters": json.loads(db_request.parameters),
             "tenant_uuid": str(db_request.requesting_tenant_uuid),
         }
@@ -82,7 +82,7 @@ class RequestInfo(BaseModel):
         init_params = {
             "uuid": str(db_request.uuid),
             "ctime": db_request.requesting_recieved_timestamp,
-            "status": eval(db_request.status),
+            "status": json.loads(db_request.status),
             "request": request_internals,
         }
 
@@ -103,7 +103,7 @@ class Result(BaseModel):
         init_params = {
             "data": json.loads(db_result.data),
             "quantity": db_result.quantity,
-            "method": eval(db_result.method),
+            "method": json.loads(db_result.method),
             "parameters": json.loads(db_result.parameters),
             "tenant_uuid": str(db_result.posting_tenant_uuid),
             "request_uuid": str(db_result.posting_tenant_uuid),

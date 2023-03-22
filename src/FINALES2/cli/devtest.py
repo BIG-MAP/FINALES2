@@ -44,6 +44,10 @@ def dummy_capability_populate():
         },
         "required": ["temperature"],
     }
+    print("\n" * 5)
+    print(dummy_specification_schema)
+    print(json.dumps(dummy_specification_schema))
+    print(type(json.dumps(dummy_specification_schema)))
 
     new_capability = Quantity(
         **{
@@ -87,12 +91,12 @@ def dummy_request_populate():
         **{
             "uuid": str(uuid.uuid4()),
             "quantity": "DummyQuantity",
-            "methods": str(["DummyMethod1", "DummyMethod2"]),
+            "methods": json.dumps(["DummyMethod1", "DummyMethod2"]),
             "parameters": json.dumps(dummy_parameters_schema),
             "requesting_tenant_uuid": str(uuid.uuid4()),
             "requesting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
             "budget": None,
-            "status": str([[datetime.now(), "pending"]]),
+            "status": json.dumps([[datetime.now(), "pending"]], default=str),
             "load_time": datetime.now(),
         }
     )
@@ -134,12 +138,12 @@ def dummy_result_populate():
             "uuid": str(uuid.uuid4()),
             "request_uuid": str(uuid.uuid4()),
             "quantity": "DummyQuantity",
-            "method": str(["DummyMethod1"]),
+            "method": json.dumps(["DummyMethod1"]),
             "parameters": json.dumps(dummy_parameters_schema),
             "data": json.dumps(dummy_data_schema),
             "posting_tenant_uuid": str(uuid.uuid4()),
             "cost": None,
-            "status": str([datetime.now(), 3]),
+            "status": json.dumps([datetime.now(), 3], default=str),
             "posting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
             "load_time": datetime.now(),
         }
