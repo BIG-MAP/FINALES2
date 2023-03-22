@@ -141,10 +141,9 @@ class Engine:
         """Return all pending requests."""
         # Currently it just gets all requests, status check pending
         query_inp = select(DbRequest).where(
-            DbRequest.status.like("%'" + RequestStatus.PENDING.value + "']]")
+            DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]')
         )
 
-        # query_inp = select(DbRequest.status)
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 

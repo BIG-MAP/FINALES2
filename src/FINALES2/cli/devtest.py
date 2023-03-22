@@ -44,10 +44,6 @@ def dummy_capability_populate():
         },
         "required": ["temperature"],
     }
-    print("\n" * 5)
-    print(dummy_specification_schema)
-    print(json.dumps(dummy_specification_schema))
-    print(type(json.dumps(dummy_specification_schema)))
 
     new_capability = Quantity(
         **{
@@ -143,7 +139,7 @@ def dummy_result_populate():
             "data": json.dumps(dummy_data_schema),
             "posting_tenant_uuid": str(uuid.uuid4()),
             "cost": None,
-            "status": json.dumps([datetime.now(), 3], default=str),
+            "status": json.dumps([datetime.now(), "3"], default=str),
             "posting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
             "load_time": datetime.now(),
         }
