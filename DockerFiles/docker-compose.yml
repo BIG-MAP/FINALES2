@@ -1,0 +1,18 @@
+# By ramirezfranciscof
+
+version: "3"
+
+services:
+  finales:
+    image: finales:v0.1
+    ports:
+      - 8888:8888
+    volumes:
+      - finales_data:/root/data
+    environment:
+      JUPYTER_TOKEN: "qwerty0123"
+      SHELL: "/bin/bash"
+
+volumes:
+  finales_data:
+    external: true
