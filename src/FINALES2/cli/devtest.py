@@ -1,11 +1,13 @@
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import click
 
-from FINALES2.db import Quantity, Request, Result, Tenant
+from FINALES2.db import Quantity, Tenant
 from FINALES2.db.session import get_db
+from FINALES2.engine.main import Engine
+from FINALES2.server.schemas import Request, Result
 
 
 @click.group("devtest")
@@ -42,7 +44,7 @@ def dummy_capability_populate():
                 ),
             }
         },
-        "required": ["temperature"],
+        "required": ["internal_temperature"],
     }
 
     new_capability = Quantity(
@@ -61,7 +63,7 @@ def dummy_capability_populate():
 
 def dummy_request_populate():
     dummy_parameters_schema = {
-        "DummyMethod1": {
+        "DummyMethod": {
             "internal_temperature": {
                 "value": 42,
                 "type": "number",
@@ -71,38 +73,24 @@ def dummy_request_populate():
                 ),
             }
         },
-        "DummyMethod2": {
-            "surrounding_temperature": {
-                "value": 101,
-                "type": "number",
-                "description": (
-                    "the surrounding temperature asked for by the request in Method2"
-                    " (this is just a temporary stand in)"
-                ),
-            }
-        },
     }
 
     new_request = Request(
         **{
-            "uuid": str(uuid.uuid4()),
             "quantity": "DummyQuantity",
-            "methods": json.dumps(["DummyMethod1", "DummyMethod2"]),
-            "parameters": json.dumps(dummy_parameters_schema),
-            "requesting_tenant_uuid": str(uuid.uuid4()),
-            "requesting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
-            "budget": None,
-            "status": json.dumps([[datetime.now(), "pending"]], default=str),
-            "load_time": datetime.now(),
+            "methods": ["DummyMethod"],
+            "parameters": dummy_parameters_schema,
+            "tenant_uuid": str(uuid.uuid4()),
         }
     )
 
-    session_commit(new_request)
+    engine = Engine()
+    engine.create_request(new_request)
 
 
 def dummy_result_populate():
     dummy_parameters_schema = {
-        "DummyMethod1": {
+        "DummyMethod": {
             "internal_temperature": {
                 "value": 42,
                 "type": "number",
@@ -129,23 +117,30 @@ def dummy_result_populate():
         },
     }
 
+    from sqlalchemy import select
+
+    from FINALES2.db import Request as DbRequest
+    from FINALES2.db.session import get_db
+
+    # Retrieve uuid for request currently in request table
+    query_inp = select(DbRequest.uuid)
+    with get_db() as session:
+        query_out = session.execute(query_inp).all()
+    present_request_id = str(query_out[0][0])
+
     new_result = Result(
         **{
-            "uuid": str(uuid.uuid4()),
-            "request_uuid": str(uuid.uuid4()),
+            "request_uuid": present_request_id,
             "quantity": "DummyQuantity",
-            "method": json.dumps(["DummyMethod1"]),
-            "parameters": json.dumps(dummy_parameters_schema),
-            "data": json.dumps(dummy_data_schema),
-            "posting_tenant_uuid": str(uuid.uuid4()),
-            "cost": None,
-            "status": json.dumps([datetime.now(), "3"], default=str),
-            "posting_recieved_timestamp": datetime.now() - timedelta(minutes=2),
-            "load_time": datetime.now(),
+            "method": ["DummyMethod"],
+            "parameters": dummy_parameters_schema,
+            "data": dummy_data_schema,
+            "tenant_uuid": str(uuid.uuid4()),
         }
     )
 
-    session_commit(new_result)
+    engine = Engine()
+    engine.create_result(new_result)
 
 
 def dummy_tenant_populate():

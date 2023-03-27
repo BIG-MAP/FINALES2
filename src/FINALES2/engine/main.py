@@ -96,6 +96,7 @@ class Engine:
         # than the request, so the method is a list with a single entry and
         # the parameters is a dict with a single key, named the same as the
         # method.
+
         method_name = received_data.method[0]
         wrapped_params = {method_name: received_data.parameters[method_name]}
         self.validate_submission(
@@ -190,7 +191,7 @@ class Engine:
                 )
 
         for method in methods:
-            if method not in parameters:
+            if method not in parameters.keys():
                 raise ValueError(
                     f"Method {method} not found in parameters: {parameters.keys()}"
                 )
