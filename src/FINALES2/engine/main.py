@@ -44,7 +44,6 @@ class Engine:
 
         if len(query_out) == 0:
             return None
-
         api_response = Result.from_db_result(query_out[0][0])
         return api_response
 
@@ -61,6 +60,7 @@ class Engine:
             request_data.quantity, request_data.methods, request_data.parameters
         )
         ctime = datetime.now()
+
         request_obj = DbRequest(
             **{
                 "uuid": str(uuid.uuid4()),
@@ -96,6 +96,7 @@ class Engine:
         # than the request, so the method is a list with a single entry and
         # the parameters is a dict with a single key, named the same as the
         # method.
+
         method_name = received_data.method[0]
         wrapped_params = {method_name: received_data.parameters[method_name]}
         self.validate_submission(
@@ -106,10 +107,11 @@ class Engine:
         query_inp = select(DbRequest).where(DbRequest.uuid == request_uuid)
 
         ctime = datetime.now()
+
         db_obj = DbResult(
             **{
                 "uuid": str(uuid.uuid4()),
-                "request_uuid": request_uuid,
+                "request_uuid": request_uuid,  # get from received data and check
                 "quantity": received_data.quantity,
                 "method": json.dumps(received_data.method),
                 "parameters": json.dumps(received_data.parameters),
@@ -142,6 +144,7 @@ class Engine:
         query_inp = select(DbRequest).where(
             DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]')
         )
+
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
@@ -188,7 +191,7 @@ class Engine:
                 )
 
         for method in methods:
-            if method not in parameters:
+            if method not in parameters.keys():
                 raise ValueError(
                     f"Method {method} not found in parameters: {parameters.keys()}"
                 )

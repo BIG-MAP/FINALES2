@@ -40,8 +40,8 @@ and getter like methods)
 (EXTRA: maybe consider using Mapping instead of Dict)
 (See: https://stackoverflow.com/a/37087556)
 """
+import datetime
 import json
-from datetime import datetime
 from typing import Any, Dict, List
 
 from pydantic import BaseModel
@@ -71,7 +71,7 @@ class Request(BaseModel):
 
 class RequestInfo(BaseModel):
     uuid: str
-    ctime: datetime
+    ctime: datetime.datetime
     status: List[List[Any]]  # List[Tuple[datetime, str]] - see note above
     request: Request
 
@@ -79,7 +79,6 @@ class RequestInfo(BaseModel):
     def from_db_request(cls, db_request: DbRequest):
         """Initializes the object from the data of an orm object"""
         request_internals = Request.from_db_request(db_request)
-
         init_params = {
             "uuid": str(db_request.uuid),
             "ctime": db_request.requesting_recieved_timestamp,
@@ -114,7 +113,7 @@ class Result(BaseModel):
 
 class ResultInfo(BaseModel):
     uuid: str
-    ctime: datetime
+    ctime: datetime.datetime
     status: List[List[Any]]  # List[Tuple[datetime, str]] - see note above
     result: Result
 
