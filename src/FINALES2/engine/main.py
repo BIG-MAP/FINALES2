@@ -217,3 +217,36 @@ class Engine:
 
         api_response = Result.from_db_result(query_out[0][0])
         return api_response
+
+    def get_all_results(
+        self,
+        quantity: Optional[str] = None,
+        method: Optional[str] = None,
+    ) -> List[Result]:
+        """Returns all results a given tenant has access to.
+
+        Currently there is no tenant verification so this just returns
+        all available results.
+
+        Filtering currently supported only for quantity and method.
+        """
+        query_inp = select(DbResult)
+        if quantity is not None:
+            query_inp = query_inp.where(DbResult.quantity == quantity)
+        if method is not None:
+            # NOTE: Currently method is stored as a string which contains a list
+            # with a single method. We should really consider having method be
+            # a single string in this case; but more in general this shows a big
+            # disadvantage of storing potentially queryable list/dict fields as
+            # serialized strings.
+            query_inp = query_inp.where(DbResult.method == f'["{method}"]')
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        api_response = []
+        for (result_info,) in query_out:
+            result_obj = Result.from_db_result(result_info)
+            api_response.append(result_obj)
+
+        return api_response
