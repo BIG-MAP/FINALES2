@@ -123,18 +123,79 @@ class Tenant(BaseModel):
                 attrsJSON[k] = datetime.fromisoformat(attr)
             if k == "queue":
                 attrsJSON[k] = eval(attr)
-        # instatiate a tenant bbject based on the resulting dictionary
         tenantObj = Tenant(**attrsJSON)
-        # return the tenant object
         return tenantObj
 
+    def _checkQuantity(self, request: Request) -> bool:
+        """This function checks, if a quantity in a request can be provided by the
+        tenant.
+
+        :param request: a request object, which contains all the information relevant
+        to the execution of the request
+        :type request: Request
+        :return: a boolean value stating, whether the requested quantity can be
+        provided by the tenant
+        :rtype: bool
+        """
+        requestedQuantity = request.quantity
+        tenantQuantitites = self.quantities.keys()
+        return requestedQuantity in tenantQuantitites
+
+    def _checkMethods(self, request: Request, requestedQuantity: str) -> list[str]:
+        """This function checks the methods in the request, if they are available in
+        from the tenant and returns the names of the matching methods in a list.
+
+        :param request: the requrest, which needs to be checked for feasibility
+        :type request: Request
+        :param requestedQuantity: the quantity, which shall be determined
+        :type requestedQuantity: str
+        :return: a list of the names of the methods, which can be performed by the
+        tenant and are requested in the request
+        :rtype: list[str]
+        """
+        tenantMethods = self.quantities[requestedQuantity].methods.keys()
+        requestedMethods = request.methods
+        # Collect all the matching methods in case the parameters are out of range
+        # for the first method found.
+        matchingMethods = []
+        for method in requestedMethods:
+            if method in tenantMethods:
+                matchingMethods.append(method)
+        return matchingMethods
+
+    def _checkParameters(self, request: Request, method: str) -> bool:
+        """_summary_
+
+        :param request: _description_
+        :type request: Request
+        :param method: _description_
+        :type method: str
+        :return: _description_
+        :rtype: bool
+        """
+        parametersCheck = []
+        requestParameters = request.parameters[method]
+        methodForQuantity = self.quantities[request.quantity].methods[method]
+        for p in requestParameters.keys():
+            tenantMin = methodForQuantity.limitations[p]["minimum"]
+            tenantMax = methodForQuantity.limitations[p]["maximum"]
+            minimumOK = requestParameters[p] > tenantMin
+            maximumOK = requestParameters[p] < tenantMax
+            parametersCheck.append(minimumOK and maximumOK)
+        parametersOK: bool = all(parametersCheck)
+        return parametersOK
+
     def _update_queue(self) -> None:
+        # empty the queue before recreating it to make sure, that all the requests
+        # listed in the queue are still pending and were not worked on by another
+        # tenant
+        self.queue.clear
+
         # get the pending requests from the FINALES server
-        pendingRequests = self._get_requests()
+        pendingRequests = self._get_pending_requests()
 
         # update the queue of the tenant
 
-        # get the relevant requests
         for pendingItem in pendingRequests:
             # create the Request object from the json string
             requestDict = pendingItem["request"]
@@ -142,40 +203,31 @@ class Tenant(BaseModel):
 
             # check, if the pending request fits with the tenant
             # check the quantity matches
-            quantityOK = request.quantity in [q for q in self.quantities.keys()]
-            if quantityOK:
-                # check methods
-                # the tenant at the moment
-                tenantMethods: list = []
-                for q in self.quantities.keys():
-                    tenantMethods.extend(self.quantities[q].methods.keys())
-                for method in tenantMethods:
-                    if method in request.methods:
-                        request.methods = [method]
-                        methodOK = True
-                    else:
-                        methodOK = False
-                if methodOK:
-                    # check parameters
-                    parametersCheck: list = []
-                    requestParameters = request.parameters[method]
-                    methodForQuantity = self.quantities[request.quantity].methods[
-                        request.methods[0]
-                    ]
-                    for p in requestParameters.keys():
-                        tenantMin = methodForQuantity.limitations[p]["minimum"]
-                        tenantMax = methodForQuantity.limitations[p]["maximum"]
-                        minimumOK = requestParameters[p] > tenantMin
-                        maximumOK = requestParameters[p] < tenantMax
-                        parametersCheck.append(minimumOK and maximumOK)
-                    parametersOK: bool = all(parametersCheck)
-            # summarize the checks
-            requestOK = quantityOK and methodOK and parametersOK
-            # if the request is ok and it is not yet in the tenant's queue
-            # add it
-            if requestOK and request not in self.queue:
-                pendingItem["request"] = request.__dict__
-                self.queue.append(pendingItem)
+            if not self._checkQuantity(request=request):
+                continue
+
+            # check, if the methods match with the tenant methods
+            # This overwrites the request object. If an appropriate method was found
+            # for the tenant, the methods list of the returned request only contains
+            # the found method. Otherwise, the returned request is unchanged to the
+            # original one
+            matchedMethods = self._checkMethods(
+                request=request, requestedQuantity=request.quantity
+            )
+            if matchedMethods == []:
+                continue
+
+            # check, if the parameters match with the tenant method
+            for method in matchedMethods:
+                if self._checkParameters(request=request, method=method):
+                    request.methods = [method]
+                    break
+
+            # Reassemble the pendingItem to collect the full request in the queue with
+            # only the method changed to the one, which can be performed by the tenant
+            pendingItem["request"] = request.__dict__
+
+            self.queue.append(pendingItem)
 
     def _get_requests(self) -> list[Request]:
         # login to the server
