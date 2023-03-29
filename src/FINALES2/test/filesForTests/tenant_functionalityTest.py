@@ -65,7 +65,5 @@ test_tenant3 = Tenant(
 )
 
 
-a = test_tenant3.to_json()
-b = Tenant.from_json(a)
-print(b)
-# test_tenant3.run()
+a = test_tenant3._get_requests()
+print(a)
