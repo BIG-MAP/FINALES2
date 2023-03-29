@@ -3,11 +3,8 @@ import uuid
 from datetime import datetime
 
 import click
-from sqlalchemy import select
 
-from FINALES2.db import Quantity
-from FINALES2.db import Request as DbRequest
-from FINALES2.db import Tenant
+from FINALES2.db import Quantity, Tenant
 from FINALES2.db.session import get_db
 from FINALES2.engine.main import Engine
 from FINALES2.server.schemas import Request, Result
@@ -88,14 +85,8 @@ def dummy_request_populate():
     )
 
     engine = Engine()
-    engine.create_request(new_request)
+    present_request_id = engine.create_request(new_request)
 
-    # Retrieve the uuid for the newly posted request, for the result table
-    query_inp = select(DbRequest.uuid)
-    with get_db() as session:
-        query_out = session.execute(query_inp).all()
-
-    present_request_id = str(query_out[-1][0])
     return present_request_id
 
 
