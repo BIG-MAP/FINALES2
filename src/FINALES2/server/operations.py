@@ -54,6 +54,13 @@ def get_pending_requests() -> List[RequestInfo]:
     return engine.get_pending_requests()
 
 
+@operations_router.get("/get/result_by_request/")
+def get_result_by_request(request_id: str) -> Optional[Result]:
+    """API endpoint to get a result by corresponding request ID."""
+    engine = Engine()
+    return engine.get_result_by_request(request_id)
+
+
 @operations_router.get("/get/capabilities/")
 def get_capabilities(currently_available=True) -> List[CapabilityInfo]:
     """API endpoint to get all capabilities."""
