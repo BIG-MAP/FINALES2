@@ -19,18 +19,18 @@ Follow these steps to set up Docker for deplying the latest development version 
 
     1. In a terminal, navigate to the directory, where the two files are saved
 
-    1. Run 'docker build -t finales:v0.1 .' (Do not overlook the trailing dot.)
+    1. Run `docker build -t finales:v0.1 .` (Do not overlook the trailing dot.)
 
-    1. Run 'docker-compose up'
+    1. Run `docker-compose up`
 
     1. Visit http://127.0.0.1:8888/lab?token=qwerty0123 in your browser to check, if the container is running or use the Docker desktop app for this
 
 
-1. Initialize the database of FINALES by running 'finales db init'
+1. Initialize the database of FINALES by running `finales db init`
 
-1. Populate the database with dummy values, if you need to retrieve data for your tests by running 'finales devtest populate-db'
+1. Populate the database with dummy values, if you need to retrieve data for your tests by running `finales devtest populate-db`
 
-1. Start the FINALES server by running 'finales server start --ip 0.0.0.0'
+1. Start the FINALES server by running `finales server start --ip 0.0.0.0`
 
 
 # Local installation of the package
