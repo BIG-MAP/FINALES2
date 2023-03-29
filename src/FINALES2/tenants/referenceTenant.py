@@ -232,18 +232,27 @@ class Tenant(BaseModel):
     def _get_requests(self) -> list[Request]:
         # login to the server
         print("Logging in ...")
-        # accessInfo = requests.post(
-        #     f"http://{self.FINALESServerConfig.host}:"
-        #     f"{self.FINALESServerConfig.port}/userManagement/authenticate",
-        #     data={},
-        #     headers={}
-        #     # data={
-        #     #     "username": self.tenantUser.username,
-        #     #     "password": self.tenantUser.password,
-        #     #     "grant_type": "password",
-        #     # },
-        #     # headers={"content-type": "application/x-www-form-urlencoded"},
-        # )
+        requests.post(
+            (
+                f"http://{self.FINALESServerConfig.host}:"
+                f"{self.FINALESServerConfig.port}/userManagement/authenticate/"
+            ),
+            data={
+                "grant_type": "",
+                "username": f"{self.tenantUser.username}",
+                "password": f"{self.tenantUser.password}",
+                "scope": "",
+                "client_id": "",
+                "client_secret": "",
+            },
+            params={
+                "userDB": f"{config.userDB}",
+            },
+            headers={
+                "accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+        )
         print("Looking for tasks...")
 
         # get the pending requests from the FINALES server
