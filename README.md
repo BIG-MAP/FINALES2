@@ -11,6 +11,9 @@ Documents related to this project and its broader context can be found on the re
 
 Follow these steps to set up Docker for deplying the latest development version of FINALES2.
 
+1. You need an ssh key for the reposiory. You can follow this tutorial to set it up: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+    1. If you encounter an error when running the command `$ ssh-keygen -t ed25519 -C "your_email@example.com"` stating, that the command is not found, try to type the command manually instead of copying and pasting it.
+
 1. Install Docker on your system (make sure to keep the WSL configuration unchanged)
 
 1. Download the docker file and the docker-compose.yml file from the FINALES2/Dockerfiles directory in the repository and save them to a directory of your choice
@@ -22,9 +25,45 @@ Follow these steps to set up Docker for deplying the latest development version 
     1. Run `docker build -t finales:v0.1 .` (Do not overlook the trailing dot.)
 
     1. Run `docker-compose up`
+        1. If the command `docker-compose up` raises the following error `external volume "finales_data" not found`, set the line 18 in the yaml file to `external: false`
 
     1. Visit http://127.0.0.1:8888/lab?token=qwerty0123 in your browser to check, if the container is running or use the Docker desktop app for this
 
+1. If you use VS code, download and install the following extensions:
+    1. Docker
+    1. Dev Containers
+
+1. Open the Docker Desktop application
+
+1. Click on the Docker icon in the left sided navigation bar in VS Code and start the container called finalesv0.1
+
+1. Click on the icon for the remote explorer in the left sided navigation bar in VS Code
+
+1. Find the finales2docker in the list, hover over it and click the left most icon that pops up
+
+1. This opens a new VS Code window within the Docker
+
+1. Open the root folder "\"
+
+1. Navigate to the directory called "data"
+
+1. Create a folder called "ssh_keys"
+
+1. Create a file called "github_key" and add your private key to this file
+
+1. Navigate into the "ssh_keys" directory
+
+1. Use the command `chmod 400 github_key` to change the permissions of the "github_key" file to read only
+
+1. Navigate back to the "data" directory and clone the FINALES2 Github repository
+
+# Get started with FINALES2
+
+1. Install the FINALES2 package in editable mode
+    1. Navigate to the FINALES2 repository in the Docker
+    1. `pip install -e .`
+
+# Start FINALES2
 
 1. Initialize the database of FINALES by running `finales db init`
 
