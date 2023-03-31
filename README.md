@@ -24,8 +24,9 @@ Follow these steps to set up Docker for deplying the latest development version 
 
     1. Run `docker build -t finales:v0.1 .` (Do not overlook the trailing dot.)
 
+    1. Run `docker volume create finales_data`
+
     1. Run `docker-compose up`
-        1. If the command `docker-compose up` raises the following error `external volume "finales_data" not found`, set the line 18 in the yaml file to `external: false`
 
     1. Visit http://127.0.0.1:8888/lab?token=qwerty0123 in your browser to check, if the container is running or use the Docker desktop app for this
 
