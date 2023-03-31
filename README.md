@@ -74,7 +74,7 @@ Follow these steps to set up Docker for deplying the latest development version 
 
 # Local installation of the package
 
-The FINALES2 repository has a file structures, which allows it to be installed like a regular Python package using pip. For this to work, please follow the steps below:
+The FINALES2 repository has a file structure, which allows it to be installed like a regular Python package using pip. For this to work, please follow the steps below:
 
 1. Clone the repository to your local machine.
 
