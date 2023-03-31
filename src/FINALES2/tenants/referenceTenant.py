@@ -164,13 +164,17 @@ class Tenant(BaseModel):
         return matchingMethods
 
     def _checkParameters(self, request: Request, method: str) -> bool:
-        """_summary_
+        """This function checks the requested parameters for their compatibility
+        with the tenant.
 
-        :param request: _description_
+        :param request: a request containing the parameters to use when processing
+        the request
         :type request: Request
-        :param method: _description_
+        :param method: the method already identified as being compatible between the
+        request and the tenant
         :type method: str
-        :return: _description_
+        :return: a boolean indicating, whether the parameters of the request are
+        within the limitations of the tenant (True) or not (False)
         :rtype: bool
         """
         parametersCheck = []
@@ -186,6 +190,7 @@ class Tenant(BaseModel):
         return parametersOK
 
     def _update_queue(self) -> None:
+        """This function clears and recreates the queue of the tenant."""
         # empty the queue before recreating it to make sure, that all the requests
         # listed in the queue are still pending and were not worked on by another
         # tenant
@@ -229,7 +234,12 @@ class Tenant(BaseModel):
 
             self.queue.append(pendingItem)
 
-    def _get_requests(self) -> list[Request]:
+    def _get_pending_requests(self) -> list[dict]:
+        """This funciton collecte all the pending requests from the server.
+
+        :return: a list of requests in JSON format
+        :rtype: list[dict]
+        """
         # login to the server
         print("Logging in ...")
         requests.post(
@@ -272,6 +282,13 @@ class Tenant(BaseModel):
         pass
 
     def _post_result(self, request: Request, data: Any):
+        """This function posts a result generated in reply to a request.
+
+        :param request: a request specifying the details of the requested data
+        :type request: Request
+        :param data: the data generated while serving the request
+        :type data: Any
+        """
         # transfer the output of your method to a postable result
         result_formatted = self._prepare_results(request=request, data=data)
 
@@ -293,6 +310,10 @@ class Tenant(BaseModel):
         print(f"Removed request with UUID {requestUUID} from the queue.")
 
     def run(self):
+        """This function runs the tenant in a loop - getting all the requests from
+        the server, checking them for their compatibility with the tenant and posting
+        them to the server.
+        """
         # run until the endRuntime is exceeded
         # this is intended for maintenance like refilling consumables,
         # for which a time can roughly be estimated

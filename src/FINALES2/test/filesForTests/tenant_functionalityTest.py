@@ -65,5 +65,5 @@ test_tenant3 = Tenant(
 )
 
 
-a = test_tenant3._get_requests()
+a = test_tenant3._get_pending_requests()
 print(a)
