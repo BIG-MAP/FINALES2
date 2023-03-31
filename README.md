@@ -30,6 +30,7 @@ Follow these steps to set up Docker for deplying the latest development version 
 
     1. Visit http://127.0.0.1:8888/lab?token=qwerty0123 in your browser to check, if the container is running or use the Docker desktop app for this
 
+The first two commands are only ran the first time and are used to create the image and the volume (for data persistence) respectively. The third command uses the image to start a container: it will block the terminal when it is executed but it can be stopped by pressing the <CTRL + C> keys. This will also stop the container, but then it can be restarted by running the command again. Once again, you don't need to re-create the image and the volume each time you restart the container (unless you specifically want to update the software inside the container or delete the old data), you just need to re-run this last command.
 1. If you use VS code, download and install the following extensions:
     1. Docker
     1. Dev Containers
