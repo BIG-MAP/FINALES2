@@ -61,6 +61,16 @@ def get_result_by_request(request_id: str) -> Optional[Result]:
     return engine.get_result_by_request(request_id)
 
 
+@operations_router.get("/get/all_results/")
+def get_all_results(
+    quantity: Optional[str] = None,
+    method: Optional[str] = None,
+) -> List[Result]:
+    """API endpoint to get all result available to the tenant requesting."""
+    engine = Engine()
+    return engine.get_all_results(quantity=quantity, method=method)
+
+
 @operations_router.get("/get/capabilities/")
 def get_capabilities(currently_available=True) -> List[CapabilityInfo]:
     """API endpoint to get all capabilities."""
