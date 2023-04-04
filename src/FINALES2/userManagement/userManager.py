@@ -42,7 +42,6 @@ class UserDB:
         Output:
         This function has no output
         """
-
         # Connect to this database and set the cursor
         self.connection: sqlite3.Connection = sqlite3.connect(savepath)
         self.connection.row_factory = sqlite3.Row
@@ -246,7 +245,6 @@ def newUser(
     Outputs:
     This function has no output.
     """
-
     # Create the new user in the database and print a message to the operator about the
     # newly created user.
     createUser(
@@ -446,7 +444,7 @@ def authenticate(
         tokenData={"sub": thisUser.username}, expirationMin=tokenExpiration
     )
     # Print an information to the user
-    print("Welcome to FINALES2!")
+    print(f"Welcome to FINALES2! You are logged in as {loginForm.username}.")
     # Assemble and return the access information
     accessInfo = {"access_token": accessToken, "token_type": "bearer"}
     return accessInfo
