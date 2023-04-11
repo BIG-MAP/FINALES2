@@ -1,0 +1,31 @@
+
+{
+    "quantity": "viscosity",
+    "method": "rollingBallViscometry",
+    "specifications":
+    {
+        "properties": {
+            "mixingRatio": {
+                "type": "dict[str, number]",
+                "description": "This is a dictionary of the names of chemicals as keys and their molar fraction in the mixture as values"
+            },
+            "fraction": {
+                "type": "str",
+                "description": "This is the type of fraction used in the mixingRatio. Currently 'molPerMol' or 'direct' are supported for this."
+            },
+            "chemicals": {
+                "type": "file",
+                "description": "This is a csv file specifying all the chemicals available in the system. This is supplied by the operator."
+            },
+            "stockSolutions": {
+                "type": "file",
+                "description": "This is a csv file specifying all the stock solutions supplied to the setup. This is supplied by the operator"
+            },
+            "measurement": {
+                "type": "str",
+                "description": "This is a string specifying, which measurement is requested. It can either be 'densiVisco' or 'nmr'."
+            }
+        },
+        "required": ["mixingRatio", "fraction"]
+    }
+}
