@@ -48,6 +48,7 @@ def db_add_capability(input_filepath):
     capability_data["quantity"] = capability_data["quantity"]
     capability_data["method"] = capability_data["method"]
     capability_data["specifications"] = json.dumps(capability_data["specifications"])
+    capability_data["result_output"] = json.dumps(capability_data["result_output"])
     capability_data["is_active"] = 1
     new_capability = Quantity(**capability_data)
 

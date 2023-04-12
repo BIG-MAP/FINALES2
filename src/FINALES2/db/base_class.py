@@ -28,6 +28,7 @@ class Base:
     SPECIFICATIONS_STRING_SIZE = 5000
     PARAMETERS_STRING_SIZE = 5000
     DATA_STRING_SIZE = 5000
+    RESULT_STRING_SIZE = 5000
 
     # to generate tablename from classname
     @declared_attr

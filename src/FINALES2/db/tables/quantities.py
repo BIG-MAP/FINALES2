@@ -36,6 +36,10 @@ class Quantity(Base):
         String(Base.SPECIFICATIONS_STRING_SIZE),
         nullable=False,
     )
+    result_output = Column(
+        String(Base.RESULT_STRING_SIZE),
+        nullable=False,
+    )
     is_active = Column(Boolean(), default=True)
     load_time = Column(
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
