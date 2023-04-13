@@ -121,7 +121,8 @@ class ResultInfo(BaseModel):
 class CapabilityInfo(BaseModel):
     quantity: str
     method: str
-    json_schema: Dict[str, Any]
+    json_schema_specifications: Dict[str, Any]
+    json_schema_result_output: Dict[str, Any]
 
     @classmethod
     def from_db_quantity(cls, db_quantity: DbQuantity):
@@ -129,6 +130,7 @@ class CapabilityInfo(BaseModel):
         init_params = {
             "quantity": db_quantity.quantity,
             "method": db_quantity.method,
-            "json_schema": json.loads(db_quantity.specifications),
+            "json_schema_specifications": json.loads(db_quantity.specifications),
+            "json_schema_result_output": json.loads(db_quantity.result_output),
         }
         return cls(**init_params)

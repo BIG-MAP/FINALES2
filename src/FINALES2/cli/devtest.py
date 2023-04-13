@@ -47,12 +47,18 @@ def dummy_capability_populate():
         "required": ["internal_temperature"],
     }
 
+    dummy_result_output_schema = {
+        "Dummy": "Dummy"
+        # Setup depends on the output given by Fransisco TODO
+    }
+
     new_capability = Quantity(
         **{
             "uuid": str(uuid.uuid4()),
             "quantity": "DummyQuantity",
             "method": "DummyMethod",
             "specifications": json.dumps(dummy_specification_schema),
+            "result_output": json.dumps(dummy_result_output_schema),
             "is_active": True,
             "load_time": datetime.now(),
         }
