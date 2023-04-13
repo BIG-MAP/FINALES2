@@ -45,11 +45,7 @@ def db_add_capability(input_filepath):
 
     # This should maybe be done through the engine or another internal submodule
     capability_data["uuid"] = str(uuid.uuid4())
-    capability_data["quantity"] = capability_data["quantity"]
-    capability_data["method"] = capability_data["method"]
     capability_data["specifications"] = json.dumps(capability_data["specifications"])
-    capability_data["result_output"] = json.dumps(capability_data["result_output"])
-    capability_data["is_active"] = 1
     new_capability = Quantity(**capability_data)
 
     with get_db() as session:
