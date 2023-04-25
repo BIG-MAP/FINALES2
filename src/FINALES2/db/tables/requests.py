@@ -9,8 +9,7 @@ class Request(Base):
     """
     Class defining the request table with the following columns:
         uuid (UUIDType (32)):   uuid of the row quantity row entry
-        quantity (String):      Type of quantity
-        methods (String):       List of of methods within the quantity that are
+        methods_uuid (String):  List of uuid methods within the quantity that are
                                 acceptable
         parameters (String):    Parameters requested for the all possible methods
         requesting_tenant_uuid (String): Json string with the specifications of the
@@ -28,8 +27,10 @@ class Request(Base):
         primary_key=True,
         nullable=False,
     )
-    quantity = Column(String(Base.QUANTITY_STRING_SIZE), nullable=False)
-    methods = Column(String(Base.METHOD_STRING_SIZE), nullable=False)
+    methods_uuid = Column(
+        String(Base.METHODS_UUID_STRING_SIZE),
+        nullable=False,
+    )
     parameters = Column(String(Base.PARAMETERS_STRING_SIZE), nullable=False)
     requesting_tenant_uuid = Column(
         UUIDType(binary=False),

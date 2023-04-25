@@ -58,7 +58,7 @@ class Request(BaseModel):
     tenant_uuid: str
 
     @classmethod
-    def from_db_request(cls, db_request: DbRequest):
+    def from_db_request(cls, db_request):
         """Initializes the object from the data of an orm object"""
         init_params = {
             "quantity": db_request.quantity,

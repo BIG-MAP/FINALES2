@@ -33,6 +33,26 @@ class Engine:
         if len(query_out) == 0:
             return None
 
+        # Getting the methods and quantity from the uuid
+        methods_uuid_str = json.loads(query_out[0][0].methods_uuid)
+        methods_uuid = [uuid.UUID(entry) for entry in methods_uuid_str]
+        query_inp_method_retrieval = select(DbQuantity).where(
+            DbQuantity.uuid.in_(methods_uuid)
+        )
+        with get_db() as session:
+            query_out_method_retrieval = session.execute(
+                query_inp_method_retrieval
+            ).all()
+
+        quantity = query_out_method_retrieval[0][0].quantity
+        methods = []
+        for (methods_iter,) in query_out_method_retrieval:
+            methods.append(methods_iter.method)
+
+        # Adding the additional information to the Reqeust class
+        query_out[0][0].quantity = quantity
+        query_out[0][0].methods = json.dumps(methods)
+
         api_response = Request.from_db_request(query_out[0][0])
         return api_response
 
@@ -54,6 +74,9 @@ class Engine:
         the internal schema that corresponds to the quantity + method
         capability.
 
+        Then the uuid corresponding to the method for the request will be retrieved
+        to be stored with the request.
+
         When creating the request object, it assigns a new uuid (and returns it).
         """
         self.validate_submission(
@@ -61,11 +84,23 @@ class Engine:
         )
         ctime = datetime.now()
 
+        # Retrieving the uuid from the quantity table for the specific method
+        quantity = request_data.quantity
+        method = request_data.methods[0]
+        query_inp = select(DbQuantity.uuid).where(
+            DbQuantity.method == method, DbQuantity.quantity == quantity
+        )
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        methods_uuid = []
+        for (method_uuid,) in query_out:
+            methods_uuid.append(str(method_uuid))
+
         request_obj = DbRequest(
             **{
                 "uuid": str(uuid.uuid4()),
-                "quantity": request_data.quantity,
-                "methods": json.dumps(request_data.methods),
+                "methods_uuid": json.dumps(methods_uuid),
                 "parameters": json.dumps(request_data.parameters),
                 "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "requesting_recieved_timestamp": ctime,
@@ -140,6 +175,20 @@ class Engine:
 
     def get_pending_requests(self) -> List[RequestInfo]:
         """Return all pending requests."""
+        # Starts by retrieving all uuid from the quantities for retireving methods and
+        # quantities
+        query_inp_quantity = select(DbQuantity)
+
+        with get_db() as session:
+            query_out_quantity = session.execute(query_inp_quantity).all()
+
+        quantity_dict = {}
+        for (quantity_entry,) in query_out_quantity:
+            quantity_dict[str(quantity_entry.uuid)] = [
+                quantity_entry.quantity,
+                quantity_entry.method,
+            ]
+
         # Currently it just gets all requests, status check pending
         query_inp = select(DbRequest).where(
             DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]')
@@ -150,6 +199,14 @@ class Engine:
 
         api_response = []
         for (request_info,) in query_out:
+            methods_uuid = json.loads(request_info.methods_uuid)
+            methods = []
+            for method_uuid in methods_uuid:
+                quantity, method = quantity_dict[method_uuid]
+                methods.append(method)
+            request_info.quantity = quantity
+            request_info.methods = json.dumps(methods)
+
             request_obj = RequestInfo.from_db_request(request_info)
             api_response.append(request_obj)
 
