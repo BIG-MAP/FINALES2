@@ -85,7 +85,6 @@ def dummy_request_populate():
         **{
             "quantity": "DummyQuantity",
             "methods": ["DummyMethod"],
-            "uuid_methods": ["DummyMethod"],
             "parameters": dummy_parameters_schema,
             "tenant_uuid": str(uuid.uuid4()),
         }
