@@ -49,11 +49,9 @@ class Engine:
         for (methods_iter,) in query_out_method_retrieval:
             methods.append(methods_iter.method)
 
-        # Adding the additional information to the Reqeust class
-        query_out[0][0].quantity = quantity
-        query_out[0][0].methods = json.dumps(methods)
-
-        api_response = Request.from_db_request(query_out[0][0])
+        api_response = Request.from_db_request(
+            query_out[0][0], quantity, json.dumps(methods)
+        )
         return api_response
 
     def get_result(self, object_id: str) -> Optional[Result]:
@@ -204,10 +202,10 @@ class Engine:
             for method_uuid in methods_uuid:
                 quantity, method = quantity_dict[method_uuid]
                 methods.append(method)
-            request_info.quantity = quantity
-            request_info.methods = json.dumps(methods)
 
-            request_obj = RequestInfo.from_db_request(request_info)
+            request_obj = RequestInfo.from_db_request(
+                request_info, quantity, json.dumps(methods)
+            )
             api_response.append(request_obj)
 
         return api_response

@@ -58,11 +58,11 @@ class Request(BaseModel):
     tenant_uuid: str
 
     @classmethod
-    def from_db_request(cls, db_request):
+    def from_db_request(cls, db_request: DbRequest, quantity, methods):
         """Initializes the object from the data of an orm object"""
         init_params = {
-            "quantity": db_request.quantity,
-            "methods": json.loads(db_request.methods),
+            "quantity": quantity,
+            "methods": json.loads(methods),
             "parameters": json.loads(db_request.parameters),
             "tenant_uuid": str(db_request.requesting_tenant_uuid),
         }
@@ -76,9 +76,9 @@ class RequestInfo(BaseModel):
     request: Request
 
     @classmethod
-    def from_db_request(cls, db_request: DbRequest):
+    def from_db_request(cls, db_request: DbRequest, quantity, methods):
         """Initializes the object from the data of an orm object"""
-        request_internals = Request.from_db_request(db_request)
+        request_internals = Request.from_db_request(db_request, quantity, methods)
         init_params = {
             "uuid": str(db_request.uuid),
             "ctime": db_request.requesting_recieved_timestamp,
