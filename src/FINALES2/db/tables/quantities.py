@@ -27,20 +27,22 @@ class Quantity(Base):
         primary_key=True,
         nullable=False,
     )
-    quantity = Column(String(Base.QUANTITY_STRING_SIZE), nullable=False)
+    quantity = Column(String, nullable=False)
     method = Column(
-        String(Base.METHOD_STRING_SIZE),
+        String,
         nullable=False,
     )
     specifications = Column(
-        String(Base.SPECIFICATIONS_STRING_SIZE),
+        String,
         nullable=False,
     )
     result_output = Column(
-        String(Base.RESULT_STRING_SIZE),
+        String,
         nullable=False,
     )
     is_active = Column(Boolean(), default=True)
     load_time = Column(
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
+
+    # uuid_link_quantity = relationship("LinkQuantityRequest", backref="quantity")

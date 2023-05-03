@@ -32,20 +32,20 @@ class Result(Base):
         ForeignKey("request.uuid"),
         nullable=False,
     )
-    quantity = Column(String(Base.QUANTITY_STRING_SIZE), nullable=False)
-    method = Column(String(Base.METHOD_STRING_SIZE), nullable=False)
+    quantity = Column(String, nullable=False)
+    method = Column(String, nullable=False)
     parameters = Column(
-        String(Base.PARAMETERS_STRING_SIZE),
+        String,
         nullable=False,
     )
-    data = Column(String(Base.DATA_STRING_SIZE), nullable=False)
+    data = Column(String, nullable=False)
     posting_tenant_uuid = Column(
         UUIDType(binary=False),
         nullable=False,
     )
 
-    cost = Column(String(Base.COST_STRING_SIZE), nullable=True)
-    status = Column(String(Base.STATUS_STRING_SIZE), nullable=False)
+    cost = Column(String, nullable=True)
+    status = Column(String, nullable=False)
     posting_recieved_timestamp = Column(
         DateTime,
         nullable=False,

@@ -45,10 +45,13 @@ import json
 from typing import Any, Dict, List
 
 from pydantic import BaseModel
+from sqlalchemy import select
 
+from FINALES2.db import LinkQuantityRequest as DBLinkQuantityRequest
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
+from FINALES2.db.session import get_db
 
 
 class Request(BaseModel):
@@ -58,11 +61,33 @@ class Request(BaseModel):
     tenant_uuid: str
 
     @classmethod
-    def from_db_request(cls, db_request: DbRequest, quantity, methods):
+    def from_db_request(cls, db_request: DbRequest):
         """Initializes the object from the data of an orm object"""
+
+        # Retrieving methods and quantity
+        query_inp = (
+            select(DbQuantity.quantity, DbQuantity.method)
+            .join(DBLinkQuantityRequest)
+            .join(DbRequest)
+            .where(DbRequest.uuid == DBLinkQuantityRequest.request_uuid)
+            .where(DbQuantity.uuid == DBLinkQuantityRequest.method_uuid)
+        )
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        # Constructs methods list
+        methods = []
+        for (
+            quantity_iter,
+            methods_iter,
+        ) in query_out:
+            methods.append(methods_iter)
+        quantity = quantity_iter
+
         init_params = {
             "quantity": quantity,
-            "methods": json.loads(methods),
+            "methods": methods,
             "parameters": json.loads(db_request.parameters),
             "tenant_uuid": str(db_request.requesting_tenant_uuid),
         }
@@ -76,9 +101,9 @@ class RequestInfo(BaseModel):
     request: Request
 
     @classmethod
-    def from_db_request(cls, db_request: DbRequest, quantity, methods):
+    def from_db_request(cls, db_request: DbRequest):
         """Initializes the object from the data of an orm object"""
-        request_internals = Request.from_db_request(db_request, quantity, methods)
+        request_internals = Request.from_db_request(db_request)
         init_params = {
             "uuid": str(db_request.uuid),
             "ctime": db_request.requesting_recieved_timestamp,

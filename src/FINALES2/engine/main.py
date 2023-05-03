@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 from jsonschema import validate
 from sqlalchemy import select
 
+from FINALES2.db import LinkQuantityRequest as DbLinkQuantityRequest
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
@@ -33,25 +34,7 @@ class Engine:
         if len(query_out) == 0:
             return None
 
-        # Getting the methods and quantity from the uuid
-        methods_uuid_str = json.loads(query_out[0][0].methods_uuid)
-        methods_uuid = [uuid.UUID(entry) for entry in methods_uuid_str]
-        query_inp_method_retrieval = select(DbQuantity).where(
-            DbQuantity.uuid.in_(methods_uuid)
-        )
-        with get_db() as session:
-            query_out_method_retrieval = session.execute(
-                query_inp_method_retrieval
-            ).all()
-
-        quantity = query_out_method_retrieval[0][0].quantity
-        methods = []
-        for (methods_iter,) in query_out_method_retrieval:
-            methods.append(methods_iter.method)
-
-        api_response = Request.from_db_request(
-            query_out[0][0], quantity, json.dumps(methods)
-        )
+        api_response = Request.from_db_request(query_out[0][0])
         return api_response
 
     def get_result(self, object_id: str) -> Optional[Result]:
@@ -82,23 +65,10 @@ class Engine:
         )
         ctime = datetime.now()
 
-        # Retrieving the uuid from the quantity table for the specific method
-        quantity = request_data.quantity
-        method = request_data.methods[0]
-        query_inp = select(DbQuantity.uuid).where(
-            DbQuantity.method == method, DbQuantity.quantity == quantity
-        )
-        with get_db() as session:
-            query_out = session.execute(query_inp).all()
-
-        methods_uuid = []
-        for (method_uuid,) in query_out:
-            methods_uuid.append(str(method_uuid))
-
+        request_uuid = str(uuid.uuid4())
         request_obj = DbRequest(
             **{
-                "uuid": str(uuid.uuid4()),
-                "methods_uuid": json.dumps(methods_uuid),
+                "uuid": request_uuid,
                 "parameters": json.dumps(request_data.parameters),
                 "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "requesting_recieved_timestamp": ctime,
@@ -109,10 +79,38 @@ class Engine:
             }
         )
 
+        link_uuid = str(uuid.uuid4())
         with get_db() as session:
+            # Add the request to the session
             session.add(request_obj)
+
+            # Loop thorugh the methods to add entries to DbLinkQuantityRequest
+            list_of_link_quantity_request_obj = []
+            for method in request_data.methods:
+                # Find uuid for method in quantity table
+                query_inp_methods = (
+                    select(DbQuantity.uuid)
+                    .where(DbQuantity.quantity == request_data.quantity)
+                    .where(DbQuantity.method == method)
+                    .where(DbQuantity.is_active == 1)
+                )
+                query_out = session.execute(query_inp_methods).all()
+                uuid_method = query_out[0][0]
+
+                link_quantity_request_obj = DbLinkQuantityRequest(
+                    **{
+                        "link_uuid": link_uuid,
+                        "method_uuid": uuid_method,
+                        "request_uuid": request_uuid,
+                    }
+                )
+                list_of_link_quantity_request_obj.append(link_quantity_request_obj)
+                session.add(link_quantity_request_obj)
+
             session.commit()
             session.refresh(request_obj)
+            for link_object in list_of_link_quantity_request_obj:
+                session.refresh(link_object)
 
         return str(request_obj.uuid)
 
@@ -173,20 +171,6 @@ class Engine:
 
     def get_pending_requests(self) -> List[RequestInfo]:
         """Return all pending requests."""
-        # Starts by retrieving all uuid from the quantities for retireving methods and
-        # quantities
-        query_inp_quantity = select(DbQuantity)
-
-        with get_db() as session:
-            query_out_quantity = session.execute(query_inp_quantity).all()
-
-        quantity_dict = {}
-        for (quantity_entry,) in query_out_quantity:
-            quantity_dict[str(quantity_entry.uuid)] = [
-                quantity_entry.quantity,
-                quantity_entry.method,
-            ]
-
         # Currently it just gets all requests, status check pending
         query_inp = select(DbRequest).where(
             DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]')
@@ -197,15 +181,7 @@ class Engine:
 
         api_response = []
         for (request_info,) in query_out:
-            methods_uuid = json.loads(request_info.methods_uuid)
-            methods = []
-            for method_uuid in methods_uuid:
-                quantity, method = quantity_dict[method_uuid]
-                methods.append(method)
-
-            request_obj = RequestInfo.from_db_request(
-                request_info, quantity, json.dumps(methods)
-            )
+            request_obj = RequestInfo.from_db_request(request_info)
             api_response.append(request_obj)
 
         return api_response
