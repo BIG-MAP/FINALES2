@@ -8,9 +8,8 @@ from jose import jwt
 from passlib.context import CryptContext
 from pytest import raises
 
-from FINALES2.schemas import User
 from FINALES2.test.filesForTests import test_config
-from FINALES2.userManagement import userManager
+from FINALES2.user_management import User, user_manager
 
 
 def test_UserDB_init():
@@ -25,7 +24,7 @@ def test_UserDB_init():
     # Test Case 1: New user database
 
     # Create the user database
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
 
     # Get the target list of column names
     columns_target = list(User.__annotations__.keys()) + [
@@ -50,7 +49,7 @@ def test_UserDB_init():
     # Test Case 2: Work with existing database
 
     # Reconnect to the existing database
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
 
     # Get the resulting list of column names
     allColumns = db.cursor.execute("SELECT * FROM users")
@@ -69,7 +68,7 @@ def test_UserDB_init():
 
 def test_UserDB_closeConnection():
     # Connect to the user database or create a new one
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     db.closeConnection()
 
     with raises(ProgrammingError):
@@ -77,7 +76,7 @@ def test_UserDB_closeConnection():
 
 
 def test_UserDB_addNewUser():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     user = User(
         username="testUser",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -96,8 +95,8 @@ def test_UserDB_addNewUser():
                 i
             ], f"The found data is {data_result[i]} instead of {data_target[i]}."
         else:
-            data_result[i] == userManager.hashPassword(data_target[i]), (
-                f"The found data is {userManager.hashPassword(data_result[i])} "
+            data_result[i] == user_manager.hashPassword(data_target[i]), (
+                f"The found data is {user_manager.hashPassword(data_result[i])} "
                 f"instead of {data_target[i]}."
             )
     # TODO: check the timestamps#, '2023-01-14 17:06:17.416907'
@@ -106,7 +105,7 @@ def test_UserDB_addNewUser():
 
 
 def test_UserDB_userFromRow():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     referenceUser = User(
         username="testUser2",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -138,7 +137,7 @@ def test_UserDB_userFromRow():
 
 
 def test_UserDB_getSingleUser():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     referenceUser = User(
         username="testUser3",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -153,7 +152,7 @@ def test_UserDB_getSingleUser():
 
     for attr in referenceUser.allAttributes():
         if attr == "password":
-            assert userManager.verifyPassword(
+            assert user_manager.verifyPassword(
                 password=referenceUser.__getattribute__(attr),
                 passwordHash=user_result.__getattribute__(attr),
             )
@@ -164,7 +163,7 @@ def test_UserDB_getSingleUser():
 
 
 def test_UserDB_getAllUsers():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     allUsers_result = db.getAllUsers()
     allUsers_reference = [
         User(
@@ -203,7 +202,7 @@ def test_UserDB_getAllUsers():
             allUsers_reference[i].uuid == allUsers_result[i].uuid
         ), f"The uuid is {allUsers_result[i].uuid} instead "
         "of {allUsers_reference[i].uuid}."
-        assert userManager.verifyPassword(
+        assert user_manager.verifyPassword(
             allUsers_reference[i].password, allUsers_result[i].password
         ), "The passwords to not match."
 
@@ -216,7 +215,7 @@ def test_createUser():
         usergroups=["1", "2", "3"],
     )
 
-    user_result2 = userManager.createUser(
+    user_result2 = user_manager.createUser(
         username=referenceUser2.username,
         password=referenceUser2.password,
         usergroups=referenceUser2.usergroups,
@@ -225,7 +224,7 @@ def test_createUser():
 
     for attr in referenceUser2.allAttributes():
         if attr == "password":
-            assert userManager.verifyPassword(
+            assert user_manager.verifyPassword(
                 password=referenceUser2.__getattribute__(attr),
                 passwordHash=user_result2.__getattribute__(attr),
             ), "The password of the user does not match the target."
@@ -246,20 +245,20 @@ def test_newUser():
         usergroups=["1", "2", "3"],
     )
 
-    userManager.newUser(
+    user_manager.newUser(
         username=referenceUser3.username,
         password=referenceUser3.password,
         usergroups=referenceUser3.usergroups,
         userDB=test_config.userDB,
     )
 
-    userDB = userManager.UserDB(test_config.userDB)
+    userDB = user_manager.UserDB(test_config.userDB)
 
     user_result3 = userDB.getSingleUser(username=referenceUser3.username)
 
     for attr in referenceUser3.allAttributes():
         if attr == "password":
-            assert userManager.verifyPassword(
+            assert user_manager.verifyPassword(
                 password=referenceUser3.__getattribute__(attr),
                 passwordHash=user_result3.__getattribute__(attr),
             ), "The password of the user does not match the target."
@@ -273,7 +272,7 @@ def test_newUser():
 
 
 def test_singleUser():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     referenceUser4 = User(
         username="testUser6",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -283,13 +282,13 @@ def test_singleUser():
     db.addNewUser(referenceUser4)
     db.closeConnection()
 
-    user_result4 = userManager.singleUser(
+    user_result4 = user_manager.singleUser(
         username=referenceUser4.username, userDB=test_config.userDB
     )
 
     for attr in referenceUser4.allAttributes():
         if attr == "password":
-            assert userManager.verifyPassword(
+            assert user_manager.verifyPassword(
                 password=referenceUser4.__getattribute__(attr),
                 passwordHash=user_result4[attr],
             ), "The password of the user does not match the target."
@@ -340,7 +339,7 @@ def test_allUsers():
         ).to_dict(),
     ]
 
-    allUsers_result2 = userManager.allUsers(userDB=test_config.userDB)
+    allUsers_result2 = user_manager.allUsers(userDB=test_config.userDB)
 
     assert all(
         [isinstance(u, dict) for u in allUsers_result2]
@@ -362,7 +361,7 @@ def test_allUsers():
 
 
 def test_getActiveUser():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     referenceUser8 = User(
         username="testUser10",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -382,13 +381,13 @@ def test_getActiveUser():
 
     tokenRefUser = jwt.encode(test_tokenData, keySecret, algorithm=algo)
 
-    activeUser = userManager.getActiveUser(
+    activeUser = user_manager.getActiveUser(
         token=tokenRefUser, userDB=test_config.userDB
     )
 
     for attr in referenceUser8.allAttributes():
         if attr == "password":
-            assert userManager.verifyPassword(
+            assert user_manager.verifyPassword(
                 password=referenceUser8.__getattribute__(attr),
                 passwordHash=activeUser[attr],
             ), "The password of the user does not match the target."
@@ -403,7 +402,7 @@ def test_hashPassword():
     testContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
     password_test = "TestPassword_0835-?"
 
-    hashedPassword = userManager.hashPassword(password=password_test)
+    hashedPassword = user_manager.hashPassword(password=password_test)
 
     assert testContext.verify(
         password_test, hashedPassword
@@ -414,17 +413,17 @@ def test_verifyPassword():
     testContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
     password_test2 = "TestPassword_0835-?"
 
-    hashedPassword2 = userManager.hashPassword(password=password_test2)
+    hashedPassword2 = user_manager.hashPassword(password=password_test2)
 
     assert testContext.verify(
         password_test2, hashedPassword2
-    ) and userManager.verifyPassword(
+    ) and user_manager.verifyPassword(
         password=password_test2, passwordHash=hashedPassword2
     ), "The password could not be verified correctly."
 
 
 def test_getAccessToken():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     referenceUser6 = User(
         username="testUser8",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -444,7 +443,7 @@ def test_getAccessToken():
 
     token_reference = jwt.encode(test_tokenData, keySecret, algorithm=algo)
 
-    token_result = userManager.getAccessToken(
+    token_result = user_manager.getAccessToken(
         tokenData=test_tokenData, expirationMin=expiration
     )
 
@@ -454,7 +453,7 @@ def test_getAccessToken():
 
 
 def test_userAuthentication():
-    db = userManager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.userDB)
     referenceUser5 = User(
         username="testUser7",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -464,7 +463,7 @@ def test_userAuthentication():
     db.addNewUser(referenceUser5)
     db.closeConnection()
 
-    user_result5 = userManager.userAuthentication(
+    user_result5 = user_manager.userAuthentication(
         username=referenceUser5.username,
         password=referenceUser5.password,
         userDB=test_config.userDB,
@@ -472,7 +471,7 @@ def test_userAuthentication():
 
     for attr in referenceUser5.allAttributes():
         if attr == "password":
-            assert userManager.verifyPassword(
+            assert user_manager.verifyPassword(
                 password=referenceUser5.__getattribute__(attr),
                 passwordHash=user_result5.__getattribute__(attr),
             ), "The password of the user does not match the target."

@@ -4,13 +4,14 @@ from uuid import UUID
 from FINALES2 import schemas
 from FINALES2.tenants.referenceMethod import prepare_my_result, run_my_method
 from FINALES2.tenants.referenceTenant import Tenant
+from FINALES2.user_management import User
 
 # get the tenant for testing
 meta3 = schemas.GeneralMetaData(
     name="testTenant", description="This is a great tenant."
 )
 
-operator3 = schemas.User(
+operator3 = User(
     username="operator1",
     password="password1",
     uuid=UUID("{12345678-1234-5678-1234-567812345679}"),
@@ -44,7 +45,7 @@ FINALESServerConfig3 = schemas.ServerConfig(
 
 endRuntime3 = datetime(2023, 3, 31)
 
-tenantUser3 = schemas.User(
+tenantUser3 = User(
     username="ReferenceTenant",
     password="secretPW_forRefUsr",
     uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
