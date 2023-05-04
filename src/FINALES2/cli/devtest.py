@@ -4,7 +4,7 @@ from datetime import datetime
 
 import click
 
-from FINALES2.db import Quantity, Tenant  # , LinkQuantityRequest
+from FINALES2.db import Quantity, Tenant
 from FINALES2.db.session import get_db
 from FINALES2.engine.main import Engine
 from FINALES2.server.schemas import Request, Result

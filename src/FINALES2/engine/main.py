@@ -88,13 +88,22 @@ class Engine:
             list_of_link_quantity_request_obj = []
             for method in request_data.methods:
                 # Find uuid for method in quantity table
-                query_inp_methods = (
+                query_inp_method = (
                     select(DbQuantity.uuid)
                     .where(DbQuantity.quantity == request_data.quantity)
                     .where(DbQuantity.method == method)
                     .where(DbQuantity.is_active == 1)
                 )
-                query_out = session.execute(query_inp_methods).all()
+                query_out = session.execute(query_inp_method).all()
+
+                # Check that the query output sizes is as intended
+                if len(query_out) != 1:
+                    raise ValueError(
+                        f"The method {method} for quantity {request_data.quantity} has "
+                        f"several entries ({len(query_out)}) in the quantity table "
+                        f"which are active"
+                    )
+
                 uuid_method = query_out[0][0]
 
                 link_quantity_request_obj = DbLinkQuantityRequest(

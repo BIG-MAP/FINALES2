@@ -39,4 +39,4 @@ class Request(Base):
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
 
-    link_reqeust = relationship("LinkQuantityRequest", back_populates="request")
+    link_request = relationship("LinkQuantityRequest", back_populates="request")

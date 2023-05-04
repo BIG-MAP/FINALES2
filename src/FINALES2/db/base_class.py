@@ -18,7 +18,8 @@ class Base:
     def __tablename__(cls) -> str:
         """
         Construct table name from classs name, which is lower case with _ for word
-        seperation
+        seperation. This is convention when dealing with tables and avoid confusing
+        with the class.
         """
 
         upper_case = [i for i, char in enumerate(cls.__name__) if char.isupper()]
