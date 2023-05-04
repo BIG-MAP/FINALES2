@@ -7,9 +7,9 @@ from uuid import UUID
 import requests
 from pydantic import BaseModel
 
-import FINALES2.server.config as config
-from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig, User
+from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
+from FINALES2.user_management.classes_user_manager import User
 
 
 class Tenant(BaseModel):
@@ -24,6 +24,7 @@ class Tenant(BaseModel):
     generalMeta: GeneralMetaData
     quantities: dict[str, Quantity]
     queue: list = []
+    sleeptime_s: int = 1
     tenantConfig: Any
     _run_method: Callable
     _prepare_results: Callable
@@ -255,9 +256,6 @@ class Tenant(BaseModel):
                 "client_id": "",
                 "client_secret": "",
             },
-            params={
-                "userDB": f"{config.userDB}",
-            },
             headers={
                 "accept": "application/json",
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -319,7 +317,7 @@ class Tenant(BaseModel):
         # for which a time can roughly be estimated
         while datetime.now() < self.endRuntime:
             # wait in between two requests to the server
-            time.sleep(config.sleepTime_s)
+            time.sleep(self.sleepTime_s)
             self._update_queue()
             # get the first request in the queue to work on -> first in - first out
             activeRequest = self.queue[0]
