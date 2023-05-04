@@ -44,7 +44,7 @@ def test_UserDB_init():
         )
 
     # Close the connection to the database
-    db.closeConnection()
+    db.close_connection()
 
     # Test Case 2: Work with existing database
 
@@ -63,19 +63,19 @@ def test_UserDB_init():
         )
 
     # Close the connection to the database
-    db.closeConnection()
+    db.close_connection()
 
 
-def test_UserDB_closeConnection():
+def test_UserDB_close_connection():
     # Connect to the user database or create a new one
     db = user_manager.UserDB(test_config.userDB)
-    db.closeConnection()
+    db.close_connection()
 
     with raises(ProgrammingError):
         db.cursor.execute("SELECT * FROM users")
 
 
-def test_UserDB_addNewUser():
+def test_UserDB_add_new_user():
     db = user_manager.UserDB(test_config.userDB)
     user = User(
         username="testUser",
@@ -84,10 +84,12 @@ def test_UserDB_addNewUser():
         usergroups=["1", "2", "3"],
     )
     print(user.__dict__)
-    db.addNewUser(user)
+    db.add_new_user(user)
+
+    db.connect()
 
     data_result = db.cursor.execute("SELECT * FROM users").fetchone()
-    data_target = tuple(list(str(v) for v in user.to_dict().values()))
+    data_target = tuple(list(str(v) for v in user.__dict__.values()))
 
     for i in range(4):
         if i != 2:
@@ -95,13 +97,13 @@ def test_UserDB_addNewUser():
                 i
             ], f"The found data is {data_result[i]} instead of {data_target[i]}."
         else:
-            data_result[i] == user_manager.hashPassword(data_target[i]), (
-                f"The found data is {user_manager.hashPassword(data_result[i])} "
+            data_result[i] == user_manager.hash_password(data_target[i]), (
+                f"The found data is {user_manager.hash_password(data_result[i])} "
                 f"instead of {data_target[i]}."
             )
     # TODO: check the timestamps#, '2023-01-14 17:06:17.416907'
     # , '2023-01-14 17:06:17.416907')]
-    db.closeConnection()
+    db.close_connection()
 
 
 def test_UserDB_userFromRow():
@@ -112,14 +114,16 @@ def test_UserDB_userFromRow():
         password="thisIs_@testPW-2",
         usergroups=["1", "2", "3"],
     )
-    db.addNewUser(referenceUser)
+    db.add_new_user(referenceUser)
+
+    db.connect()
 
     aUser = db.cursor.execute(
         "SELECT * FROM users WHERE username=(?)", (referenceUser.username,)
     )
     row = aUser.fetchall()
 
-    theUser = db.userFromRow(row[0])
+    theUser = db.user_from_row(row[0])
 
     assert isinstance(theUser, User), (
         f"The object obtained from the userFromRow method is of "
@@ -133,10 +137,10 @@ def test_UserDB_userFromRow():
                 f"{getattr(theUser, key)} instead of {row[0][key]}."
             )
 
-    db.closeConnection()
+    db.close_connection()
 
 
-def test_UserDB_getSingleUser():
+def test_UserDB_get_single_user():
     db = user_manager.UserDB(test_config.userDB)
     referenceUser = User(
         username="testUser3",
@@ -144,17 +148,17 @@ def test_UserDB_getSingleUser():
         password="thisIs_@testPW-3",
         usergroups=["1", "2", "3"],
     )
-    db.addNewUser(referenceUser)
+    db.add_new_user(referenceUser)
 
-    user_result = db.getSingleUser(username=referenceUser.username)
+    user_result = db.get_single_user(username=referenceUser.username)
 
-    db.closeConnection()
+    db.close_connection()
 
-    for attr in referenceUser.allAttributes():
+    for attr in referenceUser.__dict__.keys():
         if attr == "password":
-            assert user_manager.verifyPassword(
+            assert user_manager.verify_password(
                 password=referenceUser.__getattribute__(attr),
-                passwordHash=user_result.__getattribute__(attr),
+                password_hash=user_result.__getattribute__(attr),
             )
         else:
             assert referenceUser.__getattribute__(attr) == user_result.__getattribute__(
@@ -162,10 +166,10 @@ def test_UserDB_getSingleUser():
             )
 
 
-def test_UserDB_getAllUsers():
+def test_UserDB_get_all_users():
     db = user_manager.UserDB(test_config.userDB)
-    allUsers_result = db.getAllUsers()
-    allUsers_reference = [
+    all_users_result = db.get_all_users()
+    all_users_reference = [
         User(
             username="testUser",
             uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -187,27 +191,27 @@ def test_UserDB_getAllUsers():
     ]
 
     assert all(
-        [isinstance(u, User) for u in allUsers_result]
+        [isinstance(u, User) for u in all_users_result]
     ), "Not all objects in the obtained list of all users are of type User"
 
-    print(allUsers_result)
-    print(allUsers_reference)
+    print(all_users_result)
+    print(all_users_reference)
 
-    for i in range(len(allUsers_reference)):
+    for i in range(len(all_users_reference)):
         assert (
-            allUsers_reference[i].username == allUsers_result[i].username
-        ), f"The username is {allUsers_result[i].username} "
-        "instead of {allUsers_reference[i].username}."
+            all_users_reference[i].username == all_users_result[i].username
+        ), f"The username is {all_users_result[i].username} "
+        "instead of {all_users_reference[i].username}."
         assert (
-            allUsers_reference[i].uuid == allUsers_result[i].uuid
-        ), f"The uuid is {allUsers_result[i].uuid} instead "
-        "of {allUsers_reference[i].uuid}."
-        assert user_manager.verifyPassword(
-            allUsers_reference[i].password, allUsers_result[i].password
+            all_users_reference[i].uuid == all_users_result[i].uuid
+        ), f"The uuid is {all_users_result[i].uuid} instead "
+        "of {all_users_reference[i].uuid}."
+        assert user_manager.verify_password(
+            all_users_reference[i].password, all_users_result[i].password
         ), "The passwords to not match."
 
 
-def test_createUser():
+def test_create_user():
     referenceUser2 = User(
         username="testUser4",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -215,18 +219,17 @@ def test_createUser():
         usergroups=["1", "2", "3"],
     )
 
-    user_result2 = user_manager.createUser(
+    user_result2 = user_manager.create_user(
         username=referenceUser2.username,
         password=referenceUser2.password,
         usergroups=referenceUser2.usergroups,
-        userDB=test_config.userDB,
     )
 
-    for attr in referenceUser2.allAttributes():
+    for attr in referenceUser2.__dict__.keys():
         if attr == "password":
-            assert user_manager.verifyPassword(
+            assert user_manager.verify_password(
                 password=referenceUser2.__getattribute__(attr),
-                passwordHash=user_result2.__getattribute__(attr),
+                password_hash=user_result2.__getattribute__(attr),
             ), "The password of the user does not match the target."
         elif attr != "uuid":
             assert str(referenceUser2.__getattribute__(attr)) == str(
@@ -237,7 +240,7 @@ def test_createUser():
             )
 
 
-def test_newUser():
+def test_new_user():
     referenceUser3 = User(
         username="testUser5",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -245,22 +248,21 @@ def test_newUser():
         usergroups=["1", "2", "3"],
     )
 
-    user_manager.newUser(
+    user_manager.new_user(
         username=referenceUser3.username,
         password=referenceUser3.password,
         usergroups=referenceUser3.usergroups,
-        userDB=test_config.userDB,
     )
 
     userDB = user_manager.UserDB(test_config.userDB)
 
-    user_result3 = userDB.getSingleUser(username=referenceUser3.username)
+    user_result3 = userDB.get_single_user(username=referenceUser3.username)
 
-    for attr in referenceUser3.allAttributes():
+    for attr in referenceUser3.__dict__.keys():
         if attr == "password":
-            assert user_manager.verifyPassword(
+            assert user_manager.verify_password(
                 password=referenceUser3.__getattribute__(attr),
-                passwordHash=user_result3.__getattribute__(attr),
+                password_hash=user_result3.__getattribute__(attr),
             ), "The password of the user does not match the target."
         elif attr != "uuid":
             assert str(referenceUser3.__getattribute__(attr)) == str(
@@ -271,7 +273,7 @@ def test_newUser():
             )
 
 
-def test_singleUser():
+def test_single_user():
     db = user_manager.UserDB(test_config.userDB)
     referenceUser4 = User(
         username="testUser6",
@@ -279,18 +281,16 @@ def test_singleUser():
         password="thisIs_@testPW-6",
         usergroups=["1", "2", "3"],
     )
-    db.addNewUser(referenceUser4)
-    db.closeConnection()
+    db.add_new_user(referenceUser4)
+    db.close_connection()
 
-    user_result4 = user_manager.singleUser(
-        username=referenceUser4.username, userDB=test_config.userDB
-    )
+    user_result4 = user_manager.single_user(username=referenceUser4.username)
 
-    for attr in referenceUser4.allAttributes():
+    for attr in referenceUser4.__dict__.keys():
         if attr == "password":
-            assert user_manager.verifyPassword(
+            assert user_manager.verify_password(
                 password=referenceUser4.__getattribute__(attr),
-                passwordHash=user_result4[attr],
+                password_hash=user_result4[attr],
             ), "The password of the user does not match the target."
         elif attr != "id":
             assert referenceUser4.__getattribute__(attr) == user_result4[attr], (
@@ -299,58 +299,58 @@ def test_singleUser():
             )
 
 
-def test_allUsers():
-    allUsers_reference2 = [
+def test_all_users():
+    all_users_reference2 = [
         User(
             username="testUser",
             uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-",
             usergroups=["1", "2", "3"],
-        ).to_dict(),
+        ).__dict__,
         User(
             username="testUser2",
             uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-2",
             usergroups=["1", "2", "3"],
-        ).to_dict(),
+        ).__dict__,
         User(
             username="testUser3",
             uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-3",
             usergroups=["1", "2", "3"],
-        ).to_dict(),
+        ).__dict__,
         User(
             username="testUser4",
             uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-4",
             usergroups=["1", "2", "3"],
-        ).to_dict(),
+        ).__dict__,
         User(
             username="testUser5",
             uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-5",
             usergroups=["1", "2", "3"],
-        ).to_dict(),
+        ).__dict__,
         User(
             username="testUser6",
             uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
             password="thisIs_@testPW-6",
             usergroups=["1", "2", "3"],
-        ).to_dict(),
+        ).__dict__,
     ]
 
-    allUsers_result2 = user_manager.allUsers(userDB=test_config.userDB)
+    all_users_result2 = user_manager.all_users()
 
     assert all(
-        [isinstance(u, dict) for u in allUsers_result2]
+        [isinstance(u, dict) for u in all_users_result2]
     ), "Not all objects in the obtained list of all users are of type User"
 
     # remove all passwords
     usernames_ref = []
     usernames_res = []
-    for user_ref in allUsers_reference2:
+    for user_ref in all_users_reference2:
         usernames_ref.append(user_ref["username"])
-    for user_res in allUsers_result2:
+    for user_res in all_users_result2:
         usernames_res.append(user_res["username"])
 
     for usernameReference in usernames_ref:
@@ -360,7 +360,7 @@ def test_allUsers():
         )
 
 
-def test_getActiveUser():
+def test_get_active_user():
     db = user_manager.UserDB(test_config.userDB)
     referenceUser8 = User(
         username="testUser10",
@@ -368,8 +368,8 @@ def test_getActiveUser():
         password="thisIs_@testPW-10",
         usergroups=["1", "2", "3"],
     )
-    db.addNewUser(referenceUser8)
-    db.closeConnection()
+    db.add_new_user(referenceUser8)
+    db.close_connection()
 
     expiration = datetime.timedelta(minutes=23)
     test_tokenData = {
@@ -381,15 +381,13 @@ def test_getActiveUser():
 
     tokenRefUser = jwt.encode(test_tokenData, keySecret, algorithm=algo)
 
-    activeUser = user_manager.getActiveUser(
-        token=tokenRefUser, userDB=test_config.userDB
-    )
+    activeUser = user_manager.get_active_user(token=tokenRefUser)
 
-    for attr in referenceUser8.allAttributes():
+    for attr in referenceUser8.__dict__.keys():
         if attr == "password":
-            assert user_manager.verifyPassword(
+            assert user_manager.verify_password(
                 password=referenceUser8.__getattribute__(attr),
-                passwordHash=activeUser[attr],
+                password_hash=activeUser[attr],
             ), "The password of the user does not match the target."
         else:
             assert referenceUser8.__getattribute__(attr) == activeUser[attr], (
@@ -398,31 +396,31 @@ def test_getActiveUser():
             )
 
 
-def test_hashPassword():
+def test_hash_password():
     testContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
     password_test = "TestPassword_0835-?"
 
-    hashedPassword = user_manager.hashPassword(password=password_test)
+    hashedPassword = user_manager.hash_password(password=password_test)
 
     assert testContext.verify(
         password_test, hashedPassword
     ), "The password could not be verified."
 
 
-def test_verifyPassword():
+def test_verify_password():
     testContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
     password_test2 = "TestPassword_0835-?"
 
-    hashedPassword2 = user_manager.hashPassword(password=password_test2)
+    hashedPassword2 = user_manager.hash_password(password=password_test2)
 
     assert testContext.verify(
         password_test2, hashedPassword2
-    ) and user_manager.verifyPassword(
-        password=password_test2, passwordHash=hashedPassword2
+    ) and user_manager.verify_password(
+        password=password_test2, password_hash=hashedPassword2
     ), "The password could not be verified correctly."
 
 
-def test_getAccessToken():
+def test_get_access_token():
     db = user_manager.UserDB(test_config.userDB)
     referenceUser6 = User(
         username="testUser8",
@@ -430,8 +428,8 @@ def test_getAccessToken():
         password="thisIs_@testPW-8",
         usergroups=["1", "2", "3"],
     )
-    db.addNewUser(referenceUser6)
-    db.closeConnection()
+    db.add_new_user(referenceUser6)
+    db.close_connection()
 
     expiration = datetime.timedelta(minutes=23)
     test_tokenData = {
@@ -443,8 +441,8 @@ def test_getAccessToken():
 
     token_reference = jwt.encode(test_tokenData, keySecret, algorithm=algo)
 
-    token_result = user_manager.getAccessToken(
-        tokenData=test_tokenData, expirationMin=expiration
+    token_result = user_manager.get_access_token(
+        token_data=test_tokenData, expiration_min=expiration
     )
 
     assert (
@@ -452,7 +450,7 @@ def test_getAccessToken():
     ), f"The resulting token is {token_result} instead of {token_reference}."
 
 
-def test_userAuthentication():
+def test_user_authentication():
     db = user_manager.UserDB(test_config.userDB)
     referenceUser5 = User(
         username="testUser7",
@@ -460,20 +458,19 @@ def test_userAuthentication():
         password="thisIs_@testPW-7",
         usergroups=["1", "2", "3"],
     )
-    db.addNewUser(referenceUser5)
-    db.closeConnection()
+    db.add_new_user(referenceUser5)
+    db.close_connection()
 
-    user_result5 = user_manager.userAuthentication(
+    user_result5 = user_manager.user_authentication(
         username=referenceUser5.username,
         password=referenceUser5.password,
-        userDB=test_config.userDB,
     )
 
-    for attr in referenceUser5.allAttributes():
+    for attr in referenceUser5.__dict__.keys():
         if attr == "password":
-            assert user_manager.verifyPassword(
+            assert user_manager.verify_password(
                 password=referenceUser5.__getattribute__(attr),
-                passwordHash=user_result5.__getattribute__(attr),
+                password_hash=user_result5.__getattribute__(attr),
             ), "The password of the user does not match the target."
         else:
             assert referenceUser5.__getattribute__(

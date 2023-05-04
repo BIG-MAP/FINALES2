@@ -241,6 +241,9 @@ def create_user(username: str, password: str, usergroups: list[str]) -> User:
 
     # Instantiate the user database
     user_db = UserDB()
+    # To check, if a user is obtained from the database
+    user_in_db = None
+
     # Instantiate a new user
     new_user = User(username=username, password=password, usergroups=usergroups)
     # Save the new user to the user database, if it not already exists
@@ -256,7 +259,7 @@ def create_user(username: str, password: str, usergroups: list[str]) -> User:
                 "This username cannot be added to the database. "
                 "Pleas contact the user administrator."
             )
-    if type(user_in_db) == User:
+    if not (user_in_db is None):
         raise ValueError(
             "This username cannot be added to the database. "
             "Please choose a different one and try again."

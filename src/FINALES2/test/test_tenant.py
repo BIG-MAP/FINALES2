@@ -3,6 +3,7 @@ from uuid import UUID
 
 from FINALES2 import schemas
 from FINALES2.tenants.referenceTenant import Tenant
+from FINALES2.user_management import User
 
 
 def test_Tenant_toJSON():
@@ -11,11 +12,12 @@ def test_Tenant_toJSON():
         name="testTenant", description="This is a great tenant."
     )
 
-    operator = schemas.User(
+    operator = User(
         username="operator1",
         password="password1",
         uuid=UUID("{12345678-1234-5678-1234-567812345679}"),
         usergroups=["Project_A"],
+        sleep_time_s=1,
     )
 
     method = schemas.Method(
@@ -34,7 +36,7 @@ def test_Tenant_toJSON():
 
     quantities = {quant.name: quant}
 
-    FINALESServerConfig = schemas.ServerConfig(
+    FINALES_server_config = schemas.ServerConfig(
         app_title="FINALES2",
         app_description="FINALES2 accepting requests, "
         "managing queues and serving queries",
@@ -43,39 +45,42 @@ def test_Tenant_toJSON():
         port=5678,
     )
 
-    endRuntime = datetime(2023, 3, 31)
+    end_run_time = datetime(2023, 3, 31)
 
-    tenantUser = schemas.User(
+    tenant_user = User(
         username="ReferenceTenant",
         password="secretPW_forRefUsr",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         usergroups=["Project_A"],
+        sleep_time_s=1,
     )
 
     test_tenant = Tenant(
-        generalMeta=meta,
+        general_meta=meta,
         operator=operator,
         queue=[],
         quantities=quantities,
-        FINALESServerConfig=FINALESServerConfig,
-        endRuntime=endRuntime,
-        tenantUser=tenantUser,
+        FINALES_server_config=FINALES_server_config,
+        end_run_time=end_run_time,
+        tenant_user=tenant_user,
     )
 
     JSON_target = (
-        '{"generalMeta": {"name": "testTenant", "description": '
+        '{"general_meta": {"name": "testTenant", "description": '
         '"This is a great tenant."}, "quantities": {"DummyQuantity": '
         '{"name": "DummyQuantity", "methods": {"DummyMethod": {"name": '
         '"myMethod", "quantity": "DummyQuantity", "parameters": '
         '["temperature"], "limitations": {"temperature": {"minimum": 5, '
         '"maximum": 20}}}}, "specifications": {"composition": {"a": 5, "b": 0.7}, '
-        '"temperature": 273.15}, "is_active": true}}, "queue": "[]", '
-        '"tenantConfig": null, "FINALESServerConfig": {"app_title": "FINALES2", '
+        '"temperature": 273.15}, "is_active": true}}, "queue": [], '
+        '"sleep_time_s": 1, '
+        '"tenant_config": null, "FINALES_server_config": {"app_title": "FINALES2", '
         '"app_description": "FINALES2 accepting requests, managing queues '
         'and serving queries", "app_version": "0.0.1", "host": "0.0.0.0", '
-        '"port": 5678}, "endRuntime": "2023-03-31T00:00:00", "operator": {"username": '
+        '"port": 5678}, "end_run_time": "2023-03-31T00:00:00", "operator": '
+        '{"username": '
         '"operator1", "uuid": "12345678-1234-5678-1234-567812345679", "password": '
-        '"password1", "usergroups": ["Project_A"]}, "tenantUser": {"username": '
+        '"password1", "usergroups": ["Project_A"]}, "tenant_user": {"username": '
         '"ReferenceTenant", "uuid": "12345678-1234-5678-1234-567812345678", '
         '"password": "secretPW_forRefUsr", "usergroups": ["Project_A"]}}'
     )
@@ -93,11 +98,12 @@ def test_Tenant_fromJSON():
         name="testTenant", description="This is a great tenant."
     )
 
-    operator2 = schemas.User(
+    operator2 = User(
         username="operator1",
         password="password1",
         uuid=UUID("{12345678-1234-5678-1234-567812345679}"),
         usergroups=["Project_A"],
+        sleep_time_s=1,
     )
 
     method2 = schemas.Method(
@@ -116,7 +122,7 @@ def test_Tenant_fromJSON():
 
     quantities2 = {quant2.name: quant2}
 
-    FINALESServerConfig2 = schemas.ServerConfig(
+    FINALES_server_config2 = schemas.ServerConfig(
         app_title="FINALES2",
         app_description="FINALES2 accepting requests, "
         "managing queues and serving queries",
@@ -125,41 +131,45 @@ def test_Tenant_fromJSON():
         port=5678,
     )
 
-    endRuntime2 = datetime(2023, 3, 31)
+    end_run_time2 = datetime(2023, 3, 31)
 
-    tenantUser2 = schemas.User(
+    tenant_user2 = User(
         username="ReferenceTenant",
         password="secretPW_forRefUsr",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         usergroups=["Project_A"],
+        sleep_time_s=1,
     )
 
     test_tenant2 = Tenant(
-        generalMeta=meta2,
+        general_meta=meta2,
         operator=operator2,
         queue=[],
         quantities=quantities2,
-        FINALESServerConfig=FINALESServerConfig2,
-        endRuntime=endRuntime2,
-        tenantUser=tenantUser2,
+        FINALES_server_config=FINALES_server_config2,
+        end_run_time=end_run_time2,
+        sleep_time_s=1,
+        tenant_user=tenant_user2,
     )
 
     tenant_JSON = (
-        '{"generalMeta": {"name": "testTenant", "description": '
+        '{"general_meta": {"name": "testTenant", "description": '
         '"This is a great tenant."}, "quantities": {"DummyQuantity": '
         '{"name": "DummyQuantity", "methods": {"DummyMethod": {"name": '
         '"myMethod", "quantity": "DummyQuantity", "parameters": '
         '["temperature"], "limitations": {"temperature": {"minimum": 5, '
         '"maximum": 20}}}}, "specifications": {"composition": {"a": 5, "b": 0.7}, '
         '"temperature": 273.15}, "is_active": true}}, "queue": "[]", '
-        '"tenantConfig": null, "FINALESServerConfig": {"app_title": "FINALES2", '
+        '"tenant_config": null, "FINALES_server_config": {"app_title": "FINALES2", '
         '"app_description": "FINALES2 accepting requests, managing queues '
         'and serving queries", "app_version": "0.0.1", "host": "0.0.0.0", '
-        '"port": 5678}, "endRuntime": "2023-03-31T00:00:00", "operator": {"username": '
+        '"port": 5678}, "end_run_time": "2023-03-31T00:00:00", "operator": '
+        '{"username": '
         '"operator1", "uuid": "12345678-1234-5678-1234-567812345679", "password": '
-        '"password1", "usergroups": ["Project_A"]}, "tenantUser": {"username": '
+        '"password1", "usergroups": ["Project_A"]}, "tenant_user": {"username": '
         '"ReferenceTenant", "uuid": "12345678-1234-5678-1234-567812345678", '
-        '"password": "secretPW_forRefUsr", "usergroups": ["Project_A"]}}'
+        '"password": "secretPW_forRefUsr", "usergroups": ["Project_A"]}, '
+        '"sleep_time_s": 1}'
     )
 
     tenant_result2 = Tenant.from_json(tenant_JSON)
@@ -173,11 +183,12 @@ def test_Tenant__get_requests():
         name="testTenant", description="This is a great tenant."
     )
 
-    operator3 = schemas.User(
+    operator3 = User(
         username="operator1",
         password="password1",
         uuid=UUID("{12345678-1234-5678-1234-567812345679}"),
         usergroups=["Project_A"],
+        sleep_time_s=1,
     )
 
     method3 = schemas.Method(
@@ -196,7 +207,7 @@ def test_Tenant__get_requests():
 
     quantities3 = {quant3.name: quant3}
 
-    FINALESServerConfig3 = schemas.ServerConfig(
+    FINALES_server_config3 = schemas.ServerConfig(
         app_title="FINALES2",
         app_description="FINALES2 accepting requests, "
         "managing queues and serving queries",
@@ -205,23 +216,24 @@ def test_Tenant__get_requests():
         port=13371,
     )
 
-    endRuntime3 = datetime(2023, 3, 31)
+    end_run_time3 = datetime(2023, 3, 31)
 
-    tenantUser3 = schemas.User(
+    tenant_user3 = User(
         username="ReferenceTenant",
         password="secretPW_forRefUsr",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
         usergroups=["Project_A"],
+        sleep_time_s=1,
     )
 
     test_tenant3 = Tenant(
-        generalMeta=meta3,
+        general_meta=meta3,
         operator=operator3,
         queue=[],
         quantities=quantities3,
-        FINALESServerConfig=FINALESServerConfig3,
-        endRuntime=endRuntime3,
-        tenantUser=tenantUser3,
+        FINALES_server_config=FINALES_server_config3,
+        end_run_time=end_run_time3,
+        tenant_user=tenant_user3,
     )
 
     # TODO: Test the remaining funcitonalities of the Tenant class
