@@ -14,7 +14,7 @@ from FINALES2.user_management import User, user_manager
 
 def test_UserDB_init():
     # Get the path to the folder, where the user database is stored from the config file
-    filepath = "/".join(test_config.userDB.split("/")[0:-1])
+    filepath = "/".join(test_config.user_db.split("/")[0:-1])
     print(filepath)
 
     # Delete potentially existing user databases
@@ -24,7 +24,7 @@ def test_UserDB_init():
     # Test Case 1: New user database
 
     # Create the user database
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
 
     # Get the target list of column names
     columns_target = list(User.__annotations__.keys()) + [
@@ -49,7 +49,7 @@ def test_UserDB_init():
     # Test Case 2: Work with existing database
 
     # Reconnect to the existing database
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
 
     # Get the resulting list of column names
     allColumns = db.cursor.execute("SELECT * FROM users")
@@ -68,7 +68,7 @@ def test_UserDB_init():
 
 def test_UserDB_close_connection():
     # Connect to the user database or create a new one
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     db.close_connection()
 
     with raises(ProgrammingError):
@@ -76,7 +76,7 @@ def test_UserDB_close_connection():
 
 
 def test_UserDB_add_new_user():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     user = User(
         username="testUser",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -107,7 +107,7 @@ def test_UserDB_add_new_user():
 
 
 def test_UserDB_userFromRow():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     referenceUser = User(
         username="testUser2",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -141,7 +141,7 @@ def test_UserDB_userFromRow():
 
 
 def test_UserDB_get_single_user():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     referenceUser = User(
         username="testUser3",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -167,7 +167,7 @@ def test_UserDB_get_single_user():
 
 
 def test_UserDB_get_all_users():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     all_users_result = db.get_all_users()
     all_users_reference = [
         User(
@@ -254,7 +254,7 @@ def test_new_user():
         usergroups=referenceUser3.usergroups,
     )
 
-    userDB = user_manager.UserDB(test_config.userDB)
+    userDB = user_manager.UserDB(test_config.user_db)
 
     user_result3 = userDB.get_single_user(username=referenceUser3.username)
 
@@ -274,7 +274,7 @@ def test_new_user():
 
 
 def test_single_user():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     referenceUser4 = User(
         username="testUser6",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -361,7 +361,7 @@ def test_all_users():
 
 
 def test_get_active_user():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     referenceUser8 = User(
         username="testUser10",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -376,7 +376,7 @@ def test_get_active_user():
         "sub": referenceUser8.username,
         "exp": datetime.datetime.now() + expiration,
     }
-    keySecret = test_config.secretKey
+    keySecret = test_config.secret_key
     algo = test_config.algorithm
 
     tokenRefUser = jwt.encode(test_tokenData, keySecret, algorithm=algo)
@@ -421,7 +421,7 @@ def test_verify_password():
 
 
 def test_get_access_token():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     referenceUser6 = User(
         username="testUser8",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
@@ -436,7 +436,7 @@ def test_get_access_token():
         "sub": referenceUser6.username,
         "exp": datetime.datetime.now() + expiration,
     }
-    keySecret = test_config.secretKey
+    keySecret = test_config.secret_key
     algo = test_config.algorithm
 
     token_reference = jwt.encode(test_tokenData, keySecret, algorithm=algo)
@@ -451,7 +451,7 @@ def test_get_access_token():
 
 
 def test_user_authentication():
-    db = user_manager.UserDB(test_config.userDB)
+    db = user_manager.UserDB(test_config.user_db)
     referenceUser5 = User(
         username="testUser7",
         uuid=UUID("{12345678-1234-5678-1234-567812345678}"),
