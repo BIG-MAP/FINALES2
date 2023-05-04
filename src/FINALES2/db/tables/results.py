@@ -10,8 +10,6 @@ class Result(Base):
     Class defining the result table with the following columns:
         uuid CHAR:                  uuid of the posted result
         request_uuid CHAR:          uuid of the original request requesting the data
-        quantity VARCHAR:           Quantity of the results
-        method (String):            Method used in the result post
         parameters VARCHAR:         JSON string of the parameters used for the result.
         data VARCHAR:               JSON string of the posted data
         posting_tenant_uuid CHAR:   uuid of the tenant posting the result
@@ -32,8 +30,6 @@ class Result(Base):
         ForeignKey("request.uuid"),
         nullable=False,
     )
-    quantity = Column(String, nullable=False)
-    method = Column(String, nullable=False)
     parameters = Column(
         String,
         nullable=False,

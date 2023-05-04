@@ -48,6 +48,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from FINALES2.db import LinkQuantityRequest as DBLinkQuantityRequest
+from FINALES2.db import LinkQuantityResult as DBLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
@@ -125,10 +126,23 @@ class Result(BaseModel):
     @classmethod
     def from_db_result(cls, db_result: DbResult):
         """Initializes the object from the data of an orm object"""
+        # Retrieving methods and quantity from the quantity table
+        query_inp = (
+            select(DbQuantity.quantity, DbQuantity.method)
+            .join(DBLinkQuantityResult)
+            .join(DbResult)
+            .where(DbResult.uuid == DBLinkQuantityResult.result_uuid)
+            .where(DbQuantity.uuid == DBLinkQuantityResult.method_uuid)
+        )
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        quantity, method = query_out[0]
         init_params = {
             "data": json.loads(db_result.data),
-            "quantity": db_result.quantity,
-            "method": json.loads(db_result.method),
+            "quantity": quantity,
+            "method": [method],
             "parameters": json.loads(db_result.parameters),
             "tenant_uuid": str(db_result.posting_tenant_uuid),
             "request_uuid": str(db_result.posting_tenant_uuid),

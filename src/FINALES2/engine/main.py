@@ -8,6 +8,7 @@ from jsonschema import validate
 from sqlalchemy import select
 
 from FINALES2.db import LinkQuantityRequest as DbLinkQuantityRequest
+from FINALES2.db import LinkQuantityResult as DbLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
@@ -86,12 +87,12 @@ class Engine:
 
             # Loop thorugh the methods to add entries to DbLinkQuantityRequest
             list_of_link_quantity_request_obj = []
-            for method in request_data.methods:
+            for method_name in request_data.methods:
                 # Find uuid for method in quantity table
                 query_inp_method = (
                     select(DbQuantity.uuid)
                     .where(DbQuantity.quantity == request_data.quantity)
-                    .where(DbQuantity.method == method)
+                    .where(DbQuantity.method == method_name)
                     .where(DbQuantity.is_active == 1)
                 )
                 query_out = session.execute(query_inp_method).all()
@@ -99,9 +100,9 @@ class Engine:
                 # Check that the query output sizes is as intended
                 if len(query_out) != 1:
                     raise ValueError(
-                        f"The method {method} for quantity {request_data.quantity} has "
-                        f"several entries ({len(query_out)}) in the quantity table "
-                        f"which are active"
+                        f"The method {method_name} for quantity {request_data.quantity}"
+                        f" has several entries ({len(query_out)}) in the quantity table"
+                        f" which are active"
                     )
 
                 uuid_method = query_out[0][0]
@@ -130,6 +131,9 @@ class Engine:
         the internal schema that corresponds to the quantity + method
         capability.
 
+        A row is also added to the link_quantity_result table for uuid link between
+        result and quantity method.
+
         When creating the result object, it assigns a new uuid (and returns it).
         """
         # Note: for the results we are currently using a similar structure
@@ -148,12 +152,13 @@ class Engine:
 
         ctime = datetime.now()
 
+        result_uuid = str(uuid.uuid4())
         db_obj = DbResult(
             **{
-                "uuid": str(uuid.uuid4()),
+                "uuid": result_uuid,
                 "request_uuid": request_uuid,  # get from received data and check
-                "quantity": received_data.quantity,
-                "method": json.dumps(received_data.method),
+                # "quantity": received_data.quantity,
+                # "method": json.dumps(received_data.method),
                 "parameters": json.dumps(received_data.parameters),
                 "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
@@ -164,6 +169,7 @@ class Engine:
         )
 
         with get_db() as session:
+            # Retrieve original request for the result and update request status
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
                 raise ValueError(f"Submitted result has no request: {request_uuid}")
@@ -172,9 +178,40 @@ class Engine:
             status_list.append((ctime, RequestStatus.RESOLVED.value))
             original_request.status = json.dumps(status_list, default=str)
             session.add(db_obj)
+
+            # Add link between method for the result and the quantity table
+            query_inp_method = (
+                select(DbQuantity.uuid)
+                .where(DbQuantity.quantity == received_data.quantity)
+                .where(DbQuantity.method == method_name)
+                .where(DbQuantity.is_active == 1)
+            )
+
+            query_out_method = session.execute(query_inp_method).all()
+
+            # Check that the query output sizes is as intended
+            if len(query_out_method) != 1:
+                raise ValueError(
+                    f"The method {method_name} for quantity {received_data.quantity} "
+                    f"has several entries ({len(query_out_method)}) in the quantity "
+                    f"table which are active"
+                )
+
+            uuid_method = query_out_method[0][0]
+            link_quantity_result_obj = DbLinkQuantityResult(
+                **{
+                    "link_uuid": str(uuid.uuid4()),
+                    "method_uuid": uuid_method,
+                    "result_uuid": result_uuid,
+                }
+            )
+            session.add(link_quantity_result_obj)
+
+            # Commit all additions and refresh
             session.commit()
             session.refresh(db_obj)
             session.refresh(original_request)
+            session.refresh(link_quantity_result_obj)
 
         return str(db_obj.uuid)
 
@@ -273,16 +310,16 @@ class Engine:
 
         Filtering currently supported only for quantity and method.
         """
-        query_inp = select(DbResult)
+        query_inp = select(DbResult).join(DbLinkQuantityResult).join(DbQuantity)
         if quantity is not None:
-            query_inp = query_inp.where(DbResult.quantity == quantity)
+            query_inp = query_inp.where(DbQuantity.quantity == quantity)
         if method is not None:
             # NOTE: Currently method is stored as a string which contains a list
             # with a single method. We should really consider having method be
             # a single string in this case; but more in general this shows a big
             # disadvantage of storing potentially queryable list/dict fields as
             # serialized strings.
-            query_inp = query_inp.where(DbResult.method == f'["{method}"]')
+            query_inp = query_inp.where(DbQuantity.method == method)
 
         with get_db() as session:
             query_out = session.execute(query_inp).all()

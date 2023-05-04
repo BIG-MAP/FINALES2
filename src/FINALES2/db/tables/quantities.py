@@ -44,5 +44,3 @@ class Quantity(Base):
     load_time = Column(
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
-
-    # uuid_link_quantity = relationship("LinkQuantityRequest", backref="quantity")

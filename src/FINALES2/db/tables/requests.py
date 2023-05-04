@@ -1,5 +1,4 @@
 from sqlalchemy import TIMESTAMP, Column, DateTime, ForeignKey, String
-from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy_utils import UUIDType
 
@@ -38,5 +37,3 @@ class Request(Base):
     load_time = Column(
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
-
-    link_request = relationship("LinkQuantityRequest", back_populates="request")
