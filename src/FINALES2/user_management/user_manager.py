@@ -85,9 +85,9 @@ class UserDB:
         This function has no output.
         """
 
-        self.connection: sqlite3.Connection = sqlite3.connect(self.savepath)
+        self.connection = sqlite3.connect(self.savepath)
         self.connection.row_factory = sqlite3.Row
-        self.cursor: sqlite3.Cursor = self.connection.cursor()
+        self.cursor = self.connection.cursor()
 
     def add_new_user(self, user: User) -> None:
         """This function adds a new user with all its fields to the database.
@@ -301,7 +301,7 @@ def single_user(username: str) -> dict[str, Any]:
     # Get the user from the user database
     this_user = user_db.get_single_user(username=username)
     # Transform the user object to a dictionary and return it
-    this_user_dict = this_user.to_dict()
+    this_user_dict = this_user.__dict__
     return this_user_dict
 
 
@@ -320,7 +320,7 @@ def all_users() -> list[dict]:
     # Get all the entries from the user database
     all_users = UserDB().get_all_users()
     # Collect the dictionaries of all the users in a list and return the list
-    all_users_dict = [user.to_dict() for user in all_users]
+    all_users_dict = [user.__dict__ for user in all_users]
     return all_users_dict
 
 
