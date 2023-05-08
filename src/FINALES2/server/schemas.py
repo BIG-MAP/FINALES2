@@ -149,6 +149,12 @@ class Result(BaseModel):
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
+        if len(query_out) != 1:
+            raise ValueError(
+                f"Db corrupted: Several output ({len(query_out)}) for retrieval of "
+                f"method and quantity related to a result, only 1 output expected"
+            )
+
         quantity, method = query_out[0]
         init_params = {
             "data": json.loads(db_result.data),
