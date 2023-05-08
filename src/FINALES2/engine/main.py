@@ -157,8 +157,6 @@ class Engine:
             **{
                 "uuid": result_uuid,
                 "request_uuid": request_uuid,  # get from received data and check
-                # "quantity": received_data.quantity,
-                # "method": json.dumps(received_data.method),
                 "parameters": json.dumps(received_data.parameters),
                 "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
@@ -314,11 +312,6 @@ class Engine:
         if quantity is not None:
             query_inp = query_inp.where(DbQuantity.quantity == quantity)
         if method is not None:
-            # NOTE: Currently method is stored as a string which contains a list
-            # with a single method. We should really consider having method be
-            # a single string in this case; but more in general this shows a big
-            # disadvantage of storing potentially queryable list/dict fields as
-            # serialized strings.
             query_inp = query_inp.where(DbQuantity.method == method)
 
         with get_db() as session:

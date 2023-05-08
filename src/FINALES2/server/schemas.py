@@ -79,10 +79,21 @@ class Request(BaseModel):
 
         # Constructs methods list
         methods = []
+        quantity_former_iteration = ""
         for (
             quantity_iter,
             methods_iter,
         ) in query_out:
+            # Check that quantity is the same for the methods
+            if quantity_former_iteration == "":
+                quantity_former_iteration = quantity_iter
+            elif quantity_former_iteration != quantity_iter:
+                raise ValueError(
+                    f"Db corrupted: Several quantities ({quantity_former_iteration}, "
+                    f"{quantity_iter}) exists when retrieving the list of methods for"
+                    f"request. Only a single quantity with numerous possible methods"
+                    f"is expected"
+                )
             methods.append(methods_iter)
         quantity = quantity_iter
 
