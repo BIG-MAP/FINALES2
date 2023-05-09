@@ -19,19 +19,19 @@ class Tenant(Base):
 
     uuid = Column(UUIDType(binary=False), primary_key=True, nullable=False)
     name = Column(
-        String(Base.TENANT_NAME_STRING_SIZE),
+        String,
         nullable=False,
     )
     capabilities = Column(
-        String(Base.CAPABILITIES_STRING_SIZE),
+        String,
         nullable=False,
     )
     limitations = Column(
-        String(Base.LIMITATIONS_STRING_SIZE),
+        String,
         nullable=False,
     )
     contact_person = Column(
-        String(Base.CONTACT_PERSON_STRING_SIZE),
+        String,
         nullable=False,
     )
     load_time = Column(
