@@ -40,7 +40,7 @@ def pytest_configure(config):
                             """
             )
 
-        open(config_path.joinpath("user_management", "__init__.py"), "w").close()
+        open(config_path.joinpath("__init__.py"), "w").close()
         # https://stackoverflow.com/questions/12654772/create-empty-file-using-python
 
         print("File created.")
