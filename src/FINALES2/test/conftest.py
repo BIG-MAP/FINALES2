@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .filesFotTests import (
+from FINALES2.test.filesFotTests import (
     algorithm,
     script_path,
     secret_key,
