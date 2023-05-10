@@ -26,7 +26,6 @@ def pytest_configure(config):
         "user_management", "files_user_management"
     )
     if not config_path.is_dir():
-        config_path.parent.mkdir()
         config_path.mkdir()
         with open(config_path.joinpath("config_user_manager.py"), "w") as config_file:
             config_file.write(
