@@ -27,13 +27,17 @@ def pytest_configure(config):
         with open(config_path.joinpath("config_user_manager.py"), "w") as config_file:
             config_file.write(
                 f"""
-    script_path = {script_path}
+                    script_path = {script_path}
 
-    user_db: str = {user_db}
+                    user_db: str = {user_db}
 
-    secret_key = {secret_key}
-    algorithm = {algorithm}
-    token_expiration_min = {token_expiration_min}
-            """
+                    secret_key = {secret_key}
+                    algorithm = {algorithm}
+                    token_expiration_min = {token_expiration_min}
+                            """
             )
-    print("File created.")
+
+        open(config_path.joinpath("__init__.py"), "w").close()
+        # https://stackoverflow.com/questions/12654772/create-empty-file-using-python
+
+        print("File created.")
