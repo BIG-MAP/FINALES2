@@ -1,12 +1,19 @@
+"""This file provides a configuration for testing only. The keys in this file must not
+be used for deployment of the code."""
+
 from pathlib import Path
 
-from FINALES2.test.filesFotTests import (
-    algorithm,
-    script_path,
-    secret_key,
-    token_expiration_min,
-    user_db,
-)
+script_path = Path(__file__).parent.resolve()
+
+host = "localhost"
+port = 13371
+
+user_db: str = str(Path(script_path).joinpath("session_testing.db"))
+
+secret_key = "for_test_only"
+algorithm = "HS256"
+token_expiration_min = 2
+
 
 # The following code generates a test config file for the user management, which will
 # then be used for the test. It is a copy of this configuration file as the methods
