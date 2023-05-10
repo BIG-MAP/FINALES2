@@ -1,6 +1,7 @@
 """This file provides a configuration for testing only. The keys in this file must not
 be used for deployment of the code."""
 
+import sys
 from pathlib import Path
 
 
@@ -43,6 +44,7 @@ def pytest_configure(config):
         open(config_path.joinpath("__init__.py"), "w").close()
         # https://stackoverflow.com/questions/12654772/create-empty-file-using-python
 
+        sys.path.append(config_path.parent.mkdir())
         print("File created.")
         print("config", str(config_path.joinpath("config_user_manager.py")))
         print("init", str(config_path.joinpath("__init__.py")))
