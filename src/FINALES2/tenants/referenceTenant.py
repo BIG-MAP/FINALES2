@@ -41,55 +41,10 @@ class Tenant(BaseModel):
                  tenant object
         :rtype: str
         """
-        # # get the dictionary of the tenant object to know the top level keys
-        # tenantDict = self.__dict__
-        # # go through all the attributes of the tenant object
-        # for attr in tenantDict.keys():
-        #     # get the attribute
-        #     attrObj = getattr(self, attr)
-        #     # if it is of type GeneralMetaData or ServerConfig
-        #     if type(attrObj) in [GeneralMetaData, ServerConfig]:
-        #         # using the dictionary is possible
-        #         tenantDict[attr] = attrObj.__dict__
-        #     # if it is a list of Quantity objects
-        #     elif isinstance(attrObj, dict):
-        #         if isinstance(attrObj[list(attrObj.keys())[0]], Quantity):
-        #             # convert each element in the list to a dictionary seperately
-        #             for quantityKey in attrObj.keys():
-        #                 quantityDict = attrObj[quantityKey].__dict__
-        #                 methodsDict = quantityDict["methods"].copy()
-        #                 for method in methodsDict.keys():
-        #                     methodsDict[method] = methodsDict[method].__dict__
-        #                 quantityDict["methods"] = methodsDict
-        #                 tenantDict[attr][quantityKey] = quantityDict
-        #         else:
-        #             tenantDict[attr] = str(attrObj)
-        #     # if it is a user
-        #     elif isinstance(attrObj, User):
-        #         # get the top level keys by casting to a dictionary
-        #         tenantDict[attr] = attrObj.__dict__
-        #         # copy this dictionary
-        #         attrDict = tenantDict[attr].copy()
-        #         # iterate over the keys
-        #         for element in tenantDict[attr].keys():
-        #             # if a UUID is found
-        #             if isinstance(attrDict[element], UUID):
-        #                 # cast it to a string
-        #                 attrDict[element] = str(tenantDict[attr][element])
-        #         # assign the resulting dictionary to the tenantDict
-        #         tenantDict[attr] = attrDict
-        #     # if it is a datetime object
-        #     elif isinstance(attrObj, datetime):
-        #         # cast the datetime object to a string in iso format
-        #         tenantDict[attr] = attrObj.isoformat()
-        #     elif isinstance(attrObj, list):
-        #         # cast the list object to a string
-        #         tenantDict[attr] = str(attrObj)
-        #     elif isinstance(attrObj, int):
-        #         tenantDict[attr] = int(attrObj)
-        # # format the tenantDict as a JSON string
         return self.json()
 
+    # TODO: Consider changing this function using pydantic parse_obj_as
+    # (https://docs.pydantic.dev/latest/usage/models/#parsing-data-into-a-specified-type)
     def from_json(attrsStr: str):
         """A function to obtain a tenant object from a JSON string
 
