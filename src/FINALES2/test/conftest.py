@@ -38,3 +38,4 @@ algorithm = {algorithm}
 token_expiration_min = {token_expiration_min}
         """
         )
+print("File created.")
