@@ -21,7 +21,9 @@ def pytest_configure(config):
     config_base_path = Path(script_path).parents[2]
     print(config_base_path)
 
-    config_path = Path(config_base_path).joinpath("files_user_management")
+    config_path = Path(config_base_path).joinpath(
+        "user_management", "files_user_management"
+    )
     if not config_path.is_dir():
         config_path.mkdir()
         with open(config_path.joinpath("config_user_manager.py"), "w") as config_file:
@@ -37,7 +39,7 @@ def pytest_configure(config):
                             """
             )
 
-        open(config_path.joinpath("__init__.py"), "w").close()
+        open(config_path.joinpath("user_management", "__init__.py"), "w").close()
         # https://stackoverflow.com/questions/12654772/create-empty-file-using-python
 
         print("File created.")
