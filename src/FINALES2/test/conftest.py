@@ -41,3 +41,5 @@ def pytest_configure(config):
         # https://stackoverflow.com/questions/12654772/create-empty-file-using-python
 
         print("File created.")
+        print("config", str(config_path.joinpath("config_user_manager.py")))
+        print("init", str(config_path.joinpath("__init__.py")))
