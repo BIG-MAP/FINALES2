@@ -13,7 +13,8 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 
-from FINALES2.engine.main import Engine
+from FINALES2.engine.main import Engine, get_db
+from FINALES2.engine.server_manager import ServerManager
 from FINALES2.server.schemas import CapabilityInfo, Request, RequestInfo, Result
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
@@ -91,5 +92,5 @@ def get_capabilities(
     currently_available=True, token: User = Depends(user_manager.get_active_user)
 ) -> List[CapabilityInfo]:
     """API endpoint to get all capabilities."""
-    engine = Engine()
-    return engine.get_capabilities(currently_available=currently_available)
+    server_manager = ServerManager(database_context=get_db)
+    return server_manager.get_capabilities(currently_available=currently_available)
