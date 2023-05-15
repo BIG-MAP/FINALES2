@@ -1,11 +1,32 @@
 import json
 import uuid
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
+import jsonschema
 from sqlalchemy import select
 
 from FINALES2.db import Quantity, Tenant
-from FINALES2.server.schemas import CapabilityInfo
+from FINALES2.engine.limitations_cache import LimitationsCache
+from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo
+
+LIMITATION_SCHEMA_OPTIONS = {
+    "type": "object",
+    "properties": {
+        "available_options": {"type": "array", "items": {"type": ["number", "string"]}}
+    },
+}
+
+LIMITATION_SCHEMA_RANGE = {
+    "type": "object",
+    "properties": {
+        "available_range": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {"type": "number"},
+        }
+    },
+}
 
 
 class ServerManager:
@@ -86,3 +107,71 @@ class ServerManager:
             api_response.append(new_object)
 
         return api_response
+
+    def get_limitations(self, currently_available=True) -> List[LimitationsInfo]:
+        """Return all (currently available) limitations."""
+
+        if currently_available:
+            print("This should filter based on the available tenants")
+        else:
+            print("This should show all definitions in the quantity table")
+
+        query_inp = select(Tenant)  # .where()
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+        limitations_cache = LimitationsCache()
+        for (tenant,) in query_out:
+            tenant_limitations = json.loads(tenant.limitations)
+            for limitations_item in tenant_limitations:
+                self.validate_limitations(limitations_item)
+                limitations_cache.add_limitations(limitations_item)
+
+        api_response = limitations_cache.get_limitations()
+        return api_response
+
+    def validate_limitations(self, limitations: Dict[str, Any]):
+        """Validates a set of limitations."""
+
+        quantity = limitations["quantity"]
+        method = limitations["method"]
+        limitations_properties = limitations["properties"]
+
+        capability_info = self.get_capabilities(
+            quantity=quantity,
+            method=method,
+            currently_available=False,
+        )
+        schema_source = capability_info[0].json_schema_specifications
+        limitations_schema = self._construct_validator_recursively(schema_source)
+        print("\n\n\n\nVALIDATING\n")
+        print(limitations_schema)
+        print(limitations_properties)
+        try:
+            jsonschema.validate(
+                instance=limitations_properties, schema=limitations_schema
+            )
+            print("VALID!\n\n\n")
+        except jsonschema.exceptions.ValidationError as error:
+            print("\n\n")
+            print(error)
+            print("\nOOPSIE\n\n\n")
+
+    def _construct_validator_recursively(self, schema_source):
+        """Constructs the schema to validate the limitations recursively."""
+
+        output_schema = {}
+        for key, val in schema_source.items():
+            if key == "type" and val == "string":
+                return LIMITATION_SCHEMA_OPTIONS
+
+            if key == "type" and val == "number":
+                return LIMITATION_SCHEMA_RANGE
+
+            if isinstance(val, dict):
+                output_schema[key] = self._construct_validator_recursively(val)
+
+            else:
+                output_schema[key] = val
+
+        return output_schema
