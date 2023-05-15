@@ -2,7 +2,7 @@ import click
 import uvicorn
 from fastapi import Depends, FastAPI
 
-from FINALES2.server.operations import operations_router
+from FINALES2.server.endpoints import operations_router
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
 

@@ -39,7 +39,7 @@ def get_result(
     return engine.get_result(object_id)
 
 
-@operations_router.post("/post/request/")
+@operations_router.post("/requests/")
 def post_request(
     request_data: Request, token: User = Depends(user_manager.get_active_user)
 ) -> str:
@@ -48,7 +48,7 @@ def post_request(
     return engine.create_request(request_data)
 
 
-@operations_router.post("/post/result/")
+@operations_router.post("/results/")
 def post_result(
     result_data: Result, token: User = Depends(user_manager.get_active_user)
 ) -> str:
@@ -57,7 +57,7 @@ def post_result(
     return engine.create_result(result_data)
 
 
-@operations_router.get("/get/pending_requests/")
+@operations_router.get("/pending_requests/")
 def get_pending_requests(
     token: User = Depends(user_manager.get_active_user),
 ) -> List[RequestInfo]:
@@ -66,8 +66,8 @@ def get_pending_requests(
     return engine.get_pending_requests()
 
 
-@operations_router.get("/get/result_by_request/")
-def get_result_by_request(
+@operations_router.get("/results_requested/{request_id}")
+def get_results_requested(
     request_id: str, token: User = Depends(user_manager.get_active_user)
 ) -> Optional[Result]:
     """API endpoint to get a result by corresponding request ID."""
@@ -75,8 +75,8 @@ def get_result_by_request(
     return engine.get_result_by_request(request_id)
 
 
-@operations_router.get("/get/all_results/")
-def get_all_results(
+@operations_router.get("/results_requested/")
+def get_results_requested_all(
     quantity: Optional[str] = None,
     method: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
@@ -86,7 +86,7 @@ def get_all_results(
     return engine.get_all_results(quantity=quantity, method=method)
 
 
-@operations_router.get("/get/capabilities/")
+@operations_router.get("/capabilities/")
 def get_capabilities(
     currently_available=True, token: User = Depends(user_manager.get_active_user)
 ) -> List[CapabilityInfo]:
