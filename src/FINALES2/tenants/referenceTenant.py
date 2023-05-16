@@ -2,14 +2,13 @@ import json
 import time
 from datetime import datetime
 from typing import Any, Callable, Optional
-from uuid import UUID
 
 import requests
 from pydantic import BaseModel
 
-import FINALES2.server.config as config
-from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig, User
+from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
+from FINALES2.user_management.classes_user_manager import User
 
 
 class Tenant(BaseModel):
@@ -21,19 +20,20 @@ class Tenant(BaseModel):
     :rtype: Tenant
     """
 
-    generalMeta: GeneralMetaData
+    general_meta: GeneralMetaData
     quantities: dict[str, Quantity]
     queue: list = []
-    tenantConfig: Any
+    sleep_time_s: int = 1
+    tenant_config: Any
     _run_method: Callable
     _prepare_results: Callable
-    FINALESServerConfig: ServerConfig
-    endRuntime: Optional[datetime]
+    FINALES_server_config: ServerConfig
+    end_run_time: Optional[datetime]
     operator: User
-    tenantUser: User
+    tenant_user: User
 
     # TODO: fix for new types of attributes (methods and quantities)
-    # TODO: add tenantConfig object
+    # TODO: add tenant_config object
     def to_json(self) -> str:
         """A function to create a JSON string from a tenant object
 
@@ -41,53 +41,10 @@ class Tenant(BaseModel):
                  tenant object
         :rtype: str
         """
-        # get the dictionary of the tenant object to know the top level keys
-        tenantDict = self.__dict__
-        # go through all the attributes of the tenant object
-        for attr in tenantDict.keys():
-            # get the attribute
-            attrObj = getattr(self, attr)
-            # if it is of type GeneralMetaData or ServerConfig
-            if type(attrObj) in [GeneralMetaData, ServerConfig]:
-                # using the dictionary is possible
-                tenantDict[attr] = attrObj.__dict__
-            # if it is a list of Quantity objects
-            elif isinstance(attrObj, dict):
-                if isinstance(attrObj[list(attrObj.keys())[0]], Quantity):
-                    # convert each element in the list to a dictionary seperately
-                    for quantityKey in attrObj.keys():
-                        quantityDict = attrObj[quantityKey].__dict__
-                        methodsDict = quantityDict["methods"].copy()
-                        for method in methodsDict.keys():
-                            methodsDict[method] = methodsDict[method].__dict__
-                        quantityDict["methods"] = methodsDict
-                        tenantDict[attr][quantityKey] = quantityDict
-                else:
-                    tenantDict[attr] = str(attrObj)
-            # if it is a user
-            elif isinstance(attrObj, User):
-                # get the top level keys by casting to a dictionary
-                tenantDict[attr] = attrObj.__dict__
-                # copy this dictionary
-                attrDict = tenantDict[attr].copy()
-                # iterate over the keys
-                for element in tenantDict[attr].keys():
-                    # if a UUID is found
-                    if isinstance(attrDict[element], UUID):
-                        # cast it to a string
-                        attrDict[element] = str(tenantDict[attr][element])
-                # assign the resulting dictionary to the tenantDict
-                tenantDict[attr] = attrDict
-            # if it is a datetime object
-            elif isinstance(attrObj, datetime):
-                # cast the datetime object to a string in iso format
-                tenantDict[attr] = attrObj.isoformat()
-            elif isinstance(attrObj, list):
-                # cast the list object to a string
-                tenantDict[attr] = str(attrObj)
-        # format the tenantDict as a JSON string
-        return json.dumps(tenantDict)
+        return self.json()
 
+    # TODO: Consider changing this function using pydantic parse_obj_as
+    # (https://docs.pydantic.dev/latest/usage/models/#parsing-data-into-a-specified-type)
     def from_json(attrsStr: str):
         """A function to obtain a tenant object from a JSON string
 
@@ -107,9 +64,9 @@ class Tenant(BaseModel):
             attr = attrsJSON[k]
             # check for each attribute and create the respective object from the
             # dictionary in the JSON object
-            if k == "generalMeta":
+            if k == "general_meta":
                 attrsJSON[k] = GeneralMetaData(**attr)
-            if k in ["operator", "tenantUser"]:
+            if k in ["operator", "tenant_user"]:
                 attrsJSON[k] == User(**attr)
             if k == "quantities":
                 # TODO: properly deserialize the methods
@@ -119,7 +76,7 @@ class Tenant(BaseModel):
                         methods[key] = Method(**attr[qKey]["methods"][key])
                     attr[qKey]["methods"] = methods
                     attrsJSON[k][qKey] = Quantity(**attr[qKey])
-            if k == "endRuntime":
+            if k == "end_run_time":
                 attrsJSON[k] = datetime.fromisoformat(attr)
             if k == "queue":
                 attrsJSON[k] = eval(attr)
@@ -244,19 +201,16 @@ class Tenant(BaseModel):
         print("Logging in ...")
         requests.post(
             (
-                f"http://{self.FINALESServerConfig.host}:"
-                f"{self.FINALESServerConfig.port}/userManagement/authenticate/"
+                f"http://{self.FINALES_server_config.host}:"
+                f"{self.FINALES_server_config.port}/userManagement/authenticate/"
             ),
             data={
                 "grant_type": "",
-                "username": f"{self.tenantUser.username}",
-                "password": f"{self.tenantUser.password}",
+                "username": f"{self.tenant_user.username}",
+                "password": f"{self.tenant_user.password}",
                 "scope": "",
                 "client_id": "",
                 "client_secret": "",
-            },
-            params={
-                "userDB": f"{config.userDB}",
             },
             headers={
                 "accept": "application/json",
@@ -267,8 +221,8 @@ class Tenant(BaseModel):
 
         # get the pending requests from the FINALES server
         pendingRequests = requests.get(
-            f"http://{self.FINALESServerConfig.host}"
-            f":{self.FINALESServerConfig.port}/get/pending_requests/",
+            f"http://{self.FINALES_server_config.host}"
+            f":{self.FINALES_server_config.port}/get/pending_requests/",
             params={},
             headers={}
             # headers=accessInfo.json(),
@@ -294,8 +248,8 @@ class Tenant(BaseModel):
 
         # post the result
         _postedResult = requests.post(
-            f"http://{self.FINALESServerConfig.host}"
-            f":{self.FINALESServerConfig.port}/post/result/",
+            f"http://{self.FINALES_server_config.host}"
+            f":{self.FINALES_server_config.port}/post/result/",
             json=result_formatted,
             params={},
             headers={}
@@ -314,12 +268,12 @@ class Tenant(BaseModel):
         the server, checking them for their compatibility with the tenant and posting
         them to the server.
         """
-        # run until the endRuntime is exceeded
+        # run until the end_run_time is exceeded
         # this is intended for maintenance like refilling consumables,
         # for which a time can roughly be estimated
-        while datetime.now() < self.endRuntime:
+        while datetime.now() < self.end_run_time:
             # wait in between two requests to the server
-            time.sleep(config.sleepTime_s)
+            time.sleep(self.sleep_time_s)
             self._update_queue()
             # get the first request in the queue to work on -> first in - first out
             activeRequest = self.queue[0]
