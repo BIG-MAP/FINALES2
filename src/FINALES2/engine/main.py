@@ -13,7 +13,7 @@ from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
 from FINALES2.db.session import get_db
-from FINALES2.server.schemas import CapabilityInfo, Request, RequestInfo, Result
+from FINALES2.server.schemas import Request, RequestInfo, Result
 
 
 class RequestStatus(Enum):
@@ -227,24 +227,6 @@ class Engine:
         for (request_info,) in query_out:
             request_obj = RequestInfo.from_db_request(request_info)
             api_response.append(request_obj)
-
-        return api_response
-
-    def get_capabilities(self, currently_available=True) -> List[CapabilityInfo]:
-        """Return all (currently available) capabilities."""
-        if currently_available:
-            print("This should filter based on the available tenants")
-        else:
-            print("This should show all definitions in the quantity table")
-
-        query_inp = select(DbQuantity)  # .where()
-        with get_db() as session:
-            query_out = session.execute(query_inp).all()
-
-        api_response = []
-        for (capability,) in query_out:
-            new_object = CapabilityInfo.from_db_quantity(capability)
-            api_response.append(new_object)
 
         return api_response
 
