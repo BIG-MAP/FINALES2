@@ -30,8 +30,7 @@ operations_router = APIRouter(tags=["Data Operations"])
 
 @operations_router.get("/requests/{object_id}")
 def get_request(
-    object_id: str,
-    token: User = Depends(user_manager.get_active_user),
+    object_id: str, token: User = Depends(user_manager.get_active_user)
 ) -> Optional[Request]:
     """API endpoint to get requests by id."""
     engine = Engine()
@@ -49,8 +48,7 @@ def get_result(
 
 @operations_router.post("/requests/")
 def post_request(
-    request_data: Request,
-    token: User = Depends(user_manager.get_active_user),
+    request_data: Request, token: User = Depends(user_manager.get_active_user)
 ) -> str:
     """API endpoint to post a new request."""
     engine = Engine()
@@ -59,8 +57,7 @@ def post_request(
 
 @operations_router.post("/results/")
 def post_result(
-    result_data: Result,
-    token: User = Depends(user_manager.get_active_user),
+    result_data: Result, token: User = Depends(user_manager.get_active_user)
 ) -> str:
     """API endpoint to post a new result."""
     engine = Engine()
@@ -78,8 +75,7 @@ def get_pending_requests(
 
 @operations_router.get("/results_requested/{request_id}")
 def get_results_requested(
-    request_id: str,
-    token: User = Depends(user_manager.get_active_user),
+    request_id: str, token: User = Depends(user_manager.get_active_user)
 ) -> Optional[Result]:
     """API endpoint to get a result by corresponding request ID."""
     engine = Engine()
@@ -99,8 +95,7 @@ def get_results_requested_all(
 
 @operations_router.get("/capabilities/")
 def get_capabilities(
-    currently_available=True,
-    token: User = Depends(user_manager.get_active_user),
+    currently_available=True, token: User = Depends(user_manager.get_active_user)
 ) -> List[CapabilityInfo]:
     """API endpoint to get all capabilities."""
     server_manager = ServerManager(database_context=get_db)

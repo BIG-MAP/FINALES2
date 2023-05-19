@@ -1,0 +1,41 @@
+{
+    "name": "Example-t1",
+    "capabilities": {},
+    "limitations": [
+      {
+        "quantity": "Example-q1",
+        "method": "Example-q1-m1",
+        "limitations": {
+          "type": "object",
+          "required": [
+            "temperature"
+          ],
+          "properties": {
+            "quality": {
+              "type": "string",
+              "enum": ["low", "medium", "high"]
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "units": "kelvin",
+                  "type": "number",
+                  "multipleOf": 0.5,
+                  "minimum": 200,
+                  "maximum": 300
+                },
+                {
+                  "units": "kelvin",
+                  "type": "number",
+                  "multipleOf": 10,
+                  "minimum": 500,
+                  "maximum": 800
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "contact_person": "Robert Robinson"
+  }

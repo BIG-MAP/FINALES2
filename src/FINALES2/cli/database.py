@@ -56,7 +56,7 @@ def db_add_capability(input_filepath):
 )
 @cli_add.command("tenant")
 def db_add_tenant(input_filepath):
-    "Add an entry to the quantity table."
+    "Add an entry to the tenant table."
 
     with open(input_filepath) as fileobj:
         setup_data = json.load(fileobj)

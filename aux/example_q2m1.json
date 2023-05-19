@@ -1,0 +1,41 @@
+{
+    "quantity": "Example-q2",
+    "method": "Example-q2-m1",
+    "json_schema_specifications": {
+      "title": "Example-q2-m1-inp",
+      "type": "object",
+      "properties": {
+        "submethod": {
+          "title": "Submethod",
+          "description": "Submethod of the measurement.",
+          "type": "string"
+        },
+        "pressure": {
+          "title": "Pressure",
+          "description": "This is the pressure of measuring cell.",
+          "units": "Pascal",
+          "type": "number"
+        }
+      },
+      "required": [
+        "pressure"
+      ]
+    },
+    "json_schema_result_output": {
+      "title": "Example-q2-m1-out",
+      "description": "Result of the measurement.",
+      "type": "object",
+      "properties": {
+        "quantity_value": {
+          "title": "Output Value",
+          "description": "The value of the measured quantity.",
+          "units": "",
+          "type": "number"
+        }
+      },
+      "required": [
+        "quantity_value"
+      ]
+    },
+    "is_active": true
+  }
