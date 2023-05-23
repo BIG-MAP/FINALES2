@@ -96,10 +96,25 @@ class ServerManager:
         else:
             print("This should show all definitions in the quantity table")
 
-        query_inp = select(Tenant)  # .where()
+        query_inp = select(Tenant)
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
 
+        # Internally, the entries of the tables contains the limitations for
+        # the capabilities (quantity/method combinations) of each tenant.
+        #     {
+        #       Tenant1: { Capability1: lims, Capability2: lims, ... },
+        #       Tenant2: { Capability2: lims, Capability3: lims, ... },
+        #       ...
+        #     }
+        #
+        # But for reporting back, it is better to group all limitations of
+        # the different tenants that provide a given capability together:
+        #     {
+        #       Capability1: lims (aggregated from tenants with Capability1),
+        #       Capability2: lims (aggregated from tenants with Capability2),
+        #       ...
+        #     }
         limitations_accumdict: Dict[str, Any] = {}
         for (tenant,) in query_out:
             limitations_datalist = json.loads(tenant.limitations)
