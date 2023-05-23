@@ -41,11 +41,11 @@ Follow these steps to set up Docker for deplying the latest development version 
 
 1. Click on the icon for the remote explorer in the left sided navigation bar in VS Code
 
-1. Find the finales2docker in the list, hover over it and click the left most icon that pops up
+1. Find the finales2 docker in the list (if you did not run any other containers before, it is the first one in the list under the drop-down menu in DevContainers), hover over it and click the left most icon that pops up
 
 1. This opens a new VS Code window within the Docker
 
-1. Open the root folder "\"
+1. Open the root folder `/`
 
 1. Navigate to the directory called "data"
 
@@ -73,6 +73,51 @@ Follow these steps to set up Docker for deplying the latest development version 
 
 1. Start the FINALES server by running `finales server start --ip 0.0.0.0`
 
+# Make FINALES2 accessible from within a network
+1. Follow all the above instructions
+
+1. Stop the Docker image
+
+1. Ping the host, which ran your docker from within the network and make sure this is successful
+
+1. Change the line number 7 in the docker-compose.yml to `- "8888:13372"`
+
+1. Add the following below line number 12 inside the finales seciton
+   ```
+   extra_hosts:
+   - "FINALEShost:<the IP of your host in the network>"
+   ```
+
+1. Save the .yml file
+
+1. Open the Dockerfile and change line 26 to the following `CMD ["jupyter-lab","--ip=0.0.0.0", "--no-browser","--allow-root","--port=13371"]`
+
+1. Save the Dockerfile
+
+1. Open a terminal and navigate to the directory, in which the Dockerfile and the docker-compose.yml file are saved
+
+1. Run the Docker container for the FINALES environment using the following commands:
+
+    1. In a terminal, navigate to the directory, where the two files are saved
+
+    1. Run `docker build -t finales:v0.1 .` (Do not overlook the trailing dot.)
+
+    1. Run `docker volume create finales_data`
+
+    1. Run `docker-compose up`
+
+1. Follow the steps described under Start FINALES2 except for the last one. Exchange this to be `finales server start --ip 0.0.0.0 --port 13372`
+
+1. Check the connection by running the following command on another computer *in the same network*
+   ```
+   python
+   mport requests
+
+    r = requests.get('http://<the IP of your host in the network>:8888')
+
+    print(r.status_code)
+    ```
+    The response should be 200 and the server should also show a response 200
 
 # Local installation of the package
 
