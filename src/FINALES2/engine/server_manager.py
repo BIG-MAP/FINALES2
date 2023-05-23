@@ -1,11 +1,13 @@
 import json
 import uuid
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
+import jsonschema
+import jsonsubschema
 from sqlalchemy import select
 
 from FINALES2.db import Quantity, Tenant
-from FINALES2.server.schemas import CapabilityInfo
+from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo
 
 
 class ServerManager:
@@ -39,15 +41,14 @@ class ServerManager:
 
     def add_tenant(self, tenant_specs):
         """Adds new tenant to the server."""
-
-        tenant_limitations = json.dumps(tenant_specs["limitations"])
+        tenant_limitations = tenant_specs["limitations"]
         for limitations in tenant_limitations:
             self.validate_limitations(limitations)
 
         tenant_data = {
             "uuid": str(uuid.uuid4()),
             "name": tenant_specs["name"],
-            "limitations": tenant_limitations,
+            "limitations": json.dumps(tenant_limitations),
             "capabilities": json.dumps(tenant_specs["capabilities"]),
             "contact_person": tenant_specs["contact_person"],
         }
@@ -86,3 +87,77 @@ class ServerManager:
             api_response.append(new_object)
 
         return api_response
+
+    def get_limitations(self, currently_available=True) -> List[LimitationsInfo]:
+        """Return all (currently available) limitations."""
+
+        if currently_available:
+            print("This should filter based on the available tenants")
+        else:
+            print("This should show all definitions in the quantity table")
+
+        query_inp = select(Tenant)
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+        # Internally, the entries of the tables contains the limitations for
+        # the capabilities (quantity/method combinations) of each tenant.
+        #     {
+        #       Tenant1: { Capability1: lims, Capability2: lims, ... },
+        #       Tenant2: { Capability2: lims, Capability3: lims, ... },
+        #       ...
+        #     }
+        #
+        # But for reporting back, it is better to group all limitations of
+        # the different tenants that provide a given capability together:
+        #     {
+        #       Capability1: lims (aggregated from tenants with Capability1),
+        #       Capability2: lims (aggregated from tenants with Capability2),
+        #       ...
+        #     }
+        limitations_accumdict: Dict[str, Any] = {}
+        for (tenant,) in query_out:
+            limitations_datalist = json.loads(tenant.limitations)
+            for limitations_data in limitations_datalist:
+                quantity = limitations_data["quantity"]
+                if quantity not in limitations_accumdict:
+                    limitations_accumdict[quantity] = {}
+
+                method = limitations_data["method"]
+                if method not in limitations_accumdict[quantity]:
+                    limitations_accumdict[quantity][method] = []
+
+                limitations_schema = limitations_data["limitations"]
+                limitations_accumdict[quantity][method].append(limitations_schema)
+
+        api_response = []
+        for keyq, limitations_methods in limitations_accumdict.items():
+            for keym, limitations_schemas in limitations_methods.items():
+                api_response.append(
+                    LimitationsInfo(
+                        quantity=keyq,
+                        method=keym,
+                        limitations={"anyOf": limitations_schemas},
+                    )
+                )
+
+        return api_response
+
+    def validate_limitations(self, limitations: LimitationsInfo):
+        """Validates a set of limitations."""
+
+        capability_info = self.get_capabilities(
+            quantity=limitations["quantity"],
+            method=limitations["method"],
+            currently_available=False,
+        )
+        limitations_superschema = capability_info[0].json_schema_specifications
+        limitations_subschema = limitations["limitations"]
+
+        is_subschema = jsonsubschema.isSubschema(
+            limitations_subschema, limitations_superschema
+        )
+        if not is_subschema:
+            raise jsonschema.exceptions.ValidationError(
+                "Limitations are not a subschema"
+            )

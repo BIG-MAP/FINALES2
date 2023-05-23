@@ -1,0 +1,41 @@
+{
+    "quantity": "Example-q1",
+    "method": "Example-q1-m1",
+    "json_schema_specifications": {
+      "title": "Example-q1-m1-inp",
+      "type": "object",
+      "properties": {
+        "quality": {
+          "title": "Quality",
+          "description": "Quality of the measurement.",
+          "type": "string"
+        },
+        "temperature": {
+          "title": "Temperature",
+          "description": "This is the temperature of measuring cell.",
+          "units": "kelvin",
+          "type": "number"
+        }
+      },
+      "required": [
+        "temperature"
+      ]
+    },
+    "json_schema_result_output": {
+      "title": "Example-q1-m1-out",
+      "description": "Result of the measurement.",
+      "type": "object",
+      "properties": {
+        "quantity_value": {
+          "title": "Quantity Value",
+          "description": "The value of the measured quantity.",
+          "units": "g/L",
+          "type": "number"
+        }
+      },
+      "required": [
+        "quantity_value"
+      ]
+    },
+    "is_active": true
+  }

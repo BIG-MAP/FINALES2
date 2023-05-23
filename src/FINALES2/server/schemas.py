@@ -190,3 +190,9 @@ class CapabilityInfo(BaseModel):
             "json_schema_result_output": json.loads(db_quantity.result_output),
         }
         return cls(**init_params)
+
+
+class LimitationsInfo(BaseModel):
+    quantity: str
+    method: str
+    limitations: Dict[str, Any]

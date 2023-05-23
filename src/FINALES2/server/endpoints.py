@@ -15,7 +15,13 @@ from fastapi import APIRouter, Depends
 
 from FINALES2.engine.main import Engine, get_db
 from FINALES2.engine.server_manager import ServerManager
-from FINALES2.server.schemas import CapabilityInfo, Request, RequestInfo, Result
+from FINALES2.server.schemas import (
+    CapabilityInfo,
+    LimitationsInfo,
+    Request,
+    RequestInfo,
+    Result,
+)
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
 
@@ -94,3 +100,13 @@ def get_capabilities(
     """API endpoint to get all capabilities."""
     server_manager = ServerManager(database_context=get_db)
     return server_manager.get_capabilities(currently_available=currently_available)
+
+
+@operations_router.get("/limitations/")
+def get_limitations(
+    currently_available=True,
+    token: User = Depends(user_manager.get_active_user),
+) -> List[LimitationsInfo]:
+    """API endpoint to get all limitations."""
+    server_manager = ServerManager(database_context=get_db)
+    return server_manager.get_limitations(currently_available=currently_available)

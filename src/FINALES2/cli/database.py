@@ -45,3 +45,21 @@ def db_add_capability(input_filepath):
 
     server_manager = ServerManager(database_context=get_db)
     server_manager.add_capability(capability_data)
+
+
+@click.option(
+    "--input-filepath",
+    required=True,
+    prompt="Please provide the path to a json file with the specs",
+    type=str,
+    help="Path to a json file with the specs.",
+)
+@cli_add.command("tenant")
+def db_add_tenant(input_filepath):
+    "Add an entry to the tenant table."
+
+    with open(input_filepath) as fileobj:
+        setup_data = json.load(fileobj)
+
+    server_manager = ServerManager(database_context=get_db)
+    server_manager.add_tenant(setup_data)
