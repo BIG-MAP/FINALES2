@@ -100,6 +100,7 @@ class Tenant(BaseModel):
         return _login_func
 
 
+
     def _checkQuantity(self, request: Request) -> bool:
         """This function checks, if a quantity in a request can be provided by the
         tenant.
