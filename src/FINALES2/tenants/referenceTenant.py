@@ -2,14 +2,13 @@ import json
 import time
 from datetime import datetime
 from typing import Any, Callable, Optional
-from uuid import UUID
 
 import requests
 from pydantic import BaseModel
 
 from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig
-from FINALES2.server.schemas import Request, RequestInfo, ResultInfo
-from FINALES2.user_management.classes_user_manager import User
+from FINALES2.server.schemas import Request
+from FINALES2.user_management.classes_user_manager import AccessToken, User
 
 
 class Tenant(BaseModel):
@@ -30,9 +29,9 @@ class Tenant(BaseModel):
     _prepare_results: Callable
     FINALES_server_config: ServerConfig
     end_run_time: Optional[datetime]
+    authorization_header: Optional[dict]
     operator: User
     tenant_user: User
-    tenant_uuid: str = "test_ID"
 
     # TODO: fix for new types of attributes (methods and quantities)
     # TODO: add tenant_config object
@@ -84,6 +83,36 @@ class Tenant(BaseModel):
                 attrsJSON[k] = eval(attr)
         tenantObj = Tenant(**attrsJSON)
         return tenantObj
+
+    def _login(func):   # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
+        def _login_func(self, *args, **kwargs):
+            print("Logging in ...")
+            access_information = requests.post(
+                (
+                    f"http://{self.FINALES_server_config.host}:"
+                    f"{self.FINALES_server_config.port}/user_management/authenticate/"
+                ),
+                data={
+                    "grant_type": "",
+                    "username": f"{self.tenant_user.username}",
+                    "password": f"{self.tenant_user.password}",
+                    "scope": "",
+                    "client_id": "",
+                    "client_secret": "",
+                },
+                headers={
+                    "accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+            access_information = access_information.json()
+            self.authorization_header = {
+                    "accept": "application/json",
+                    "Authorization": (f"{access_information['token_type'].capitalize()} "
+                    f"{access_information['access_token']}")
+                }
+            return func(self, *args, **kwargs)
+        return _login_func
 
 
     def _checkQuantity(self, request: Request) -> bool:
@@ -149,6 +178,7 @@ class Tenant(BaseModel):
         parametersOK: bool = all(parametersCheck)
         return parametersOK
 
+    @_login
     def _update_queue(self) -> None:
         """This function clears and recreates the queue of the tenant."""
         # empty the queue before recreating it to make sure, that all the requests
@@ -158,9 +188,7 @@ class Tenant(BaseModel):
 
         # get the pending requests from the FINALES server
         pendingRequests = self._get_pending_requests()
-
         # update the queue of the tenant
-
         for pendingItem in pendingRequests:
             # create the Request object from the json string
             requestDict = pendingItem["request"]
@@ -200,37 +228,15 @@ class Tenant(BaseModel):
         :return: a list of requests in JSON format
         :rtype: list[dict]
         """
-        # login to the server
-        print("Logging in ...")
-        requests.post(
-            (
-                f"http://{self.FINALES_server_config.host}:"
-                f"{self.FINALES_server_config.port}/userManagement/authenticate/"
-            ),
-            data={
-                "grant_type": "",
-                "username": f"{self.tenant_user.username}",
-                "password": f"{self.tenant_user.password}",
-                "scope": "",
-                "client_id": "",
-                "client_secret": "",
-            },
-            headers={
-                "accept": "application/json",
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-        )
         print("Looking for tasks...")
-
         # get the pending requests from the FINALES server
         pendingRequests = requests.get(
             f"http://{self.FINALES_server_config.host}"
             f":{self.FINALES_server_config.port}/get/pending_requests/",
             params={},
-            headers={}
-            # headers=accessInfo.json(),
-        ).json()
-        return pendingRequests
+            headers=self.authorization_header
+        )
+        return pendingRequests.json()
 
     def _post_request(self):
         pass
@@ -238,7 +244,7 @@ class Tenant(BaseModel):
     def _get_results(self):
         pass
 
-    def _post_result(self, request: RequestInfo, data: Any):
+    def _post_result(self, request: Request, data: Any):
         """This function posts a result generated in reply to a request.
 
         :param request: a request specifying the details of the requested data
@@ -248,8 +254,6 @@ class Tenant(BaseModel):
         """
         # transfer the output of your method to a postable result
         result_formatted = self._prepare_results(request=request, data=data)
-
-        result_formatted.tenant_uuid = self.tenant_uuid
 
         # post the result
         _postedResult = requests.post(
@@ -280,18 +284,19 @@ class Tenant(BaseModel):
             # wait in between two requests to the server
             time.sleep(self.sleep_time_s)
             self._update_queue()
-            # get the first request in the queue to work on -> first in - first out
-            activeRequest = self.queue[0]
-            # strip the metadata from the request
-            activeRequest_technical = Request(**activeRequest["request"])
+            if len(self.queue) > 0:
+                # get the first request in the queue to work on -> first in - first out
+                activeRequest = self.queue[0]
+                # strip the metadata from the request
+                activeRequest_technical = Request(**activeRequest["request"])
 
-            # extract the method and the parameters from the request
-            reqMethod = activeRequest_technical.methods[0]
-            reqParameters = activeRequest_technical.parameters[reqMethod]
+                # extract the method and the parameters from the request
+                reqMethod = activeRequest_technical.methods[0]
+                reqParameters = activeRequest_technical.parameters[reqMethod]
 
-            # get the method, which matches
-            resultData = self._run_method(method=reqMethod, parameters=reqParameters)
+                # get the method, which matches
+                resultData = self._run_method(method=reqMethod, parameters=reqParameters)
 
-            # post the result
-            self._post_result(request=activeRequest, data=resultData)
+                # post the result
+                self._post_result(request=activeRequest, data=resultData)
             continue
