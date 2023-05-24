@@ -70,7 +70,7 @@ class Request(BaseModel):
             select(DbQuantity.quantity, DbQuantity.method)
             .join(DBLinkQuantityRequest)
             .join(DbRequest)
-            .where(DbRequest.uuid == DBLinkQuantityRequest.request_uuid)
+            .where(db_request.uuid == DBLinkQuantityRequest.request_uuid)
             .where(DbQuantity.uuid == DBLinkQuantityRequest.method_uuid)
         )
 
@@ -142,7 +142,7 @@ class Result(BaseModel):
             select(DbQuantity.quantity, DbQuantity.method)
             .join(DBLinkQuantityResult)
             .join(DbResult)
-            .where(DbResult.uuid == DBLinkQuantityResult.result_uuid)
+            .where(db_result.uuid == DBLinkQuantityResult.result_uuid)
             .where(DbQuantity.uuid == DBLinkQuantityResult.method_uuid)
         )
 
