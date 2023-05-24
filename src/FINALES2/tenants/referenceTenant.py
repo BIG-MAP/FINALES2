@@ -2,12 +2,13 @@ import json
 import time
 from datetime import datetime
 from typing import Any, Callable, Optional
+from uuid import UUID
 
 import requests
 from pydantic import BaseModel
 
 from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig
-from FINALES2.server.schemas import Request
+from FINALES2.server.schemas import Request, RequestInfo, ResultInfo
 from FINALES2.user_management.classes_user_manager import User
 
 
@@ -31,6 +32,7 @@ class Tenant(BaseModel):
     end_run_time: Optional[datetime]
     operator: User
     tenant_user: User
+    tenant_uuid: str = "test_ID"
 
     # TODO: fix for new types of attributes (methods and quantities)
     # TODO: add tenant_config object
@@ -235,7 +237,7 @@ class Tenant(BaseModel):
     def _get_results(self):
         pass
 
-    def _post_result(self, request: Request, data: Any):
+    def _post_result(self, request: RequestInfo, data: Any):
         """This function posts a result generated in reply to a request.
 
         :param request: a request specifying the details of the requested data
@@ -245,6 +247,8 @@ class Tenant(BaseModel):
         """
         # transfer the output of your method to a postable result
         result_formatted = self._prepare_results(request=request, data=data)
+
+        result_formatted.tenant_uuid = self.tenant_uuid
 
         # post the result
         _postedResult = requests.post(
