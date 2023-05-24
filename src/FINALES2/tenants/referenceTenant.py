@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from typing import Any, Callable, Optional
+from uuid import UUID
 
 import requests
 from pydantic import BaseModel
@@ -233,7 +234,7 @@ class Tenant(BaseModel):
     def _get_results(self):
         pass
 
-    def _post_result(self, request: Request, data: Any):
+    def _post_result(self, request: RequestInfo, data: Any):
         """This function posts a result generated in reply to a request.
 
         :param request: a request specifying the details of the requested data
@@ -245,6 +246,8 @@ class Tenant(BaseModel):
         result_formatted = self._prepare_results(request=request, data=data)
         result_formatted.tenant_uuid = self.tenant_uuid
         result_formatted = result_formatted.dict()
+
+        result_formatted.tenant_uuid = self.tenant_uuid
 
         # post the result
         _postedResult = requests.post(
