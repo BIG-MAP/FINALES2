@@ -1,7 +1,6 @@
 import time
 from datetime import datetime
 from typing import Any, Callable, Optional
-from uuid import UUID
 
 import requests
 from pydantic import BaseModel
@@ -99,6 +98,36 @@ class Tenant(BaseModel):
             return func(self, *args, **kwargs)
         return _login_func
 
+
+    def _login(func):   # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
+        def _login_func(self, *args, **kwargs):
+            print("Logging in ...")
+            access_information = requests.post(
+                (
+                    f"http://{self.FINALES_server_config.host}:"
+                    f"{self.FINALES_server_config.port}/user_management/authenticate/"
+                ),
+                data={
+                    "grant_type": "",
+                    "username": f"{self.tenant_user.username}",
+                    "password": f"{self.tenant_user.password}",
+                    "scope": "",
+                    "client_id": "",
+                    "client_secret": "",
+                },
+                headers={
+                    "accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+            access_information = access_information.json()
+            self.authorization_header = {
+                    "accept": "application/json",
+                    "Authorization": (f"{access_information['token_type'].capitalize()} "
+                    f"{access_information['access_token']}")
+                }
+            return func(self, *args, **kwargs)
+        return _login_func
 
 
     def _checkQuantity(self, request: Request) -> bool:
@@ -215,7 +244,7 @@ class Tenant(BaseModel):
         :return: a list of requests in JSON format
         :rtype: list[dict]
         """
-        print("Looking for tasks ...")
+        print("Looking for tasks...")
         # get the pending requests from the FINALES server
         pendingRequests = requests.get(
             f"http://{self.FINALES_server_config.host}"
@@ -235,7 +264,7 @@ class Tenant(BaseModel):
     def _get_results(self):
         pass
 
-    def _post_result(self, request: RequestInfo, data: Any):
+    def _post_result(self, request: Request, data: Any):
         """This function posts a result generated in reply to a request.
 
         :param request: a request specifying the details of the requested data
@@ -247,8 +276,6 @@ class Tenant(BaseModel):
         result_formatted = self._prepare_results(request=request, data=data)
         result_formatted.tenant_uuid = self.tenant_uuid
         result_formatted = result_formatted.dict()
-
-        result_formatted.tenant_uuid = self.tenant_uuid
 
         # post the result
         _postedResult = requests.post(
