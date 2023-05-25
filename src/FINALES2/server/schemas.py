@@ -80,7 +80,7 @@ class Request(BaseModel):
         # Constructs methods list
         methods = []
         quantity_former_iteration = ""
-        print("HIIIIIIIII", query_out)
+
         for (
             quantity_iter,
             methods_iter,

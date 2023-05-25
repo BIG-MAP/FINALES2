@@ -171,7 +171,7 @@ class Tenant(BaseModel):
         requestParameters = request.parameters[method]
         methodForQuantity = self.quantities[request.quantity].methods[method]
         for p in requestParameters.keys():
-            if isinstance(requestParameters[p], float) or isinstance(requestParameters[p], int):
+            if isinstance(requestParameters[p], (int,float)):
                 tenantMin = methodForQuantity.limitations[p][0]
                 tenantMax = methodForQuantity.limitations[p][1]
                 minimumOK = requestParameters[p] > tenantMin
