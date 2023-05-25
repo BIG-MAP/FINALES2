@@ -170,7 +170,6 @@ class Tenant(BaseModel):
         parametersCheck = []
         requestParameters = request.parameters[method]
         methodForQuantity = self.quantities[request.quantity].methods[method]
-        print(methodForQuantity.dict())
         for p in requestParameters.keys():
             if isinstance(requestParameters[p], float) or isinstance(requestParameters[p], int):
                 tenantMin = methodForQuantity.limitations[p][0]
@@ -191,7 +190,6 @@ class Tenant(BaseModel):
 
         # get the pending requests from the FINALES server
         pendingRequests = self._get_pending_requests()
-        print(self.authorization_header)
         # update the queue of the tenant
         for pendingItem in pendingRequests:
             # create the Request object from the json string
@@ -260,7 +258,6 @@ class Tenant(BaseModel):
         result_formatted = self._prepare_results(request=request, data=data)
         result_formatted.tenant_uuid = self.tenant_uuid
         result_formatted = result_formatted.dict()
-        print(result_formatted)
 
         # post the result
         _postedResult = requests.post(
