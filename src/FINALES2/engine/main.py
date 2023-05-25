@@ -141,6 +141,21 @@ class Engine:
         # the parameters is a dict with a single key, named the same as the
         # method.
 
+        # Validations specific to posting results
+        if len(received_data.method) != 1:
+            raise ValueError(
+                "Wrong length of method string for recieved result. "
+                "A list with a single method is expected, the recieved list "
+                f"{received_data.method} does not comply with this"
+            )
+        if len(received_data.parameters) != 1:
+            raise ValueError(
+                "Wrong number of keys in passed parameters. A single key with the "
+                "specific method was expected, the recieved parameters has the "
+                f"following keys {list(received_data.parameters.keys())} and does not "
+                "comply with this"
+            )
+
         method_name = received_data.method[0]
         wrapped_params = {method_name: received_data.parameters[method_name]}
         self.validate_submission(
