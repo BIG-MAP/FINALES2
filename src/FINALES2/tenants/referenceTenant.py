@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
-from FINALES2.user_management.classes_user_manager import AccessToken, User
+from FINALES2.user_management.classes_user_manager import User
 
 
 class Tenant(BaseModel):
@@ -99,7 +99,9 @@ class Tenant(BaseModel):
         return _login_func
 
 
-    def _login(func):   # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
+    def _login(func: Callable):
+        # Impelemented using this tutorial as an example:
+        # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
         def _login_func(self, *args, **kwargs):
             print("Logging in ...")
             access_information = requests.post(
@@ -122,13 +124,15 @@ class Tenant(BaseModel):
             )
             access_information = access_information.json()
             self.authorization_header = {
-                    "accept": "application/json",
-                    "Authorization": (f"{access_information['token_type'].capitalize()} "
-                    f"{access_information['access_token']}")
-                }
+                "accept": "application/json",
+                "Authorization": (
+                    f"{access_information['token_type'].capitalize()} "
+                    f"{access_information['access_token']}"
+                ),
+            }
             return func(self, *args, **kwargs)
-        return _login_func
 
+        return _login_func
 
     def _checkQuantity(self, request: Request) -> bool:
         """This function checks, if a quantity in a request can be provided by the
