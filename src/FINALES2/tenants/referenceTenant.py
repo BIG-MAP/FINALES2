@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional
 import requests
 from pydantic import BaseModel
 
-from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig
+from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
 from FINALES2.user_management.classes_user_manager import User
 
@@ -32,72 +32,6 @@ class Tenant(BaseModel):
     operator: User
     tenant_user: User
     tenant_uuid: str
-
-    def _login(func: Callable):
-        # Impelemented using this tutorial as an example:
-        # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
-        def _login_func(self, *args, **kwargs):
-            print("Logging in ...")
-            access_information = requests.post(
-                (
-                    f"http://{self.FINALES_server_config.host}:"
-                    f"{self.FINALES_server_config.port}/user_management/authenticate/"
-                ),
-                data={
-                    "grant_type": "",
-                    "username": f"{self.tenant_user.username}",
-                    "password": f"{self.tenant_user.password}",
-                    "scope": "",
-                    "client_id": "",
-                    "client_secret": "",
-                },
-                headers={
-                    "accept": "application/json",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            )
-            access_information = access_information.json()
-            self.authorization_header = {
-                "accept": "application/json",
-                "Authorization": (
-                    f"{access_information['token_type'].capitalize()} "
-                    f"{access_information['access_token']}"
-                ),
-            }
-            return func(self, *args, **kwargs)
-
-        return _login_func
-
-    def _login(func):   # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
-        def _login_func(self, *args, **kwargs):
-            print("Logging in ...")
-            access_information = requests.post(
-                (
-                    f"http://{self.FINALES_server_config.host}:"
-                    f"{self.FINALES_server_config.port}/user_management/authenticate/"
-                ),
-                data={
-                    "grant_type": "",
-                    "username": f"{self.tenant_user.username}",
-                    "password": f"{self.tenant_user.password}",
-                    "scope": "",
-                    "client_id": "",
-                    "client_secret": "",
-                },
-                headers={
-                    "accept": "application/json",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            )
-            access_information = access_information.json()
-            self.authorization_header = {
-                    "accept": "application/json",
-                    "Authorization": (f"{access_information['token_type'].capitalize()} "
-                    f"{access_information['access_token']}")
-                }
-            return func(self, *args, **kwargs)
-        return _login_func
-
 
     def _login(func: Callable):
         # Impelemented using this tutorial as an example:
