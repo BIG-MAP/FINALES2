@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from FINALES2.schemas import GeneralMetaData, Method, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
-from FINALES2.user_management.classes_user_manager import AccessToken, User
+from FINALES2.user_management.classes_user_manager import User
 
 
 class Tenant(BaseModel):
@@ -34,8 +34,6 @@ class Tenant(BaseModel):
     tenant_user: User
     tenant_uuid: str
 
-    # TODO: fix for new types of attributes (methods and quantities)
-    # TODO: add tenant_config object
     def to_json(self) -> str:
         """A function to create a JSON string from a tenant object
 
@@ -85,7 +83,9 @@ class Tenant(BaseModel):
         tenantObj = Tenant(**attrsJSON)
         return tenantObj
 
-    def _login(func):   # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
+    def _login(func: Callable):
+        # Impelemented using this tutorial as an example:
+        # https://realpython.com/primer-on-python-decorators/#is-the-user-logged-in
         def _login_func(self, *args, **kwargs):
             print("Logging in ...")
             access_information = requests.post(
@@ -108,13 +108,15 @@ class Tenant(BaseModel):
             )
             access_information = access_information.json()
             self.authorization_header = {
-                    "accept": "application/json",
-                    "Authorization": (f"{access_information['token_type'].capitalize()} "
-                    f"{access_information['access_token']}")
-                }
+                "accept": "application/json",
+                "Authorization": (
+                    f"{access_information['token_type'].capitalize()} "
+                    f"{access_information['access_token']}"
+                ),
+            }
             return func(self, *args, **kwargs)
-        return _login_func
 
+        return _login_func
 
     def _checkQuantity(self, request: Request) -> bool:
         """This function checks, if a quantity in a request can be provided by the
@@ -171,7 +173,9 @@ class Tenant(BaseModel):
         requestParameters = request.parameters[method]
         methodForQuantity = self.quantities[request.quantity].methods[method]
         for p in requestParameters.keys():
-            if isinstance(requestParameters[p], float) or isinstance(requestParameters[p], int):
+            if isinstance(requestParameters[p], float) or isinstance(
+                requestParameters[p], int
+            ):
                 tenantMin = methodForQuantity.limitations[p][0]
                 tenantMax = methodForQuantity.limitations[p][1]
                 minimumOK = requestParameters[p] > tenantMin
@@ -236,13 +240,17 @@ class Tenant(BaseModel):
             f"http://{self.FINALES_server_config.host}"
             f":{self.FINALES_server_config.port}/pending_requests/",
             params={},
-            headers=self.authorization_header
+            headers=self.authorization_header,
         )
         return pendingRequests.json()
 
+    # TODO: implement these functions once there is an example case, where it needs
+    # to be applied.
     def _post_request(self):
         pass
 
+    # TODO: implement these functions once there is an example case, where it needs
+    # to be applied.
     def _get_results(self):
         pass
 
@@ -265,7 +273,7 @@ class Tenant(BaseModel):
             f":{self.FINALES_server_config.port}/results/",
             json=result_formatted,
             params={},
-            headers=self.authorization_header
+            headers=self.authorization_header,
         )
         _postedResult.raise_for_status()
         print(f"Result is posted {_postedResult.json()}!")
@@ -275,11 +283,11 @@ class Tenant(BaseModel):
         requestUUID = request["uuid"]
         print(f"Removed request with UUID {requestUUID} from the queue.")
 
-    def _run_method(self, method:str, parameters:dict[str,Any]):
+    def _run_method(self, method: str, parameters: dict[str, Any]):
         print("Running method ...")
         return self.run_method(method, parameters)
 
-    def _prepare_results(self, request:dict, data:Any):
+    def _prepare_results(self, request: dict, data: Any):
         print("Preparing results ...")
         return self.prepare_results(request, data)
 
@@ -306,7 +314,9 @@ class Tenant(BaseModel):
                 reqParameters = activeRequest_technical.parameters[reqMethod]
 
                 # get the method, which matches
-                resultData = self._run_method(method=reqMethod, parameters=reqParameters)
+                resultData = self._run_method(
+                    method=reqMethod, parameters=reqParameters
+                )
                 # post the result
                 self._post_result(request=activeRequest, data=resultData)
             continue
