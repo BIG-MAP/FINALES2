@@ -77,7 +77,7 @@ class Request(BaseModel):
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
-        if query_out.count() < 1:
+        if len(query_out) < 1:
             raise RuntimeError(
                 f"Corrupted DB! No quantity was found for request {db_request.uuid}."
             )
