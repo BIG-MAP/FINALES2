@@ -123,13 +123,7 @@ class Tenant(BaseModel):
         requestParameters = request.parameters[method]
         methodForQuantity = self.quantities[request.quantity].methods[method]
         for p in requestParameters.keys():
-<<<<<<< HEAD
             if isinstance(requestParameters[p], (int,float)):
-=======
-            if isinstance(requestParameters[p], float) or isinstance(
-                requestParameters[p], int
-            ):
->>>>>>> 8579553b233cccabf201f4d62be0c65b5ac782ba
                 tenantMin = methodForQuantity.limitations[p][0]
                 tenantMax = methodForQuantity.limitations[p][1]
                 minimumOK = requestParameters[p] > tenantMin
