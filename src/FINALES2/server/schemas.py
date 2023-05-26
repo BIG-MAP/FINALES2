@@ -77,6 +77,11 @@ class Request(BaseModel):
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
+        if len(query_out) < 1:
+            raise RuntimeError(
+                f"Corrupted DB! No quantity was found for request {db_request.uuid}."
+            )
+
         # Constructs methods list
         methods = []
         quantity_former_iteration = ""
@@ -89,8 +94,8 @@ class Request(BaseModel):
             if quantity_former_iteration == "":
                 quantity_former_iteration = quantity_iter
             elif quantity_former_iteration != quantity_iter:
-                raise ValueError(
-                    f"Db corrupted: Several quantities ({quantity_former_iteration}, "
+                raise RuntimeError(
+                    f"Corrupted DB! Several quantities ({quantity_former_iteration}, "
                     f"{quantity_iter}) exists when retrieving the list of methods for"
                     f"request. Only a single quantity with numerous possible methods"
                     f"is expected"
