@@ -85,6 +85,7 @@ class Request(BaseModel):
         # Constructs methods list
         methods = []
         quantity_former_iteration = ""
+
         for (
             quantity_iter,
             methods_iter,
