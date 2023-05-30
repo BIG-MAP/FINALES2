@@ -34,6 +34,9 @@ class ServerManager:
         }
         new_capability = Quantity(**capability_data)
 
+        # Check if entry already exists in database
+        self._dublicate_capability_db_check(new_capability)
+
         with self._database_context() as session:
             session.add(new_capability)
             session.commit()
@@ -54,6 +57,9 @@ class ServerManager:
         }
         new_tenant = Tenant(**tenant_data)
 
+        # Check if entry already exists in database
+        self._dublicate_tenant_db_check(new_tenant)
+
         with self._database_context() as session:
             session.add(new_tenant)
             session.commit()
@@ -72,7 +78,7 @@ class ServerManager:
         else:
             print("This should show all definitions in the quantity table")
 
-        query_inp = select(Quantity)  # .where()
+        query_inp = select(Quantity)
         if quantity is not None:
             query_inp = query_inp.where(Quantity.quantity == quantity)
         if method is not None:
@@ -151,6 +157,14 @@ class ServerManager:
             method=limitations["method"],
             currently_available=False,
         )
+
+        if len(capability_info) == 0:
+            raise ValueError(
+                f"The quantity ({limitations['quantity']}) and method "
+                f"({limitations['method']}) are not currently present in the "
+                "capabilities and the tenant can therefore not be added"
+            )
+
         limitations_superschema = capability_info[0].json_schema_specifications
         limitations_subschema = limitations["limitations"]
 
@@ -161,3 +175,54 @@ class ServerManager:
             raise jsonschema.exceptions.ValidationError(
                 "Limitations are not a subschema"
             )
+
+    def _dublicate_capability_db_check(self, db_entry):
+        """
+        Method for checking if the method being added to the capabilities is already
+        present in the database with status active
+        """
+
+        active_entry = True
+        query_inp = (
+            select(Quantity)
+            .where(Quantity.quantity == db_entry.quantity)
+            .where(Quantity.method == db_entry.method)
+            .where(active_entry == db_entry.is_active)
+        )
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+        if len(query_out) > 0:
+            raise ValueError(
+                f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
+                "already present in the database with same is_active state "
+                f"({db_entry.is_active})"
+            )
+
+        return
+
+    def _dublicate_tenant_db_check(self, db_entry):
+        """
+        Method for checking if the method being added to the capabilities is already
+        present in the database with status active
+        """
+
+        # TODO currently no is_active approach to the tenant
+        query_inp = (
+            select(Tenant)
+            .where(Tenant.name == db_entry.name)
+            .where(Tenant.limitations == db_entry.limitations)
+            .where(Tenant.capabilities == db_entry.capabilities)
+        )
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+        if len(query_out) > 0:
+            raise ValueError(
+                f"The tenant ({db_entry.name}) is already present in the database with "
+                "identical limitations and capabilities"
+            )
+
+        return
