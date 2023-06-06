@@ -66,11 +66,13 @@ def post_result(
 
 @operations_router.get("/pending_requests/")
 def get_pending_requests(
+    quantity: Optional[str] = None,
+    method: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
 ) -> List[RequestInfo]:
     """API endpoint to get all pending requests."""
     engine = Engine()
-    return engine.get_pending_requests()
+    return engine.get_pending_requests(quantity=quantity, method=method)
 
 
 @operations_router.get("/results_requested/{request_id}")

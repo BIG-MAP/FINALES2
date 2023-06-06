@@ -228,12 +228,24 @@ class Engine:
 
         return str(db_obj.uuid)
 
-    def get_pending_requests(self) -> List[RequestInfo]:
+    def get_pending_requests(
+        self,
+        quantity: Optional[str] = None,
+        method: Optional[str] = None,
+    ) -> List[RequestInfo]:
         """Return all pending requests."""
         # Currently it just gets all requests, status check pending
-        query_inp = select(DbRequest).where(
-            DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]')
+        query_inp = (
+            select(DbRequest)
+            .join(DbLinkQuantityRequest)
+            .join(DbQuantity)
+            .where(DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]'))
         )
+
+        if quantity is not None:
+            query_inp = query_inp.where(DbQuantity.quantity == quantity)
+        if method is not None:
+            query_inp = query_inp.where(DbQuantity.method == method)
 
         with get_db() as session:
             query_out = session.execute(query_inp).all()
