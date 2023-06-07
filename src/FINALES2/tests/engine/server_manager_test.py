@@ -1,5 +1,6 @@
 import typing as ty
 
+import jsonref
 import jsonschema
 import pytest
 from pydantic import BaseModel
@@ -30,17 +31,15 @@ class TestLimitationsSchemaTranslation:
     def test_empty_limitations(self, capability_schema):
         """Test empty limitations."""
         limitations = [{}]
-        limitations_schema = limitations_schema_translation(
-            capability_schema, capability_schema
-        )
+        capability_schema = jsonref.replace_refs(capability_schema)
+        limitations_schema = limitations_schema_translation(capability_schema)
         jsonschema.validate(instance=limitations, schema=limitations_schema)
 
     def test_numeric_ranges(self, capability_schema):
         """Test partial numeric ranges."""
         limitations = [{"temperature": [{"max": 400, "step": 2}, 0]}]
-        limitations_schema = limitations_schema_translation(
-            capability_schema, capability_schema
-        )
+        capability_schema = jsonref.replace_refs(capability_schema)
+        limitations_schema = limitations_schema_translation(capability_schema)
         jsonschema.validate(instance=limitations, schema=limitations_schema)
 
     def test_high_level_conditions(self, capability_schema):
@@ -49,9 +48,8 @@ class TestLimitationsSchemaTranslation:
             {"temperature": [{"min": 200, "max": 400, "step": 2}], "unit": ["Kelvin"]},
             {"temperature": [{"min": -73, "max": 273, "step": 2}], "unit": ["Celcius"]},
         ]
-        limitations_schema = limitations_schema_translation(
-            capability_schema, capability_schema
-        )
+        capability_schema = jsonref.replace_refs(capability_schema)
+        limitations_schema = limitations_schema_translation(capability_schema)
         jsonschema.validate(instance=limitations, schema=limitations_schema)
 
     def test_subobject_limitations(self, capability_schema):
@@ -66,9 +64,8 @@ class TestLimitationsSchemaTranslation:
                 "compounds": [[compound1, compound2], [compound2, compound3]],
             },
         ]
-        limitations_schema = limitations_schema_translation(
-            capability_schema, capability_schema
-        )
+        capability_schema = jsonref.replace_refs(capability_schema)
+        limitations_schema = limitations_schema_translation(capability_schema)
         jsonschema.validate(instance=limitations, schema=limitations_schema)
 
     @pytest.mark.parametrize(
@@ -94,8 +91,7 @@ class TestLimitationsSchemaTranslation:
     )
     def test_incorrect_limitations(self, limitations, capability_schema):
         """Test that the code raises with incorrect limitations."""
-        limitations_schema = limitations_schema_translation(
-            capability_schema, capability_schema
-        )
+        capability_schema = jsonref.replace_refs(capability_schema)
+        limitations_schema = limitations_schema_translation(capability_schema)
         with pytest.raises(jsonschema.exceptions.ValidationError):
             jsonschema.validate(instance=limitations, schema=limitations_schema)

@@ -2,6 +2,7 @@ import json
 import uuid
 from typing import Any, Dict, List, Optional
 
+import jsonref
 from jsonschema import validate
 from sqlalchemy import select
 
@@ -165,9 +166,8 @@ class ServerManager:
             )
 
         capability_schema = capability_info[0].json_schema_specifications
-        limitations_schema = limitations_schema_translation(
-            capability_schema, capability_schema
-        )
+        capability_schema = jsonref.replace_refs(capability_schema)
+        limitations_schema = limitations_schema_translation(capability_schema)
         limitations = limitations["limitations"]
         validate(instance=limitations, schema=limitations_schema)
 
@@ -223,36 +223,39 @@ class ServerManager:
         return
 
 
-def limitations_schema_translation(
-    inputs_schema: Dict[str, Any],
-    parent_schema: Dict[str, Any],
-) -> Dict[str, Any]:
-    """Generates the limitations schema in a recursive way from parameters schema."""
+def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Generates the limitations schema in a recursive way from parameters schema.
+    """
 
+    # Trivial case: if there are no parameters, there can be no limitations.
     if len(inputs_schema) == 0:
-        return dict()
+        return {"additionalProperties": False}
 
+    # Every object in the schema becomes an array of objects with the
+    # possible values (or ranges).
     limitations_schema: Dict[str, Any] = {"type": "array"}
+
     # The title is not necessary but may be useful for debugging at runtime
     if "title" in inputs_schema:
         limitations_schema["title"] = inputs_schema["title"]
 
+    # Now I need to set the "items" descriptor of the array, which contains
+    # the type of the objects in it.
+
     if "anyOf" in inputs_schema:
+        # If the object could have many types, it will not have a "type"
+        # descriptor but an "anyOf" list of descriptors. I need to go
+        # through all of them and add them as an "anyOf" in the "items".
         limitations_schema["items"] = {"anyOf": []}
         for schema_item in inputs_schema["anyOf"]:
-            new_schema = limitations_schema_translation(schema_item, parent_schema)
+            new_schema = limitations_schema_translation(schema_item)
             limitations_schema["items"]["anyOf"].append(new_schema)
 
-    elif "$ref" in inputs_schema:
-        schemapath = inputs_schema["$ref"]
-        schemapath = schemapath.split("/")[1:]
-        new_schema = parent_schema
-        for subpath in schemapath:
-            new_schema = new_schema[subpath]
-        new_schema = limitations_schema_translation(new_schema, parent_schema)
-        limitations_schema = new_schema
-
     elif inputs_schema["type"] in ["number", "integer"]:
+        # If the object was a numeric type, the type of the possibilities
+        # in the array will be of either that same numeric type, or a dict
+        # defining a possible range.
         number_type = inputs_schema["type"]
         cases_schema = {"type": number_type}
         range_schema = {
@@ -267,24 +270,27 @@ def limitations_schema_translation(
         limitations_schema["items"] = {"anyOf": [range_schema, cases_schema]}
 
     elif inputs_schema["type"] == "array":
+        # If the object was an array, the type is defined inside of "items".
         new_items = inputs_schema["items"]
-        new_items = limitations_schema_translation(new_items, parent_schema)
+        new_items = limitations_schema_translation(new_items)
         limitations_schema["items"] = new_items
 
     else:
+        # If the object was a string or any other, the type is defined
+        # inside of "type". If it was a string then this is over, but
+        # if it was another custom type, I need to go throught its
+        # properties and add them recursively.
         limitations_schema["items"] = {"type": inputs_schema["type"]}
 
         if "properties" in inputs_schema:
             limitations_schema["items"]["properties"] = {}
             for propery_name, property_schema in inputs_schema["properties"].items():
-                new_property = limitations_schema_translation(
-                    property_schema, parent_schema
-                )
+                new_property = limitations_schema_translation(property_schema)
                 limitations_schema["items"]["properties"][propery_name] = new_property
 
         if "additionalProperties" in inputs_schema:
             new_property = inputs_schema["additionalProperties"]
-            new_property = limitations_schema_translation(new_property, parent_schema)
+            new_property = limitations_schema_translation(new_property)
             limitations_schema["items"]["additionalProperties"] = new_property
 
     return limitations_schema
