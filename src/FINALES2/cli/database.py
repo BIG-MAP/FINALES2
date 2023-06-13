@@ -1,10 +1,10 @@
 import json
-import uuid
 
 import click
 
-from FINALES2.db import Base, Quantity
+from FINALES2.db import Base
 from FINALES2.db.session import engine, get_db
+from FINALES2.engine.server_manager import ServerManager
 
 
 @click.group("db")
@@ -43,12 +43,23 @@ def db_add_capability(input_filepath):
     with open(input_filepath) as fileobj:
         capability_data = json.load(fileobj)
 
-    # This should maybe be done through the engine or another internal submodule
-    capability_data["uuid"] = str(uuid.uuid4())
-    capability_data["specifications"] = json.dumps(capability_data["specifications"])
-    new_capability = Quantity(**capability_data)
+    server_manager = ServerManager(database_context=get_db)
+    server_manager.add_capability(capability_data)
 
-    with get_db() as session:
-        session.add(new_capability)
-        session.commit()
-        session.refresh(new_capability)
+
+@click.option(
+    "--input-filepath",
+    required=True,
+    prompt="Please provide the path to a json file with the specs",
+    type=str,
+    help="Path to a json file with the specs.",
+)
+@cli_add.command("tenant")
+def db_add_tenant(input_filepath):
+    "Add an entry to the tenant table."
+
+    with open(input_filepath) as fileobj:
+        setup_data = json.load(fileobj)
+
+    server_manager = ServerManager(database_context=get_db)
+    server_manager.add_tenant(setup_data)

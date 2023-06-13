@@ -27,4 +27,4 @@ jobs:
         run: pre-commit run --all-files
       - name: Run the tests
         run: |
-          pytest -v ./src/FINALES2/test
+          pytest -v ./src/FINALES2/tests

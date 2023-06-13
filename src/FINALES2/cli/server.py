@@ -2,10 +2,9 @@ import click
 import uvicorn
 from fastapi import Depends, FastAPI
 
-from FINALES2.schemas import User
-from FINALES2.server import config
-from FINALES2.server.operations import operations_router
-from FINALES2.userManagement import userManager
+from FINALES2.server.endpoints import operations_router
+from FINALES2.user_management import user_manager
+from FINALES2.user_management.classes_user_manager import User
 
 
 @click.group("server")
@@ -19,7 +18,7 @@ def cli_server():
     required=True,
     default="localhost",
     show_default=True,
-    # prompt='IP for the server (prompt)',
+    # prompt="IP for the server (prompt)",
     type=str,
     help="IP for the server (help).",
 )
@@ -28,7 +27,7 @@ def cli_server():
     required=True,
     default=13371,
     show_default=True,
-    # prompt='Please indicate the port',
+    # prompt="Please indicate the port",
     type=int,
     help="Port to be used.",
 )
@@ -39,18 +38,17 @@ def server_start(ip, port):
         description="FINALES2 accepting requests, managing queues and serving queries",
         version="0.0.1",
     )
-    app.include_router(router=userManager.userRouter)
+    app.include_router(router=user_manager.user_router)
     app.include_router(router=operations_router)
 
     @app.get("/")
-    def Hello():
+    def Hello(token: User = Depends(user_manager.get_active_user)):
         """Remainder from the first script to start the server."""
         return "Hello! This is FINALES2."
 
     @app.get("/test")
-    def test(token: User = Depends(userManager.getActiveUser)):
+    def test(token: User = Depends(user_manager.get_active_user)):
         """Remainder from the first script to start the server."""
-        print(config.userDB)
         return token
 
     uvicorn.run(app=app, host=ip, port=port)
