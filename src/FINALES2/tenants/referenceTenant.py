@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 
 import requests
 from pydantic import BaseModel
@@ -176,6 +176,7 @@ class Tenant(BaseModel):
 
             self.queue.append(pendingItem)
 
+    @_login
     def _get_pending_requests(self) -> list[dict]:
         """This funciton collecte all the pending requests from the server.
 
@@ -193,11 +194,12 @@ class Tenant(BaseModel):
         return pendingRequests.json()
 
     # TODO: implement (input) validations.
+    @_login
     def _post_request(self,
                       quantity:str,
                       methods:list[str],
                       parameters:dict[str, dict[str, Any]],
-    ):
+    ) -> None:
         """This function posts a request.
 
         :param quantity: the name of the quantity to be requested
@@ -227,11 +229,62 @@ class Tenant(BaseModel):
         _posted_request.raise_for_status()
         print(f"Request is posted {_posted_request.json()}!")
 
-    # TODO: implement these functions once there is an example case, where it needs
-    # to be applied.
-    def _get_results(self):
-        pass
+    # TODO: implement (input) validations.
+    @_login
+    def _get_results(self,
+                     quantity:Union[str,None],
+                     method:Union[str,None],
+                     request_id:Union[str,None]=None
+        ) -> Union[list,dict]:
+        """This function queries requests from the FINALES server. It my either provide
+        a list of requests, if quantity and method is given, or a single request, if a
+        request_id and optionally quantity and method are given. If there is no
+        request_id and either quantity or method is None, a ValueError is raised
 
+        :param quantity: the name of the quantity to be requested
+        :type quantity: Union[str,None]
+        :param method: the name of the method, by which the result was created
+        :type method: Union[str,None]
+        :param request_id: the id of hte request, which asked for the result,
+            defaults to None
+        :type request_id: Union[str,None], optional
+        :raises ValueError: A value error is raised, if information for requesting
+            results by any of the available endpoints is impossible
+        :return: _description_
+        :rtype: Union[list,dict]
+        """
+        print("Looking for results ...")
+        if (request_id is None) and not ((quantity is None) or (method is None)):
+            # get the results from the FINALES server
+            results = requests.get(
+                f"http://{self.FINALES_server_config.host}"
+                f":{self.FINALES_server_config.port}/results_requested/",
+                params={
+                    "quantity": quantity,
+                    "method": method
+                },
+                headers=self.authorization_header,
+            )
+            return results
+        
+        elif (((not (request_id is None)) and ((quantity is None) and (method is None)))
+              or
+              (not ((request_id is None) or (quantity is None) or (method is None)))):
+            # get the result for this ID from the FINALES server
+            result = requests.get(
+                f"http://{self.FINALES_server_config.host}"
+                f":{self.FINALES_server_config.port}/results_requested/{request_id}",
+                params={},
+                headers=self.authorization_header,
+            )
+            return result
+        else:
+            raise ValueError("The given combination of parameters is invalid."
+                             f"request_id is {request_id} \n"
+                             f"quantity is {quantity} \n"
+                             f"method is{method}")
+
+    @_login
     def _post_result(self, request: Request, data: Any):
         """This function posts a result generated in reply to a request.
 
