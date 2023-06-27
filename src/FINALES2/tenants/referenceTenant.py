@@ -192,10 +192,40 @@ class Tenant(BaseModel):
         )
         return pendingRequests.json()
 
-    # TODO: implement these functions once there is an example case, where it needs
-    # to be applied.
-    def _post_request(self):
-        pass
+    # TODO: implement (input) validations.
+    def _post_request(self,
+                      quantity:str,
+                      methods:list[str],
+                      parameters:dict[str, dict[str, Any]],
+    ):
+        """This function posts a request.
+
+        :param quantity: the name of the quantity to be requested
+        :type quantity: str
+        :param methods: a list of the method names acceptable for creating the result
+        :type methods: list[str]
+        :param parameters: a dictionary of the parameters, which shall be used when
+            running the method; first key is the name of the method, the second level
+            keys are the names of the parameters
+        :type parameters: dict[str, dict[str, Any]]
+        """
+
+        request = Request(
+            quantity=quantity,
+            methods=methods,
+            parameters=parameters,
+            tenant_uuid=self.tenant_uuid
+        ).dict()
+
+        _posted_request = requests.post(
+            f"http://{self.FINALES_server_config.host}"
+            f":{self.FINALES_server_config.port}/requests/",
+            json=request,
+            params={},
+            headers=self.authorization_header
+        )
+        _posted_request.raise_for_status()
+        print(f"Request is posted {_posted_request.json()}!")
 
     # TODO: implement these functions once there is an example case, where it needs
     # to be applied.
@@ -216,15 +246,15 @@ class Tenant(BaseModel):
         result_formatted = result_formatted.dict()
 
         # post the result
-        _postedResult = requests.post(
+        _posted_result = requests.post(
             f"http://{self.FINALES_server_config.host}"
             f":{self.FINALES_server_config.port}/results/",
             json=result_formatted,
             params={},
             headers=self.authorization_header,
         )
-        _postedResult.raise_for_status()
-        print(f"Result is posted {_postedResult.json()}!")
+        _posted_result.raise_for_status()
+        print(f"Result is posted {_posted_result.json()}!")
 
         # delete the request from the queue
         self.queue.remove(request)
