@@ -20,15 +20,11 @@ class Method(BaseModel):
 
 class Quantity(BaseModel):
     name: str
-    methods: dict[str, Method]
-    specifications: Optional[dict] = None
+    methods: dict[str, Method]  # {"method_name": Method}
     is_active: bool
 
 
 class ServerConfig(BaseModel):
-    app_title: str
-    app_description: str
-    app_version: str
     host: str
     port: int
 
