@@ -176,8 +176,21 @@ class Result(BaseModel):
 class ResultInfo(BaseModel):
     uuid: str
     ctime: datetime.datetime
-    status: List[List[Any]]  # List[Tuple[datetime, str]] - see note above
+    status: str
     result: Result
+
+    @classmethod
+    def from_db_result(cls, db_result: DbResult):
+        """Initializes the object from the data of an orm object"""
+        result_internals = Result.from_db_result(db_result)
+        init_params = {
+            "uuid": str(db_result.uuid),
+            "ctime": db_result.load_time,
+            "status": db_result.status,
+            "result": result_internals,
+        }
+
+        return cls(**init_params)
 
 
 class CapabilityInfo(BaseModel):

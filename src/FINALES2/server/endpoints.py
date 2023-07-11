@@ -21,6 +21,7 @@ from FINALES2.server.schemas import (
     Request,
     RequestInfo,
     Result,
+    ResultInfo,
 )
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
@@ -31,7 +32,7 @@ operations_router = APIRouter(tags=["Data Operations"])
 @operations_router.get("/requests/{object_id}")
 def get_request(
     object_id: str, token: User = Depends(user_manager.get_active_user)
-) -> Optional[Request]:
+) -> Optional[RequestInfo]:
     """API endpoint to get requests by id."""
     engine = Engine()
     return engine.get_request(object_id)
@@ -40,7 +41,7 @@ def get_request(
 @operations_router.get("/results/{object_id}")
 def get_result(
     object_id: str, token: User = Depends(user_manager.get_active_user)
-) -> Optional[Result]:
+) -> Optional[ResultInfo]:
     """API endpoint to get results by id."""
     engine = Engine()
     return engine.get_result(object_id)
