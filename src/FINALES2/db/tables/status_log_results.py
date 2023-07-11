@@ -7,7 +7,7 @@ from FINALES2.db.base_class import Base
 
 class StatusLogResult(Base):
     """
-    This change will log contains a log of every status change for a result
+    This table contains a log of every status change for all stored results.
     Class defining the quantity table with the following columns:
         uuid (UUIDType(32)): uuid of entry
         result_uuid (UUIDType(32)): uuid of the result for the status change
