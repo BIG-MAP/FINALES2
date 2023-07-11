@@ -15,8 +15,7 @@ class Result(Base):
         posting_tenant_uuid CHAR:   uuid of the tenant posting the result
         posting_recieved_timestamp: Timestamp of the when the posting was recieved
         cost VARCHAR:               Cost associated with the result...
-        status VARCHAR:             List with status and timestamps of the entry,
-                                    with the last list entry being the current status
+        status (String):            String representing the current status of the entry
         load_time(DateTime):        Timestamp for when the row is added
     """
 
