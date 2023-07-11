@@ -291,7 +291,7 @@ class Engine:
             if not match_found:
                 raise ValueError(f"No records for this method: {method}")
 
-    def get_result_by_request(self, request_id: str) -> Optional[Result]:
+    def get_result_by_request(self, request_id: str) -> Optional[ResultInfo]:
         """Return the result corresponding to a given request ID."""
         query_inp = select(DbResult).where(
             DbResult.request_uuid == uuid.UUID(request_id)
@@ -302,7 +302,7 @@ class Engine:
         if len(query_out) == 0:
             return None
 
-        api_response = Result.from_db_result(query_out[0][0])
+        api_response = ResultInfo.from_db_result(query_out[0][0])
         return api_response
 
     def get_all_results(
@@ -328,7 +328,7 @@ class Engine:
 
         api_response = []
         for (result_info,) in query_out:
-            result_obj = Result.from_db_result(result_info)
+            result_obj = ResultInfo.from_db_result(result_info)
             api_response.append(result_obj)
 
         return api_response

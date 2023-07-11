@@ -79,7 +79,7 @@ def get_pending_requests(
 @operations_router.get("/results_requested/{request_id}")
 def get_results_requested(
     request_id: str, token: User = Depends(user_manager.get_active_user)
-) -> Optional[Result]:
+) -> Optional[ResultInfo]:
     """API endpoint to get a result by corresponding request ID."""
     engine = Engine()
     return engine.get_result_by_request(request_id)
@@ -90,7 +90,7 @@ def get_results_requested_all(
     quantity: Optional[str] = None,
     method: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
-) -> List[Result]:
+) -> List[ResultInfo]:
     """API endpoint to get all result available to the tenant requesting."""
     engine = Engine()
     return engine.get_all_results(quantity=quantity, method=method)
