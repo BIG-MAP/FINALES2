@@ -112,3 +112,35 @@ def get_limitations(
     """API endpoint to get all limitations."""
     server_manager = ServerManager(database_context=get_db)
     return server_manager.get_limitations(currently_available=currently_available)
+
+
+@operations_router.post("/new_status_request/")
+def post_new_request(
+    request_id: str,
+    new_status: str,
+    status_change_message: Optional[str],
+    token: User = Depends(user_manager.get_active_user),
+) -> str:
+    """API endpoint to change the status of a request. The possible inputs are:
+    pending
+    reserved
+    resolved
+    retracted
+    """
+    engine = Engine()
+    return engine.change_status_request(
+        request_id=request_id,
+        status=new_status,
+        status_change_message=status_change_message,
+    )
+
+
+# @operations_router.post("/new_status_result/")
+# def post_new_result(
+#     result_id: str,
+#     new_status: str,
+#     token: User = Depends(user_manager.get_active_user)
+# ) -> str:
+#     """API endpoint to change the status of a result."""
+#     engine = Engine()
+#     return engine.change_status_result(result_id=result_id, status=new_status)

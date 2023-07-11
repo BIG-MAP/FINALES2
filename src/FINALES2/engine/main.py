@@ -12,6 +12,8 @@ from FINALES2.db import LinkQuantityResult as DbLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
+
+# from FINALES2.db import StatusLogRequest as DbStatusLogRequest
 from FINALES2.db.session import get_db
 from FINALES2.server.schemas import Request, RequestInfo, Result
 
@@ -332,3 +334,42 @@ class Engine:
             api_response.append(result_obj)
 
         return api_response
+
+    def change_status_request(self, request_id, status, status_change_message):
+        """Checks the given status is one of the allowed strings, if so overwrite
+        the value in the request table, and log the change in the request status log
+        table"""
+
+        if status not in (
+            RequestStatus.PENDING.value,
+            RequestStatus.RESERVED.value,
+            RequestStatus.RESOLVED.value,
+            RequestStatus.RETRACTED.value,
+        ):
+            return None
+
+        # query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
+        # with get_db() as session:
+        #     # Retrieve original request for the result and update request status
+        #     query_out = session.execute(query_inp).all()
+        #     if len(query_out) == 0:
+        #         raise ValueError(f"No request with id: {request_id}")
+
+        #     original_request = query_out[0][0]
+        #     original_request.status = status
+
+        #     request_status_log_obj = StatusLogRequest(
+        #         **{
+        #             "uuid": str(uuid.uuid4()),
+        #             "request_uuid": request_id,
+        #             "status": status,
+        #             "status_change_message": status_change_message,
+        #         }
+        #     )
+        #     session.add(request_status_log_obj)
+        #     session.commit()
+
+        #     session.refresh(request_status_log_obj)
+        #     session.refresh(original_request)
+
+        # return "Successful change"
