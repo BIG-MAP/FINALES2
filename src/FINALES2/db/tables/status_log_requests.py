@@ -7,8 +7,7 @@ from FINALES2.db.base_class import Base
 
 class StatusLogRequest(Base):
     """
-    This change will log contains a log of every status change for a request
-    Class defining the table with the status log of all request entries with the
+    This table contains a log of every status change for all stored requests with the
     following columns:
         uuid (UUIDType(32)): uuid of the entry
         request_uuid (UUIDType(32)): uuid of the request for the status change
