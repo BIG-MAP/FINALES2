@@ -7,8 +7,7 @@ from FINALES2.db.base_class import Base
 
 class StatusLogResult(Base):
     """
-    This table contains a log of every status change for all stored results.
-    Class defining the table with the status log of all result entries with the
+    This table contains a log of every status change for all stored results with the
     following columns:
         uuid (UUIDType(32)): uuid of entry
         result_uuid (UUIDType(32)): uuid of the result for the status change
