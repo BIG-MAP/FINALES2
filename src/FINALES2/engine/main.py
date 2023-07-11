@@ -12,8 +12,7 @@ from FINALES2.db import LinkQuantityResult as DbLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
-
-# from FINALES2.db import StatusLogRequest as DbStatusLogRequest
+from FINALES2.db import StatusLogRequest as DbStatusLogRequest
 from FINALES2.db.session import get_db
 from FINALES2.server.schemas import Request, RequestInfo, Result
 
@@ -76,9 +75,16 @@ class Engine:
                 "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "requesting_recieved_timestamp": ctime,
                 "budget": "not currently implemented in the API",
-                "status": json.dumps(
-                    [(ctime, RequestStatus.PENDING.value)], default=str
-                ),
+                "status": RequestStatus.PENDING.value,
+            }
+        )
+
+        status_log_obj = DbStatusLogRequest(
+            **{
+                "uuid": str(uuid.uuid4()),
+                "request_uuid": request_uuid,
+                "status": RequestStatus.PENDING.value,
+                "status_change_message": "The requests was created in the server",
             }
         )
 
@@ -86,6 +92,7 @@ class Engine:
         with get_db() as session:
             # Add the request to the session
             session.add(request_obj)
+            session.add(status_log_obj)
 
             # Loop thorugh the methods to add entries to DbLinkQuantityRequest
             list_of_link_quantity_request_obj = []
@@ -121,6 +128,7 @@ class Engine:
 
             session.commit()
             session.refresh(request_obj)
+            session.refresh(status_log_obj)
             for link_object in list_of_link_quantity_request_obj:
                 session.refresh(link_object)
 
@@ -188,10 +196,9 @@ class Engine:
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
                 raise ValueError(f"Submitted result has no request: {request_uuid}")
+
             original_request = query_out[0][0]
-            status_list = json.loads(original_request.status)
-            status_list.append((ctime, RequestStatus.RESOLVED.value))
-            original_request.status = json.dumps(status_list, default=str)
+            original_request.status = RequestStatus.RESOLVED.value
             session.add(db_obj)
 
             # Add link between method for the result and the quantity table
@@ -241,7 +248,7 @@ class Engine:
             select(DbRequest)
             .join(DbLinkQuantityRequest)
             .join(DbQuantity)
-            .where(DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]'))
+            .where(DbRequest.status == RequestStatus.PENDING.value)
         )
 
         if quantity is not None:
@@ -336,9 +343,11 @@ class Engine:
         return api_response
 
     def change_status_request(self, request_id, status, status_change_message):
-        """Checks the given status is one of the allowed strings, if so overwrite
+        """
+        Checks the given status is one of the allowed strings, if so overwrite
         the value in the request table, and log the change in the request status log
-        table"""
+        table
+        """
 
         if status not in (
             RequestStatus.PENDING.value,
@@ -348,28 +357,29 @@ class Engine:
         ):
             return None
 
-        # query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
-        # with get_db() as session:
-        #     # Retrieve original request for the result and update request status
-        #     query_out = session.execute(query_inp).all()
-        #     if len(query_out) == 0:
-        #         raise ValueError(f"No request with id: {request_id}")
+        query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
+        with get_db() as session:
+            # Retrieve original request for the result and update request status
+            query_out = session.execute(query_inp).all()
+            if len(query_out) == 0:
+                raise ValueError(f"No request with id: {request_id}")
 
-        #     original_request = query_out[0][0]
-        #     original_request.status = status
+            original_request = query_out[0][0]
+            # Update value
+            original_request.status = status
 
-        #     request_status_log_obj = StatusLogRequest(
-        #         **{
-        #             "uuid": str(uuid.uuid4()),
-        #             "request_uuid": request_id,
-        #             "status": status,
-        #             "status_change_message": status_change_message,
-        #         }
-        #     )
-        #     session.add(request_status_log_obj)
-        #     session.commit()
+            request_status_log_obj = DbStatusLogRequest(
+                **{
+                    "uuid": str(uuid.uuid4()),
+                    "request_uuid": request_id,
+                    "status": status,
+                    "status_change_message": status_change_message,
+                }
+            )
+            session.add(request_status_log_obj)
+            session.commit()
 
-        #     session.refresh(request_status_log_obj)
-        #     session.refresh(original_request)
+            session.refresh(request_status_log_obj)
+            session.refresh(original_request)
 
-        # return "Successful change"
+        return "Successful change"

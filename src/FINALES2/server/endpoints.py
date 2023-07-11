@@ -122,10 +122,7 @@ def post_new_request(
     token: User = Depends(user_manager.get_active_user),
 ) -> str:
     """API endpoint to change the status of a request. The possible inputs are:
-    pending
-    reserved
-    resolved
-    retracted
+    pending, reserved, resolved, retracted
     """
     engine = Engine()
     return engine.change_status_request(
