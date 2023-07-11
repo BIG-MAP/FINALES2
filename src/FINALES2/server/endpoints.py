@@ -21,6 +21,7 @@ from FINALES2.server.schemas import (
     Request,
     RequestInfo,
     Result,
+    ResultInfo,
 )
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
@@ -31,7 +32,7 @@ operations_router = APIRouter(tags=["Data Operations"])
 @operations_router.get("/requests/{object_id}")
 def get_request(
     object_id: str, token: User = Depends(user_manager.get_active_user)
-) -> Optional[Request]:
+) -> Optional[RequestInfo]:
     """API endpoint to get requests by id."""
     engine = Engine()
     return engine.get_request(object_id)
@@ -40,7 +41,7 @@ def get_request(
 @operations_router.get("/results/{object_id}")
 def get_result(
     object_id: str, token: User = Depends(user_manager.get_active_user)
-) -> Optional[Result]:
+) -> Optional[ResultInfo]:
     """API endpoint to get results by id."""
     engine = Engine()
     return engine.get_result(object_id)
@@ -78,7 +79,7 @@ def get_pending_requests(
 @operations_router.get("/results_requested/{request_id}")
 def get_results_requested(
     request_id: str, token: User = Depends(user_manager.get_active_user)
-) -> Optional[Result]:
+) -> Optional[ResultInfo]:
     """API endpoint to get a result by corresponding request ID."""
     engine = Engine()
     return engine.get_result_by_request(request_id)
@@ -89,7 +90,7 @@ def get_results_requested_all(
     quantity: Optional[str] = None,
     method: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
-) -> List[Result]:
+) -> List[ResultInfo]:
     """API endpoint to get all result available to the tenant requesting."""
     engine = Engine()
     return engine.get_all_results(quantity=quantity, method=method)
