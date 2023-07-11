@@ -12,6 +12,7 @@ from FINALES2.db import LinkQuantityResult as DbLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
+from FINALES2.db import StatusLogRequest as DbStatusLogRequest
 from FINALES2.db.session import get_db
 from FINALES2.server.schemas import Request, RequestInfo, Result
 
@@ -74,9 +75,16 @@ class Engine:
                 "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "requesting_recieved_timestamp": ctime,
                 "budget": "not currently implemented in the API",
-                "status": json.dumps(
-                    [(ctime, RequestStatus.PENDING.value)], default=str
-                ),
+                "status": RequestStatus.PENDING.value,
+            }
+        )
+
+        status_log_obj = DbStatusLogRequest(
+            **{
+                "uuid": str(uuid.uuid4()),
+                "request_uuid": request_uuid,
+                "status": RequestStatus.PENDING.value,
+                "status_change_message": "The requests was created in the server",
             }
         )
 
@@ -84,6 +92,7 @@ class Engine:
         with get_db() as session:
             # Add the request to the session
             session.add(request_obj)
+            session.add(status_log_obj)
 
             # Loop thorugh the methods to add entries to DbLinkQuantityRequest
             list_of_link_quantity_request_obj = []
@@ -119,6 +128,7 @@ class Engine:
 
             session.commit()
             session.refresh(request_obj)
+            session.refresh(status_log_obj)
             for link_object in list_of_link_quantity_request_obj:
                 session.refresh(link_object)
 
@@ -186,10 +196,9 @@ class Engine:
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
                 raise ValueError(f"Submitted result has no request: {request_uuid}")
+
             original_request = query_out[0][0]
-            status_list = json.loads(original_request.status)
-            status_list.append((ctime, RequestStatus.RESOLVED.value))
-            original_request.status = json.dumps(status_list, default=str)
+            original_request.status = RequestStatus.RESOLVED.value
             session.add(db_obj)
 
             # Add link between method for the result and the quantity table
@@ -239,7 +248,7 @@ class Engine:
             select(DbRequest)
             .join(DbLinkQuantityRequest)
             .join(DbQuantity)
-            .where(DbRequest.status.like('%"' + RequestStatus.PENDING.value + '"]]'))
+            .where(DbRequest.status == RequestStatus.PENDING.value)
         )
 
         if quantity is not None:
