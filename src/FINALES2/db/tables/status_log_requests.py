@@ -11,8 +11,8 @@ class StatusLogRequest(Base):
     Class defining the quantity table with the following columns:
         uuid (UUIDType(32)): uuid of the entry
         request_uuid (UUIDType(32)): uuid of the request for the status change
-        status (int): The status of the request at the load_time timestamp
-        status_change_message (str): Message for the reasoning of the status change
+        status (VARCHAR): The status of the request at the load_time timestamp
+        status_change_message (VARCHAR): Message for the reasoning of the status change
         load_time (Datetime):  Timestamp for when the row is added
     """
 
