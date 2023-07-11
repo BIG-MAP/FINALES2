@@ -24,6 +24,22 @@ class FinalesConfiguration(BaseModel):
     algorithm: str = "HS256"
     token_expiration_min: int = 1440
 
+    def safeget_userdb(self):
+        """A way to get the user_db that makes sure the folder exists.
+
+        NOTE: Ideally this should be implemented with an intrinsic
+        getter or defining a property, but it is not trivial to do
+        this in a way that is compatible with pydantic.
+        """
+        userdb_dirpath = Path(self.user_db).resolve().parent
+        if not userdb_dirpath.exists():
+            print(
+                f"Parent path {userdb_dirpath} for the user_db does not exist,"
+                f"creating it."
+            )
+            userdb_dirpath.mkdir(parents=True)
+        return self.user_db
+
 
 def get_configuration():
     """Returns the dict with configuration for FINALES."""
@@ -50,4 +66,5 @@ def get_configuration():
     with open(config_filepath) as fileobj:
         config_data = json.load(fileobj)
         config_object = FinalesConfiguration(**config_data)
-        return config_object
+
+    return config_object
