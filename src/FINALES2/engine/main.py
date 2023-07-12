@@ -358,19 +358,6 @@ class Engine:
         table
         """
 
-        # Check if result is already associated with request.
-        # This logic also infer that a status "resolved" cannot be changed
-        query_inp_result = select(DbResult.status).where(
-            DbResult.request_uuid == uuid.UUID(request_id)
-        )
-        with get_db() as session:
-            query_out_result = session.execute(query_inp_result).all()
-            if len(query_out_result) != 0:
-                raise ValueError(
-                    f"Cannot change status of request to '{status}' since an associated"
-                    f" result with status '{query_out_result[0][0]}' is already posted"
-                )
-
         # Change status and log change
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
         with get_db() as session:
@@ -380,6 +367,14 @@ class Engine:
                 raise ValueError(f"No request with id: {request_id}")
 
             original_request = query_out[0][0]
+
+            # Raise error if the status is 'resolved'
+            if original_request.status == RequestStatus.RESOLVED.value:
+                raise ValueError(
+                    "The requests is connected to an already posted results and"
+                    "therefore has the status 'resolved' which cannot be changed."
+                )
+
             # Update value
             original_request.status = status
 

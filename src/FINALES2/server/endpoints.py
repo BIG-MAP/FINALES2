@@ -115,7 +115,7 @@ def get_limitations(
     return server_manager.get_limitations(currently_available=currently_available)
 
 
-@operations_router.post("/new_status_request/")
+@operations_router.post("/requests/{object_id}/new_status_request/")
 def post_new_status_for_request(
     request_id: str,
     new_status: RequestStatus,
@@ -133,7 +133,7 @@ def post_new_status_for_request(
     )
 
 
-@operations_router.post("/new_status_result/")
+@operations_router.post("/result/{object_id}/new_status_result/")
 def post_new_status_for_result(
     result_id: str,
     new_status: ResultStatus,
