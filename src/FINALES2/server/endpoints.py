@@ -123,7 +123,8 @@ def post_new_status_for_request(
     token: User = Depends(user_manager.get_active_user),
 ) -> str:
     """API endpoint to change the status of a request which is currently not resolved.
-    The possible inputs are: pending, reserved, retracted."""
+    The possible inputs are: pending, reserved, retracted, with resolved being auto-
+    matically designed when a result is posted"""
     engine = Engine()
     return engine.change_status_request(
         request_id=request_id,
@@ -139,7 +140,9 @@ def post_new_status_for_result(
     status_change_message: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
 ) -> str:
-    """API endpoint to change the status of a result."""
+    """API endpoint to change the status of a result.
+    The possible inputs are: deleted and amended, with original being reserved for the
+    initial posting"""
     engine = Engine()
     return engine.change_status_result(
         result_id=result_id,

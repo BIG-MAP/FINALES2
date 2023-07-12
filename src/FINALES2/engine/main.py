@@ -405,6 +405,13 @@ class Engine:
         table
         """
 
+        # Not possible to change status to 'original'
+        if status == ResultStatus.ORIGINAL.value:
+            ValueError(
+                f"Not possible to change status to '{ResultStatus.ORIGINAL.value}' "
+                "since this is reserved only for the initial posting"
+            )
+
         # Change status and log change
         query_inp = select(DbResult).where(DbResult.uuid == uuid.UUID(result_id))
         with get_db() as session:
