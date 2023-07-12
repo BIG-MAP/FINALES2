@@ -16,20 +16,20 @@ def cli_server():
 @click.option(
     "--ip",
     required=True,
-    default="localhost",
+    default="0.0.0.0",
     show_default=True,
-    # prompt="IP for the server (prompt)",
+    # prompt="Please indicate the IP to use",
     type=str,
-    help="IP for the server (help).",
+    help="IP to use for deploying the server.",
 )
 @click.option(
     "--port",
     required=True,
     default=13371,
     show_default=True,
-    # prompt="Please indicate the port",
+    # prompt="Please indicate the port to use",
     type=int,
-    help="Port to be used.",
+    help="Port to use for deploying the server.",
 )
 def server_start(ip, port):
     """Start the finales server with given ip and host."""
