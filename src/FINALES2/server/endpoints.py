@@ -146,10 +146,3 @@ def post_new_status_for_result(
         status=new_status,
         status_change_message=status_change_message,
     )
-
-
-# TODO Hvad skal der ske ved forkert uuid?
-# Hvad med dropdown menu? Er det fint, eller gør det automatiseringen svær?
-# Results uploaded -> it is bad. Can't change request, can set result to delete.
-# Data done once again, can't be related to request
-# Must it be a specific tenant that deletes?

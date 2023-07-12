@@ -21,20 +21,14 @@ from FINALES2.server.schemas import Request, RequestInfo, Result, ResultInfo
 class RequestStatus(Enum):
     PENDING = "pending"
     RESERVED = "reserved"
+    RESOLVED = "resolved"
     RETRACTED = "retracted"
 
 
-class RequestStatusInternalServer(Enum):
-    RESOLVED = "resolved"
-
-
 class ResultStatus(Enum):
+    ORIGINAL = "original"
     DELETED = "deleted"
     AMENDED = "amended"
-
-
-class ResultStatusInternalServer(Enum):
-    ORIGINAL = "original"
 
 
 class Engine:
@@ -199,7 +193,7 @@ class Engine:
                 "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "cost": "Not implemented in the API yet",
-                "status": ResultStatusInternalServer.ORIGINAL.value,
+                "status": ResultStatus.ORIGINAL.value,
                 "posting_recieved_timestamp": ctime,
             }
         )
@@ -211,7 +205,7 @@ class Engine:
                 raise ValueError(f"Submitted result has no request: {request_uuid}")
 
             original_request = query_out[0][0]
-            original_request.status = RequestStatusInternalServer.RESOLVED.value
+            original_request.status = RequestStatus.RESOLVED.value
             session.add(db_obj)
 
             # Add link between method for the result and the quantity table
