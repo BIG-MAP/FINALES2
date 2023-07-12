@@ -204,8 +204,6 @@ class Engine:
             if len(query_out) == 0:
                 raise ValueError(f"Submitted result has no request: {request_uuid}")
 
-            original_request = query_out[0][0]
-            original_request.status = RequestStatus.RESOLVED.value
             session.add(db_obj)
 
             # Add link between method for the result and the quantity table
@@ -236,11 +234,30 @@ class Engine:
             )
             session.add(link_quantity_result_obj)
 
+            # Log the status of the new posted posted
+            result_status_log_obj = DbStatusLogResult(
+                **{
+                    "uuid": str(uuid.uuid4()),
+                    "result_uuid": result_uuid,
+                    "status": ResultStatus.ORIGINAL.value,
+                    "status_change_message": "Result posted",
+                }
+            )
+
+            session.add(result_status_log_obj)
+
             # Commit all additions and refresh
             session.commit()
             session.refresh(db_obj)
-            session.refresh(original_request)
+            session.refresh(result_status_log_obj)
             session.refresh(link_quantity_result_obj)
+
+        # Changes the status for the request the result is connected to
+        self.change_status_request(
+            request_id=request_uuid,
+            status=RequestStatus.RESOLVED,
+            status_change_message="Result posted for corresponding request",
+        )
 
         return str(db_obj.uuid)
 
@@ -350,12 +367,18 @@ class Engine:
         return api_response
 
     def change_status_request(
-        self, request_id: str, status: str, status_change_message: Optional[str] = None
+        self,
+        request_id: str,
+        status: RequestStatus,
+        status_change_message: Optional[str] = None,
     ) -> str:
         """
         Checks the given status is one of the allowed strings, if so overwrite
         the value in the request table, and log the change in the request status log
-        table
+        table.
+        Passing the same status which is already currently logged, won't result in an
+        error, since a new status_change_message can accompany the new log entry for a
+        further/new description.
         """
 
         # Change status and log change
@@ -376,13 +399,13 @@ class Engine:
                 )
 
             # Update value
-            original_request.status = status
+            original_request.status = status.value
 
             request_status_log_obj = DbStatusLogRequest(
                 **{
                     "uuid": str(uuid.uuid4()),
                     "request_uuid": request_id,
-                    "status": status,
+                    "status": status.value,
                     "status_change_message": status_change_message,
                 }
             )
@@ -392,20 +415,26 @@ class Engine:
             session.refresh(request_status_log_obj)
             session.refresh(original_request)
 
-        api_response = f"Successful change of status to {status}"
+        api_response = f"Successful change of status to {status.value}"
         return api_response
 
     def change_status_result(
-        self, result_id: str, status: str, status_change_message: Optional[str] = None
+        self,
+        result_id: str,
+        status: ResultStatus,
+        status_change_message: Optional[str] = None,
     ) -> str:
         """
         Checks the given status is one of the allowed strings, if so overwrite
         the value in the result table, and log the change in the result status log
-        table
+        table.
+        Passing the same status which is already currently logged, won't result in an
+        error, since a new status_change_message can accompany the new log entry for a
+        further/new description.
         """
 
         # Not possible to change status to 'original'
-        if status == ResultStatus.ORIGINAL.value:
+        if status.value == ResultStatus.ORIGINAL.value:
             raise ValueError(
                 f"Not possible to change status to '{ResultStatus.ORIGINAL.value}' "
                 "since this is reserved only for the initial posting"
@@ -421,12 +450,12 @@ class Engine:
             original_result = query_out[0][0]
 
             # Update value
-            original_result.status = status
+            original_result.status = status.value
             result_status_log_obj = DbStatusLogResult(
                 **{
                     "uuid": str(uuid.uuid4()),
                     "result_uuid": result_id,
-                    "status": status,
+                    "status": status.value,
                     "status_change_message": status_change_message,
                 }
             )
@@ -436,5 +465,5 @@ class Engine:
             session.refresh(result_status_log_obj)
             session.refresh(original_result)
 
-        api_response = f"Successful change of status to {status}"
+        api_response = f"Successful change of status to {status.value}"
         return api_response
