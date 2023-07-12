@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 
-from FINALES2.engine.main import Engine, get_db
+from FINALES2.engine.main import Engine, RequestStatus, ResultStatus, get_db
 from FINALES2.engine.server_manager import ServerManager
 from FINALES2.server.schemas import (
     CapabilityInfo,
@@ -116,15 +116,14 @@ def get_limitations(
 
 
 @operations_router.post("/new_status_request/")
-def post_new_request(
+def post_new_status_for_request(
     request_id: str,
-    new_status: str,
+    new_status: RequestStatus,
     status_change_message: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
 ) -> str:
-    """API endpoint to change the status of a request. The possible inputs are:
-    pending, reserved, resolved, retracted
-    """
+    """API endpoint to change the status of a request which is currently not resolved.
+    The possible inputs are: pending, reserved, retracted."""
     engine = Engine()
     return engine.change_status_request(
         request_id=request_id,
@@ -133,12 +132,24 @@ def post_new_request(
     )
 
 
-# @operations_router.post("/new_status_result/")
-# def post_new_result(
-#     result_id: str,
-#     new_status: str,
-#     token: User = Depends(user_manager.get_active_user)
-# ) -> str:
-#     """API endpoint to change the status of a result."""
-#     engine = Engine()
-#     return engine.change_status_result(result_id=result_id, status=new_status)
+@operations_router.post("/new_status_result/")
+def post_new_status_for_result(
+    result_id: str,
+    new_status: ResultStatus,
+    status_change_message: Optional[str] = None,
+    token: User = Depends(user_manager.get_active_user),
+) -> str:
+    """API endpoint to change the status of a result."""
+    engine = Engine()
+    return engine.change_status_result(
+        result_id=result_id,
+        status=new_status,
+        status_change_message=status_change_message,
+    )
+
+
+# TODO Hvad skal der ske ved forkert uuid?
+# Hvad med dropdown menu? Er det fint, eller gør det automatiseringen svær?
+# Results uploaded -> it is bad. Can't change request, can set result to delete.
+# Data done once again, can't be related to request
+# Must it be a specific tenant that deletes?

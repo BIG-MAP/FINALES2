@@ -13,6 +13,7 @@ from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
 from FINALES2.db import StatusLogRequest as DbStatusLogRequest
+from FINALES2.db import StatusLogResult as DbStatusLogResult
 from FINALES2.db.session import get_db
 from FINALES2.server.schemas import Request, RequestInfo, Result, ResultInfo
 
@@ -20,8 +21,20 @@ from FINALES2.server.schemas import Request, RequestInfo, Result, ResultInfo
 class RequestStatus(Enum):
     PENDING = "pending"
     RESERVED = "reserved"
-    RESOLVED = "resolved"
     RETRACTED = "retracted"
+
+
+class RequestStatusInternalServer(Enum):
+    RESOLVED = "resolved"
+
+
+class ResultStatus(Enum):
+    DELETED = "deleted"
+    AMENDED = "amended"
+
+
+class ResultStatusInternalServer(Enum):
+    ORIGINAL = "original"
 
 
 class Engine:
@@ -186,7 +199,7 @@ class Engine:
                 "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "cost": "Not implemented in the API yet",
-                "status": "Not implemented in the API yet",
+                "status": ResultStatusInternalServer.ORIGINAL.value,
                 "posting_recieved_timestamp": ctime,
             }
         )
@@ -198,7 +211,7 @@ class Engine:
                 raise ValueError(f"Submitted result has no request: {request_uuid}")
 
             original_request = query_out[0][0]
-            original_request.status = RequestStatus.RESOLVED.value
+            original_request.status = RequestStatusInternalServer.RESOLVED.value
             session.add(db_obj)
 
             # Add link between method for the result and the quantity table
@@ -349,13 +362,23 @@ class Engine:
         table
         """
 
-        # If status is not defined in RequestStatus return
-        if status not in (vars(RequestStatus)["_member_names_"]):
-            return None
+        # Check if result is already associated with request.
+        # This logic also infer that a status "resolved" cannot be changed
+        query_inp_result = select(DbResult.status).where(
+            DbResult.request_uuid == uuid.UUID(request_id)
+        )
+        with get_db() as session:
+            query_out_result = session.execute(query_inp_result).all()
+            if len(query_out_result) != 0:
+                raise ValueError(
+                    f"Cannot change status of request to '{status}' since an associated"
+                    f" result with status '{query_out_result[0][0]}' is already posted"
+                )
 
+        # Change status and log change
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
         with get_db() as session:
-            # Retrieve original request for the result and update request status
+            # Retrieve original request and update request status
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
                 raise ValueError(f"No request with id: {request_id}")
@@ -377,5 +400,42 @@ class Engine:
 
             session.refresh(request_status_log_obj)
             session.refresh(original_request)
+
+        api_response = f"Successful change of status to {status}"
+        return api_response
+
+    def change_status_result(self, result_id, status, status_change_message):
+        """
+        Checks the given status is one of the allowed strings, if so overwrite
+        the value in the result table, and log the change in the result status log
+        table
+        """
+
+        # Change status and log change
+        query_inp = select(DbResult).where(DbResult.uuid == uuid.UUID(result_id))
+        with get_db() as session:
+            # Retrieve original result and update result status
+            query_out = session.execute(query_inp).all()
+            if len(query_out) == 0:
+                raise ValueError(f"No result with id: {result_id}")
+
+            original_request = query_out[0][0]
+            # Update value
+            original_request.status = status
+
+            result_status_log_obj = DbStatusLogResult(
+                **{
+                    "uuid": str(uuid.uuid4()),
+                    "request_uuid": result_id,
+                    "status": status,
+                    "status_change_message": status_change_message,
+                }
+            )
+            session.add(result_status_log_obj)
+            session.commit()
+
+            session.refresh(result_status_log_obj)
+            session.refresh(original_request)
+
         api_response = f"Successful change of status to {status}"
         return api_response
