@@ -234,7 +234,7 @@ class Engine:
             )
             session.add(link_quantity_result_obj)
 
-            # Log the status of the new posted posted
+            # Log the status of the newly posted result
             result_status_log_obj = DbStatusLogResult(
                 **{
                     "uuid": str(uuid.uuid4()),
