@@ -349,7 +349,9 @@ class Engine:
 
         return api_response
 
-    def change_status_request(self, request_id, status, status_change_message):
+    def change_status_request(
+        self, request_id: str, status: str, status_change_message: Optional[str] = None
+    ) -> str:
         """
         Checks the given status is one of the allowed strings, if so overwrite
         the value in the request table, and log the change in the request status log
@@ -398,7 +400,9 @@ class Engine:
         api_response = f"Successful change of status to {status}"
         return api_response
 
-    def change_status_result(self, result_id, status, status_change_message):
+    def change_status_result(
+        self, result_id: str, status: str, status_change_message: Optional[str] = None
+    ) -> str:
         """
         Checks the given status is one of the allowed strings, if so overwrite
         the value in the result table, and log the change in the result status log
@@ -407,7 +411,7 @@ class Engine:
 
         # Not possible to change status to 'original'
         if status == ResultStatus.ORIGINAL.value:
-            ValueError(
+            raise ValueError(
                 f"Not possible to change status to '{ResultStatus.ORIGINAL.value}' "
                 "since this is reserved only for the initial posting"
             )
@@ -419,24 +423,23 @@ class Engine:
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
                 raise ValueError(f"No result with id: {result_id}")
+            original_result = query_out[0][0]
 
-            original_request = query_out[0][0]
             # Update value
-            original_request.status = status
-
+            original_result.status = status
             result_status_log_obj = DbStatusLogResult(
                 **{
                     "uuid": str(uuid.uuid4()),
-                    "request_uuid": result_id,
+                    "result_uuid": result_id,
                     "status": status,
                     "status_change_message": status_change_message,
                 }
             )
+
             session.add(result_status_log_obj)
             session.commit()
-
             session.refresh(result_status_log_obj)
-            session.refresh(original_request)
+            session.refresh(original_result)
 
         api_response = f"Successful change of status to {status}"
         return api_response

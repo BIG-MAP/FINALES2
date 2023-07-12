@@ -128,7 +128,7 @@ def post_new_status_for_request(
     engine = Engine()
     return engine.change_status_request(
         request_id=request_id,
-        status=new_status,
+        status=new_status.value,
         status_change_message=status_change_message,
     )
 
@@ -146,6 +146,6 @@ def post_new_status_for_result(
     engine = Engine()
     return engine.change_status_result(
         result_id=result_id,
-        status=new_status,
+        status=new_status.value,
         status_change_message=status_change_message,
     )

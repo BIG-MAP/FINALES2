@@ -126,7 +126,7 @@ class Result(BaseModel):
             "method": [method],
             "parameters": json.loads(db_result.parameters),
             "tenant_uuid": str(db_result.posting_tenant_uuid),
-            "request_uuid": str(db_result.posting_tenant_uuid),
+            "request_uuid": str(db_result.request_uuid),
         }
         return cls(**init_params)
 
