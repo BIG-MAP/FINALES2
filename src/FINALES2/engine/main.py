@@ -14,7 +14,7 @@ from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
 from FINALES2.db import StatusLogRequest as DbStatusLogRequest
 from FINALES2.db.session import get_db
-from FINALES2.server.schemas import Request, RequestInfo, Result
+from FINALES2.server.schemas import Request, RequestInfo, Result, ResultInfo
 
 
 class RequestStatus(Enum):
@@ -27,7 +27,7 @@ class RequestStatus(Enum):
 class Engine:
     """This class is the outermost manager of the functionalities of finales."""
 
-    def get_request(self, object_id: str) -> Optional[Request]:
+    def get_request(self, object_id: str) -> Optional[RequestInfo]:
         """Retrieve a request entry from the database by id."""
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(object_id))
         with get_db() as session:
@@ -36,10 +36,10 @@ class Engine:
         if len(query_out) == 0:
             return None
 
-        api_response = Request.from_db_request(query_out[0][0])
+        api_response = RequestInfo.from_db_request(query_out[0][0])
         return api_response
 
-    def get_result(self, object_id: str) -> Optional[Result]:
+    def get_result(self, object_id: str) -> Optional[ResultInfo]:
         """Retrieve a result entry from the database by id."""
         query_inp = select(DbResult).where(DbResult.uuid == uuid.UUID(object_id))
         with get_db() as session:
@@ -47,7 +47,7 @@ class Engine:
 
         if len(query_out) == 0:
             return None
-        api_response = Result.from_db_result(query_out[0][0])
+        api_response = ResultInfo.from_db_result(query_out[0][0])
         return api_response
 
     def create_request(self, request_data: Request) -> str:
@@ -300,7 +300,7 @@ class Engine:
             if not match_found:
                 raise ValueError(f"No records for this method: {method}")
 
-    def get_result_by_request(self, request_id: str) -> Optional[Result]:
+    def get_result_by_request(self, request_id: str) -> Optional[ResultInfo]:
         """Return the result corresponding to a given request ID."""
         query_inp = select(DbResult).where(
             DbResult.request_uuid == uuid.UUID(request_id)
@@ -311,7 +311,7 @@ class Engine:
         if len(query_out) == 0:
             return None
 
-        api_response = Result.from_db_result(query_out[0][0])
+        api_response = ResultInfo.from_db_result(query_out[0][0])
         return api_response
 
     def get_all_results(
@@ -337,7 +337,7 @@ class Engine:
 
         api_response = []
         for (result_info,) in query_out:
-            result_obj = Result.from_db_result(result_info)
+            result_obj = ResultInfo.from_db_result(result_info)
             api_response.append(result_obj)
 
         return api_response
