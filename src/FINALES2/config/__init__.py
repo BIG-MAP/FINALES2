@@ -58,7 +58,7 @@ def get_configuration():
         parent_path = config_filepath.parent
         parent_path.mkdir(parents=True, exist_ok=True)
         default_config = FinalesConfiguration()
-        default_config_data = default_config.dict()
+        default_config_data = default_config.model_dump()
         with open(config_filepath, "w") as fileobj:
             json.dump(default_config_data, fileobj, indent=2)
         return default_config

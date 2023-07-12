@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 class GeneralMetaData(BaseModel):
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
 
 
 class Method(BaseModel):
@@ -21,7 +21,7 @@ class Method(BaseModel):
 class Quantity(BaseModel):
     name: str
     methods: dict[str, Method]
-    specifications: Optional[dict]
+    specifications: Optional[dict] = None
     is_active: bool
 
 
