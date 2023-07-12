@@ -349,12 +349,8 @@ class Engine:
         table
         """
 
-        if status not in (
-            RequestStatus.PENDING.value,
-            RequestStatus.RESERVED.value,
-            RequestStatus.RESOLVED.value,
-            RequestStatus.RETRACTED.value,
-        ):
+        # If status is not defined in RequestStatus return
+        if status not in (vars(RequestStatus)["_member_names_"]):
             return None
 
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
@@ -381,5 +377,5 @@ class Engine:
 
             session.refresh(request_status_log_obj)
             session.refresh(original_request)
-
-        return "Successful change"
+        api_response = f"Successful change of status to {status}"
+        return api_response

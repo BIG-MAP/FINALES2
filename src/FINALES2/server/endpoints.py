@@ -118,7 +118,7 @@ def get_limitations(
 def post_new_request(
     request_id: str,
     new_status: str,
-    status_change_message: Optional[str],
+    status_change_message: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
 ) -> str:
     """API endpoint to change the status of a request. The possible inputs are:
