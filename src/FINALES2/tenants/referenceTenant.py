@@ -23,12 +23,12 @@ class Tenant(BaseModel):
     quantities: dict[str, Quantity]
     queue: list = []
     sleep_time_s: int = 1
-    tenant_config: Any
+    tenant_config: Any = None
     run_method: Callable
     prepare_results: Callable
     FINALES_server_config: ServerConfig
-    end_run_time: Optional[datetime]
-    authorization_header: Optional[dict]
+    end_run_time: Optional[datetime] = None
+    authorization_header: Optional[dict] = None
     operator: User
     tenant_user: User
     tenant_uuid: str
