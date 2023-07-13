@@ -133,7 +133,7 @@ def post_new_status_for_request(
     )
 
 
-@operations_router.post("/result/{object_id}/new_status_result/")
+@operations_router.post("/results/{object_id}/update_status/")
 def post_new_status_for_result(
     result_id: str,
     new_status: ResultStatus,
