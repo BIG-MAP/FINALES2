@@ -433,7 +433,8 @@ class Engine:
         further/new description.
         """
 
-        # Not possible to change status to 'original'
+        # Here it is enforced that it is not possible to change status to 'original'
+        # since this is reserved for the status when the data is initially posted
         if status == ResultStatus.ORIGINAL:
             raise ValueError(
                 f"Not possible to change status to '{ResultStatus.ORIGINAL.value}' "
