@@ -434,7 +434,7 @@ class Engine:
         """
 
         # Not possible to change status to 'original'
-        if status.value == ResultStatus.ORIGINAL.value:
+        if status == ResultStatus.ORIGINAL:
             raise ValueError(
                 f"Not possible to change status to '{ResultStatus.ORIGINAL.value}' "
                 "since this is reserved only for the initial posting"
