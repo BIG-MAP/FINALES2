@@ -253,6 +253,9 @@ class Engine:
             session.refresh(link_quantity_result_obj)
 
         # Changes the status for the request the result is connected to
+        # ISSUES has been raised, concerning that this status update is done after
+        # the above commit, leaving the database in an inconsistent state before the
+        # below is performed
         self.change_status_request(
             request_id=request_uuid,
             status=RequestStatus.RESOLVED,
