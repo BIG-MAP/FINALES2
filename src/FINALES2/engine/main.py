@@ -252,8 +252,10 @@ class Engine:
             session.refresh(result_status_log_obj)
             session.refresh(link_quantity_result_obj)
 
-        # Changes the status for the request the result is connected to
-        # ISSUES has been raised, concerning that this status update is done after
+        # The following lines changes the status of the request (and logs change)
+        # now that a result associated with the request has been posted.
+
+        # An issue has been raised, concerning that this status update is done after
         # the above commit, leaving the database in an inconsistent state before the
         # below is performed
         self.change_status_request(
