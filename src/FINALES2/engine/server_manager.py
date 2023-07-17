@@ -222,6 +222,63 @@ class ServerManager:
 
         return
 
+    def deactivate_capability(self, method_name):
+        """Adds new state to a capability."""
+        query_inp = (
+            select(Quantity)
+            .where(Quantity.method == method_name)
+            .where(Quantity.is_active == 1)
+        )
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+            if len(query_out) == 0:
+                raise ValueError(
+                    "No method with this name is currently active in the map"
+                )
+
+            capability = query_out[0][0]
+            # Updating the is_active column
+            capability.status = 0
+
+            session.commit()
+            session.refresh(capability)
+
+        print(f"The method {method_name} has been deactivated in the map")
+        return
+
+    # def alter_capability_state(self, uuid, new_is_active_state):
+    #     """Adds new state to a capability."""
+    #     query_inp = select(Quantity).where(Quantity.uuid == uuid.UUID(uuid))
+
+    #     with self._database_context() as session:
+    #         query_out = session.execute(query_inp).all()
+
+    #         if len(query_out) == 0:
+    #             raise ValueError(
+    #                 'No capability entry in the quantity table with the provided uuid'
+    #                 )
+
+    #         capability = query_out[0][0]
+    #         if cabability.is_active == new_is_active_state:
+    #             raise ValueError(
+    #                 'The capability entry already has the desired is_active state '
+    #                 f'({new_is_active_state})'
+    #                 )
+
+    #         # Updating the is_active column
+    #         original_result.status = new_is_active_state
+
+    #         session.commit()
+    #         session.refresh(original_result)
+
+    #     print(
+    #         f'The is_active state of capability with uuid ({uuid}) was successfully '
+    #         f"changed to ({new_is_active_state})"
+    #         )
+    #     return
+
 
 def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, Any]:
     """
