@@ -100,7 +100,8 @@ def get_results_requested_all(
 def get_capabilities(
     currently_available=True, token: User = Depends(user_manager.get_active_user)
 ) -> List[CapabilityInfo]:
-    """API endpoint to get all capabilities."""
+    """API endpoint to get all capabilities. Filtering for currently_available=True
+    will return capabilities that currently has active tenants."""
     server_manager = ServerManager(database_context=get_db)
     return server_manager.get_capabilities(currently_available=currently_available)
 
