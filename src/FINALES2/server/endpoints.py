@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 
-from FINALES2.engine.main import Engine, get_db
+from FINALES2.engine.main import Engine, RequestStatus, ResultStatus, get_db
 from FINALES2.engine.server_manager import ServerManager
 from FINALES2.server.schemas import (
     CapabilityInfo,
@@ -113,3 +113,39 @@ def get_limitations(
     """API endpoint to get all limitations."""
     server_manager = ServerManager(database_context=get_db)
     return server_manager.get_limitations(currently_available=currently_available)
+
+
+@operations_router.post("/requests/{object_id}/update_status/")
+def post_new_status_for_request(
+    request_id: str,
+    new_status: RequestStatus,
+    status_change_message: Optional[str] = None,
+    token: User = Depends(user_manager.get_active_user),
+) -> str:
+    """API endpoint to change the status of a request which is currently not resolved.
+    The possible inputs are: pending, reserved, retracted, with resolved being auto-
+    matically designed when a result is posted"""
+    engine = Engine()
+    return engine.change_status_request(
+        request_id=request_id,
+        status=new_status,
+        status_change_message=status_change_message,
+    )
+
+
+@operations_router.post("/results/{object_id}/update_status/")
+def post_new_status_for_result(
+    result_id: str,
+    new_status: ResultStatus,
+    status_change_message: Optional[str] = None,
+    token: User = Depends(user_manager.get_active_user),
+) -> str:
+    """API endpoint to change the status of a result.
+    The possible inputs are: deleted and amended, with original being reserved for the
+    initial posting"""
+    engine = Engine()
+    return engine.change_status_result(
+        result_id=result_id,
+        status=new_status,
+        status_change_message=status_change_message,
+    )
