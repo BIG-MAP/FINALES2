@@ -73,12 +73,9 @@ class ServerManager:
         method: Optional[str] = None,
         currently_available=True,
     ) -> List[CapabilityInfo]:
-        """Return all (currently available) capabilities."""
-
-        if currently_available:
-            print("This should filter based on the available tenants")
-        else:
-            print("This should show all definitions in the quantity table")
+        """Return all (currently available) capabilities. currently_available=True will
+        return capabilities based on avaliable tenants. currently_available=False will
+        show all capabilities defined that are registered in the database."""
 
         # Filter for the quantities tenants can register for
         query_inp = select(Quantity).where(Quantity.is_active == 1)
