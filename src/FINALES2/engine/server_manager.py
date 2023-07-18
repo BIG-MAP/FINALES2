@@ -223,7 +223,7 @@ class ServerManager:
         return
 
     def deactivate_capability(self, method_name):
-        """Adds new state to a capability."""
+        """Deactivate the is_active column for a capability."""
         query_inp = (
             select(Quantity)
             .where(Quantity.method == method_name)
@@ -248,36 +248,54 @@ class ServerManager:
         print(f"The method {method_name} has been deactivated in the map")
         return
 
-    # def alter_capability_state(self, uuid, new_is_active_state):
-    #     """Adds new state to a capability."""
-    #     query_inp = select(Quantity).where(Quantity.uuid == uuid.UUID(uuid))
+    def alter_tenant_state(self, tenant_uuid, new_is_active_state):
+        """Adds new state to a capability."""
+        query_inp = select(Tenant).where(Tenant.uuid == uuid.UUID(tenant_uuid))
 
-    #     with self._database_context() as session:
-    #         query_out = session.execute(query_inp).all()
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
 
-    #         if len(query_out) == 0:
-    #             raise ValueError(
-    #                 'No capability entry in the quantity table with the provided uuid'
-    #                 )
+            if len(query_out) == 0:
+                raise ValueError("No tenant exists with the provided uuid")
 
-    #         capability = query_out[0][0]
-    #         if cabability.is_active == new_is_active_state:
-    #             raise ValueError(
-    #                 'The capability entry already has the desired is_active state '
-    #                 f'({new_is_active_state})'
-    #                 )
+            tenant = query_out[0][0]
+            if tenant.is_active == new_is_active_state:
+                raise ValueError(
+                    "The capability entry already has the desired is_active state "
+                    f"({new_is_active_state})"
+                )
 
-    #         # Updating the is_active column
-    #         original_result.status = new_is_active_state
+            # Updating the is_active column
+            tenant.status = new_is_active_state
 
-    #         session.commit()
-    #         session.refresh(original_result)
+            session.commit()
+            session.refresh(tenant)
 
-    #     print(
-    #         f'The is_active state of capability with uuid ({uuid}) was successfully '
-    #         f"changed to ({new_is_active_state})"
-    #         )
-    #     return
+        print(
+            f"The is_active state of tenant with uuid ({uuid}) was successfully "
+            f"changed to ({new_is_active_state})"
+        )
+        return
+
+    def retrieve_tenant_uuid(self, tenant_uuid):
+        """Adds new state to a capability."""
+        query_inp = select(Tenant)
+        if tenant_uuid is not None:
+            query_inp = query_inp.where(Tenant.uuid == uuid.UUID(tenant_uuid))
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+            if len(query_out) == 0:
+                if tenant_uuid is None:
+                    raise ValueError("No tenant exists with the provided name")
+                else:
+                    raise ValueError("No tenants in the database")
+
+        for (tenant,) in query_out:
+            print(f"tenant: {tenant.name}, uuid: {tenant.uuid}")
+
+        return
 
 
 def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, Any]:

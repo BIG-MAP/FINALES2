@@ -85,23 +85,43 @@ def db_deactivate_capability(input_method_name):
     server_manager.deactivate_capability(input_method_name)
 
 
-# @click.option(
-#     "--input-uuid",
-#     required=True,
-#     prompt="Please provide the uuid of the method",
-#     type=str,
-#     help="uuid string of the capability (method).",
-# )
-# @click.option(
-#     "--input-boolean",
-#     required=True,
-#     prompt="Please provide the new is_active state as a boolean integer",
-#     type=int,
-#     help="Boolean integer the is_active column should be changed to.",
-# )
-# @cli_alter_state.command("capability")
-# def db_add_capability(input_uuid, new_is_active_state):
-#     "Alter the is_active state of a cabability"
+@click.option(
+    "--input-boolean",
+    required=True,
+    prompt="Please provide the new is_active state as a boolean integer",
+    type=int,
+    help="Boolean integer the is_active column should be changed to.",
+)
+@click.option(
+    "--input-uuid",
+    required=True,
+    prompt="Please provide the uuid of the tenant",
+    type=str,
+    help="uuid string the tenant.",
+)
+@cli_alter_state.command("tenant")
+def db_alter_tenant_state(input_uuid, input_boolean):
+    "Alter the is_active state of a tenant"
 
-#     server_manager = ServerManager(database_context=get_db)
-#     server_manager.alter_capability_state(input_uuid, new_is_active_state)
+    server_manager = ServerManager(database_context=get_db)
+    server_manager.alter_tenant_state(input_uuid, input_boolean)
+
+
+@cli_db.group("get")
+def cli_retrieve():
+    """Commands to retrieve information on tenants."""
+
+
+@click.option(
+    "--input-name",
+    required=False,
+    prompt="Provide input the name of the tenant to retrieve the uuid for",
+    type=str,
+    help=("Possible way to filter the name of a tenant to retrieve the uuid."),
+)
+@cli_retrieve.command("tenant-uuid")
+def db_retrieve_tenant_specification(input_name=None):
+    "Alter the is_active state of a tenant"
+
+    server_manager = ServerManager(database_context=get_db)
+    server_manager.retrieve_tenant_uuid(input_name)
