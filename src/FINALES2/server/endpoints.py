@@ -100,8 +100,15 @@ def get_results_requested_all(
 def get_capabilities(
     currently_available=True, token: User = Depends(user_manager.get_active_user)
 ) -> List[CapabilityInfo]:
-    """API endpoint to get all capabilities. Filtering for currently_available=True
-    will return capabilities that currently has active tenants."""
+    """
+    API endpoint to return all (currently available) capabilities
+    registered in the MAP.
+
+    :type currently_available: bool
+
+    :param currently_available: A flag to decide if the capabilities returned are from
+        all registered tenants (if False) or only currently available ones (if True).
+    """
     server_manager = ServerManager(database_context=get_db)
     return server_manager.get_capabilities(currently_available=currently_available)
 
@@ -111,6 +118,14 @@ def get_limitations(
     currently_available=True,
     token: User = Depends(user_manager.get_active_user),
 ) -> List[LimitationsInfo]:
-    """API endpoint to get all limitations."""
+    """
+    API endpoint to return all (currently available) limitations.
+
+    :type currently_available: bool
+
+    :param currently_available: A flag to decide if the limitations returned are
+        from all tenants registered in the database (if False) or from avaliable
+        tenants that are currently active (if True)
+    """
     server_manager = ServerManager(database_context=get_db)
     return server_manager.get_limitations(currently_available=currently_available)

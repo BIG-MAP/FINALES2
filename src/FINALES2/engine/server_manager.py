@@ -74,10 +74,11 @@ class ServerManager:
         currently_available=True,
     ) -> List[CapabilityInfo]:
         """Return all (currently available) capabilities.
-        
+
         :type currently_available: bool
-        :param currently_available: A flag to decide if the capabilities returned are from
-            all tenants (if False) or only available ones (if True)
+        :param currently_available: A flag to decide if the capabilities returned are
+            from all registered tenants (if False) or only currently available ones
+            (if True).
         """
 
         # Filter for the quantities tenants can register for
@@ -115,9 +116,12 @@ class ServerManager:
 
     def get_limitations(self, currently_available=True) -> List[LimitationsInfo]:
         """
-        Return all (currently available) limitations. currently_available=True will
-        return limitations based on avaliable tenants. currently_available=False will
-        show all limtations defined that are registered in the database.
+        Return all (currently available) limitations.
+
+        :type currently_available: bool
+        :param currently_available: A flag to decide if the limitations returned are
+            from all tenants registered in the database (if False) or from avaliable
+            tenants that are currently active (if True)
         """
 
         query_inp = select(Tenant)
