@@ -102,13 +102,9 @@ class ServerManager:
 
         api_response = []
         for (capability,) in query_out:
-            # If currently_available=True the capbility is returned if the correpsonding
-            # method is currently being provided by an active tenant in the MAP
-            if currently_available:
-                if capability.method in active_method_list:
-                    new_object = CapabilityInfo.from_db_quantity(capability)
-                    api_response.append(new_object)
-            else:
+            # If currently_available=True we need to also check that the capability is
+            # currently being provided by an active tenant in the MAP
+            if not currently_available or capability.method in active_method_list:
                 new_object = CapabilityInfo.from_db_quantity(capability)
                 api_response.append(new_object)
 
