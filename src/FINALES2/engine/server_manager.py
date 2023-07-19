@@ -48,12 +48,14 @@ class ServerManager:
         for limitations in tenant_limitations:
             self.validate_limitations(limitations)
 
+        is_active = 1
         tenant_data = {
             "uuid": str(uuid.uuid4()),
             "name": tenant_specs["name"],
             "limitations": json.dumps(tenant_limitations),
             "capabilities": json.dumps(tenant_specs["capabilities"]),
             "contact_person": tenant_specs["contact_person"],
+            "is_active": is_active,
         }
         new_tenant = Tenant(**tenant_data)
 
@@ -71,14 +73,16 @@ class ServerManager:
         method: Optional[str] = None,
         currently_available=True,
     ) -> List[CapabilityInfo]:
-        """Return all (currently available) capabilities."""
+        """Return all (currently available) capabilities.
 
-        if currently_available:
-            print("This should filter based on the available tenants")
-        else:
-            print("This should show all definitions in the quantity table")
+        :type currently_available: bool
+        :param currently_available: A flag to decide if the capabilities returned are
+            from all registered tenants (if False) or only currently available ones
+            (if True).
+        """
 
-        query_inp = select(Quantity)
+        # Filter for the quantities tenants can register for
+        query_inp = select(Quantity).where(Quantity.is_active == 1)
         if quantity is not None:
             query_inp = query_inp.where(Quantity.quantity == quantity)
         if method is not None:
@@ -87,22 +91,44 @@ class ServerManager:
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
 
+        # Retrieve all current active tenants
+        query_inp_tenant = select(Tenant).where(Tenant.is_active == 1)
+        with self._database_context() as session:
+            query_out_tenant = session.execute(query_inp_tenant).all()
+
+        # Create a list of all the methods currently provided by active tenants
+        active_method_list = []
+        for (tenant,) in query_out_tenant:
+            tenant_limitations = json.loads(tenant.limitations)
+            for limitation in tenant_limitations:
+                if limitation["method"] not in active_method_list:
+                    active_method_list.append(limitation["method"])
+
         api_response = []
         for (capability,) in query_out:
-            new_object = CapabilityInfo.from_db_quantity(capability)
-            api_response.append(new_object)
+            # If currently_available=True we need to also check that the capability is
+            # currently being provided by an active tenant in the MAP
+            if not currently_available or capability.method in active_method_list:
+                new_object = CapabilityInfo.from_db_quantity(capability)
+                api_response.append(new_object)
 
         return api_response
 
     def get_limitations(self, currently_available=True) -> List[LimitationsInfo]:
-        """Return all (currently available) limitations."""
+        """
+        Return all (currently available) limitations.
 
-        if currently_available:
-            print("This should filter based on the available tenants")
-        else:
-            print("This should show all definitions in the quantity table")
+        :type currently_available: bool
+        :param currently_available: A flag to decide if the limitations returned are
+            from all tenants registered in the database (if False) or from avaliable
+            tenants that are currently active (if True)
+        """
 
         query_inp = select(Tenant)
+        # Filters for all currently available tenants
+        if currently_available:
+            query_inp = query_inp.where(Tenant.is_active == 1)
+
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
 

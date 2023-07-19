@@ -1,4 +1,4 @@
-from sqlalchemy import TIMESTAMP, Column, String
+from sqlalchemy import TIMESTAMP, Boolean, Column, String
 from sqlalchemy.sql import func
 from sqlalchemy_utils import UUIDType
 
@@ -13,6 +13,7 @@ class Tenant(Base):
         capabilities VARCHAR:   capabilities of the tenant, quantity, method
         limitations VARCHAR:    limitations of the tenant within each method
         contact_person VARCHAR: contact person of the tenant
+        is_active Boolean:      status if the tenant is currently active
         load_time (Datetime):   Timestamp for when the row is added
 
     """
@@ -34,6 +35,7 @@ class Tenant(Base):
         String,
         nullable=False,
     )
+    is_active = Column(Boolean(), default=True)
     load_time = Column(
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
