@@ -203,7 +203,7 @@ class ServerManager:
         present in the database with status active
         """
 
-        active_entry = 1
+        active_entry = True
         query_inp = (
             select(Quantity)
             .where(Quantity.quantity == db_entry.quantity)
