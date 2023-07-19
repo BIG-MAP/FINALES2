@@ -203,17 +203,16 @@ class ServerManager:
         present in the database with status active
         """
 
-        active_entry = True
+        active_entry = 1
         query_inp = (
             select(Quantity)
             .where(Quantity.quantity == db_entry.quantity)
             .where(Quantity.method == db_entry.method)
-            .where(active_entry == db_entry.is_active)
+            .where(Quantity.is_active == active_entry)
         )
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
-
         if len(query_out) > 0:
             raise ValueError(
                 f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
@@ -266,7 +265,7 @@ class ServerManager:
 
             capability = query_out[0][0]
             # Updating the is_active column
-            capability.status = 0
+            capability.is_active = 0
 
             session.commit()
             session.refresh(capability)
