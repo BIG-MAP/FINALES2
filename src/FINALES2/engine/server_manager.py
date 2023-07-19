@@ -73,9 +73,12 @@ class ServerManager:
         method: Optional[str] = None,
         currently_available=True,
     ) -> List[CapabilityInfo]:
-        """Return all (currently available) capabilities. currently_available=True will
-        return capabilities based on avaliable tenants. currently_available=False will
-        show all capabilities defined that are registered in the database."""
+        """Return all (currently available) capabilities.
+        
+        :type currently_available: bool
+        :param currently_available: A flag to decide if the capabilities returned are from
+            all tenants (if False) or only available ones (if True)
+        """
 
         # Filter for the quantities tenants can register for
         query_inp = select(Quantity).where(Quantity.is_active == 1)
