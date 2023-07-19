@@ -77,10 +77,22 @@ def cli_alter_state():
     type=str,
     help="Name of the method to deactivate",
 )
+@click.option(
+    "--input-answer",
+    required=True,
+    prompt=(
+        "This is an irreversible command for the method entry. "
+        "A new entry would be needed for tenants to register to the method "
+        "Enter 1 if you wish to proceed"
+    ),
+    type=int,
+    help="Name of the method to deactivate",
+)
 @cli_alter_state.command("deactivate-capability")
-def db_deactivate_capability(input_method_name):
-    "Alter the is_active state of a cabability"
-
+def db_deactivate_capability(input_method_name, input_answer):
+    """Alter the is_active state of a cabability."""
+    if input_answer != 1:
+        return
     server_manager = ServerManager(database_context=get_db)
     server_manager.deactivate_capability(input_method_name)
 
