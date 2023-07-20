@@ -110,6 +110,7 @@ def get_capabilities(
     :param currently_available: A flag to decide if the capabilities returned are from
         all registered tenants (if False) or only currently available ones (if True).
     """
+    print(currently_available)
     server_manager = ServerManager(database_context=get_db)
     return server_manager.get_capabilities(currently_available=currently_available)
 
