@@ -5,14 +5,8 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from FINALES2.logging.logger import loggerConfig
-
 DIRPATH_THIS = pathlib.Path(__file__).parent.resolve()
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{DIRPATH_THIS}/sql_app.db"
-
-
-logger_obj = loggerConfig()
-logger = logger_obj.get_logger()
 
 
 engine = create_engine(
@@ -35,8 +29,4 @@ def get_db() -> Generator:
         db = SessionLocal()
         yield db
     finally:
-        print("boomSauce")
-        logger.info("A")
-        logger.warning("B")
-        logger.debug("C")
         db.close()

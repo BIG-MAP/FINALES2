@@ -15,7 +15,6 @@ def cli_db():
 @cli_db.command("init")
 def db_init():
     "Initialize the database, with the tables for FINALES"
-    click.echo("here")
     Base.metadata.create_all(bind=engine)
     click.echo("Initialized the database with the following tables:")
 
