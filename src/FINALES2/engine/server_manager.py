@@ -274,7 +274,7 @@ class ServerManager:
         return
 
     def alter_tenant_state(self, tenant_uuid, new_is_active_state):
-        """Adds new state to a capability."""
+        """Adds new state to a tenant."""
         query_inp = select(Tenant).where(Tenant.uuid == uuid.UUID(tenant_uuid))
 
         with self._database_context() as session:
