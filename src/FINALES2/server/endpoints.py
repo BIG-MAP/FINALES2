@@ -9,9 +9,10 @@ fetching all pending requests, and obtaining the capabilities of the system.
 The module uses FastAPI's APIRouter to define the routes and handle the requests.
 """
 
+import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from FINALES2.engine.main import Engine, RequestStatus, ResultStatus, get_db
 from FINALES2.engine.server_manager import ServerManager
@@ -115,7 +116,9 @@ def get_limitations(
     return server_manager.get_limitations(currently_available=currently_available)
 
 
-@operations_router.post("/requests/{object_id}/update_status/")
+@operations_router.post(
+    "/requests/{object_id}/update_status/",
+)
 def post_new_status_for_request(
     request_id: str,
     new_status: RequestStatus,
@@ -126,11 +129,15 @@ def post_new_status_for_request(
     The possible inputs are: pending, reserved, retracted, with resolved being auto-
     matically designed when a result is posted"""
     engine = Engine()
-    return engine.change_status_request(
-        request_id=request_id,
-        status=new_status,
-        status_change_message=status_change_message,
-    )
+    try:
+        return engine.change_status_request(
+            request_id=request_id,
+            status=new_status,
+            status_change_message=status_change_message,
+        )
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=422, detail=str(error_message))
 
 
 @operations_router.post("/results/{object_id}/update_status/")

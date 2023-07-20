@@ -15,7 +15,6 @@ from FINALES2.db import Result as DbResult
 from FINALES2.db import StatusLogRequest as DbStatusLogRequest
 from FINALES2.db import StatusLogResult as DbStatusLogResult
 from FINALES2.db.session import get_db
-from FINALES2.engine.http_exception_handler import http_exception_handler
 from FINALES2.server.schemas import Request, RequestInfo, Result, ResultInfo
 
 
@@ -394,7 +393,7 @@ class Engine:
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
                 # raise error
-                http_exception_handler(f"No request with id: {request_id}")
+                raise ValueError(f"No request with id: {request_id}")
 
             original_request = query_out[0][0]
 
