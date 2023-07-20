@@ -71,7 +71,7 @@ class ServerManager:
         self,
         quantity: Optional[str] = None,
         method: Optional[str] = None,
-        currently_available=True,
+        currently_available: bool = True,
     ) -> List[CapabilityInfo]:
         """Return all (currently available) capabilities.
 
@@ -114,7 +114,9 @@ class ServerManager:
 
         return api_response
 
-    def get_limitations(self, currently_available=True) -> List[LimitationsInfo]:
+    def get_limitations(
+        self, currently_available: bool = True
+    ) -> List[LimitationsInfo]:
         """
         Return all (currently available) limitations.
 
