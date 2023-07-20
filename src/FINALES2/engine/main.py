@@ -392,7 +392,6 @@ class Engine:
             # Retrieve original request and update request status
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
-                # raise error
                 raise ValueError(f"No request with id: {request_id}")
 
             original_request = query_out[0][0]
