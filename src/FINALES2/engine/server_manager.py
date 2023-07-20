@@ -53,7 +53,6 @@ class ServerManager:
             "uuid": str(uuid.uuid4()),
             "name": tenant_specs["name"],
             "limitations": json.dumps(tenant_limitations),
-            "capabilities": json.dumps(tenant_specs["capabilities"]),
             "contact_person": tenant_specs["contact_person"],
             "is_active": is_active,
         }
@@ -225,7 +224,7 @@ class ServerManager:
 
     def _dublicate_tenant_db_check(self, db_entry):
         """
-        Method for checking if the method being added to the capabilities is already
+        Method for checking if a tenant with the same name and limitations is already
         present in the database with status active
         """
 
@@ -234,7 +233,6 @@ class ServerManager:
             select(Tenant)
             .where(Tenant.name == db_entry.name)
             .where(Tenant.limitations == db_entry.limitations)
-            .where(Tenant.capabilities == db_entry.capabilities)
         )
 
         with self._database_context() as session:
