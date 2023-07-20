@@ -268,3 +268,13 @@ class Tenant(BaseModel):
                 # post the result
                 self._post_result(request=activeRequest, data=resultData)
             continue
+
+
+def Tenant_object_to_json(TenantInstance):
+    """
+    Funciton for creating the json input, which is to be forwarded to the admin for
+    registering a tenant.
+
+    The uuid will be returned by the admin, which the user then will add to there Tenant
+    object tenant_uuid field.
+    """
