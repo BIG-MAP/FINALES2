@@ -1,14 +1,14 @@
 import datetime
 import sqlite3
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+from FINALES2.config import get_configuration
 from FINALES2.user_management.classes_user_manager import AccessToken, User
-from FINALES2.user_management.files_user_management import config_user_manager as config
 
 # Create a router
 user_router = APIRouter(prefix="/user_management", tags=["user_management"])
@@ -33,7 +33,7 @@ class UserDB:
     """This class provides a database object, which allows to interface an SQL user
     database using sqlite3."""
 
-    def __init__(self, savepath: str = config.user_db) -> None:
+    def __init__(self, savepath: Optional[str] = None) -> None:
         """This function initializes a database for storing the user data.
 
         Inputs:
@@ -42,6 +42,10 @@ class UserDB:
         Output:
         This function has no output
         """
+        if savepath is None:
+            config = get_configuration()
+            savepath = config.safeget_userdb()
+
         # Connect to this database and set the cursor
         self.connection: sqlite3.Connection = sqlite3.connect(savepath)
         self.connection.row_factory = sqlite3.Row
@@ -339,7 +343,7 @@ def get_active_user(token: str = Depends(authentication_scheme)) -> dict[str, An
     active_user: a user object created based on a query to the user database with the
                 username obtained from the token
     """
-
+    config = get_configuration()
     # Try to decode the token
     try:
         decoded_JWT = jwt.decode(
@@ -411,6 +415,7 @@ def get_access_token(
     Outputs:
     token_JWT: a string representing the token generated
     """
+    config = get_configuration()
 
     # Create a copy of the token data
     token_data = token_data.copy()
@@ -464,6 +469,7 @@ def authenticate(login_form: OAuth2PasswordRequestForm = Depends()) -> dict[str,
     Outputs:
     tokenInfo: a dictionary with the relevant AccessToken and token_type
     """
+    config = get_configuration()
 
     # Get the user from the user database and check, if the password is correct
     this_user = user_authentication(

@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import datetime
 from typing import Any, Callable, Optional, Union
@@ -23,13 +24,13 @@ class Tenant(BaseModel):
     quantities: dict[str, Quantity]
     queue: list = []
     sleep_time_s: int = 1
-    tenant_config: Any
+    tenant_config: Any = None
     run_method: Callable
     prepare_results: Callable
     FINALES_server_config: ServerConfig
-    end_run_time: Optional[datetime]
-    authorization_header: Optional[dict]
-    operator: list[User]
+    end_run_time: Optional[datetime] = None
+    authorization_header: Optional[dict] = None
+    operators: list[User]
     tenant_user: User
     tenant_uuid: str
 
@@ -352,3 +353,38 @@ class Tenant(BaseModel):
                 # post the result
                 self._post_result(request=activeRequest, data=resultData)
             continue
+
+    def tenant_object_to_json(self):
+        """
+        Funciton for creating the json input file, which is to be forwarded to the admin
+        for registering a tenant.
+
+        The uuid will be returned by the admin, which the user then will add to there
+        Tenant object tenant_uuid field.
+        """
+
+        limitations = []
+        capability_keys = list(self.quantities.keys())
+        for capa_key in capability_keys:
+            method_keys = list(self.quantities[capa_key].methods.keys())
+            for method_key in method_keys:
+                limitations.append(
+                    {
+                        "quantity": capa_key,
+                        "method": method_key,
+                        "limitations": self.quantities[capa_key]
+                        .methods[method_key]
+                        .limitations,
+                    }
+                )
+
+        output_dict = {
+            "name": self.general_meta.name,
+            "limitations": limitations,
+            "contact_person": str([u.username for u in self.operators]),
+        }
+
+        with open(f"{self.general_meta.name}_tenant.json", "w") as fp:
+            json.dump(output_dict, fp)
+
+        return

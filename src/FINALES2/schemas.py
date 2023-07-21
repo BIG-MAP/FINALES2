@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 class GeneralMetaData(BaseModel):
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
 
 
 class Method(BaseModel):
