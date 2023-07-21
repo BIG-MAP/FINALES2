@@ -585,6 +585,23 @@ def parse_schema_for_template(
                                 elif "type" == key:
                                     if anyOf_type in types_dict.keys():
                                         types.append(types_dict[anyOf_type])
+                                    elif anyOf_type == "array":
+                                        typelist = []
+                                        for prefix_item in anyOf_item["prefixItems"]:
+                                            typelist.append(
+                                                types_dict[prefix_item["type"]]
+                                            )
+                                        if ("maxItems" in anyOf_item.keys()) and (
+                                            "minItems" in anyOf_item.keys()
+                                        ):
+                                            if (
+                                                anyOf_item["maxItems"]
+                                                == anyOf_item["minItems"]
+                                            ):
+                                                typestuple = tuple(typelist)
+                                                types.append(str(typestuple))
+                                            else:
+                                                types.append(str(typelist))
                                     elif anyOf_type == "null":
                                         requirement_subprop = "optional"
                         template[prop] = f"{requirement_subprop}, {' or '.join(types)}"
