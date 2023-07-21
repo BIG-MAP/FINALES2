@@ -7,7 +7,7 @@ import requests
 from pydantic import BaseModel
 
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig
-from FINALES2.server.schemas import Request, RequestInfo
+from FINALES2.server.schemas import Request
 from FINALES2.user_management.classes_user_manager import User
 
 
@@ -316,7 +316,7 @@ class Tenant(BaseModel):
         requestUUID = request["uuid"]
         print(f"Removed request with UUID {requestUUID} from the queue.")
 
-    def _run_method(self, request_info: RequestInfo):
+    def _run_method(self, request_info: dict[str, Any]):
         print("Running method ...")
         # mark as in progress
         return self.run_method(request_info)
@@ -377,7 +377,7 @@ class Tenant(BaseModel):
             "contact_person": "TODO - add contact person",
         }
 
-        with open(f"{TenantInstance.general_meta.name}_tenant.json", "w") as fp:
-            json.dump(output_dict, fp)
+        with open(f"{self.general_meta.name}_tenant.json", "w") as fp:
+            json.dump(output_dict, fp, indent=2)
 
         return
