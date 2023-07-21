@@ -98,7 +98,8 @@ def get_results_requested_all(
 
 @operations_router.get("/capabilities/")
 def get_capabilities(
-    currently_available=True, token: User = Depends(user_manager.get_active_user)
+    currently_available: bool = True,
+    token: User = Depends(user_manager.get_active_user),
 ) -> List[CapabilityInfo]:
     """
     API endpoint to return all (currently available) capabilities
@@ -115,7 +116,7 @@ def get_capabilities(
 
 @operations_router.get("/limitations/")
 def get_limitations(
-    currently_available=True,
+    currently_available: bool = True,
     token: User = Depends(user_manager.get_active_user),
 ) -> List[LimitationsInfo]:
     """
