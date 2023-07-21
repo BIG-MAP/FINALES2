@@ -1,6 +1,0 @@
-{
-  "secret_key": "",
-  "user_db": "C:\\Users\\MonikaVogler\\Documents\\BIG-MAP\\FINALES2\\FINALES2\\src\\FINALES2\\user_management\\files_user_management\\users.db",
-  "algorithm": "HS256",
-  "token_expiration_min": 1440
-}
