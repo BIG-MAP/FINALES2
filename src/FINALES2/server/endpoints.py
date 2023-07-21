@@ -40,7 +40,7 @@ def get_request(
         return engine.get_request(object_id)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/results/{object_id}")
@@ -53,7 +53,7 @@ def get_result(
         return engine.get_result(object_id)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.post("/requests/")
@@ -66,7 +66,7 @@ def post_request(
         return engine.create_request(request_data)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.post("/results/")
@@ -79,7 +79,7 @@ def post_result(
         return engine.create_result(result_data)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/pending_requests/")
@@ -94,7 +94,7 @@ def get_pending_requests(
         return engine.get_pending_requests(quantity=quantity, method=method)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/results_requested/{request_id}")
@@ -107,7 +107,7 @@ def get_results_requested(
         return engine.get_result_by_request(request_id)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/results_requested/")
@@ -122,7 +122,7 @@ def get_results_requested_all(
         return engine.get_all_results(quantity=quantity, method=method)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/capabilities/")
@@ -135,7 +135,7 @@ def get_capabilities(
         return server_manager.get_capabilities(currently_available=currently_available)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/limitations/")
@@ -149,7 +149,7 @@ def get_limitations(
         return server_manager.get_limitations(currently_available=currently_available)
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.post(
@@ -173,7 +173,7 @@ def post_new_status_for_request(
         )
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.post("/results/{object_id}/update_status/")
@@ -195,4 +195,4 @@ def post_new_status_for_result(
         )
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
