@@ -10,7 +10,7 @@ The module uses FastAPI's APIRouter to define the routes and handle the requests
 """
 
 import logging
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -224,8 +224,12 @@ def get_templates(
     """API endpoint to get templates for the input and output schemas for the
     queried quantity and/or method."""
     server_manager = ServerManager(database_context=get_db)
-    return server_manager.get_schema_template(
-        quantity=quantity,
-        method=method,
-        currently_available=currently_available,
-    )
+    try:
+        return server_manager.get_schema_template(
+            quantity=quantity,
+            method=method,
+            currently_available=currently_available,
+        )
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=422, detail=str(error_message))
