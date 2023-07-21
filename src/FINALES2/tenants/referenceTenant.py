@@ -7,7 +7,7 @@ import requests
 from pydantic import BaseModel
 
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig
-from FINALES2.server.schemas import Request
+from FINALES2.server.schemas import Request, RequestInfo
 from FINALES2.user_management.classes_user_manager import User
 
 
@@ -316,9 +316,10 @@ class Tenant(BaseModel):
         requestUUID = request["uuid"]
         print(f"Removed request with UUID {requestUUID} from the queue.")
 
-    def _run_method(self, method: str, parameters: dict[str, Any]):
+    def _run_method(self, request_info: RequestInfo):
         print("Running method ...")
-        return self.run_method(method, parameters)
+        # mark as in progress
+        return self.run_method(request_info)
 
     def _prepare_results(self, request: dict, data: Any):
         print("Preparing results ...")
@@ -339,17 +340,9 @@ class Tenant(BaseModel):
             if len(self.queue) > 0:
                 # get the first request in the queue to work on -> first in - first out
                 activeRequest = self.queue[0]
-                # strip the metadata from the request
-                activeRequest_technical = Request(**activeRequest["request"])
-
-                # extract the method and the parameters from the request
-                reqMethod = activeRequest_technical.methods[0]
-                reqParameters = activeRequest_technical.parameters[reqMethod]
 
                 # get the method, which matches
-                resultData = self._run_method(
-                    method=reqMethod, parameters=reqParameters
-                )
+                resultData = self._run_method(request_info=activeRequest)
                 # post the result
                 self._post_result(request=activeRequest, data=resultData)
             continue
