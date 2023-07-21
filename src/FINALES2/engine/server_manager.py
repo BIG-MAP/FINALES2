@@ -210,12 +210,11 @@ class ServerManager:
             select(Quantity)
             .where(Quantity.quantity == db_entry.quantity)
             .where(Quantity.method == db_entry.method)
-            .where(active_entry == db_entry.is_active)
+            .where(Quantity.is_active == active_entry)
         )
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
-
         if len(query_out) > 0:
             raise ValueError(
                 f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
@@ -247,6 +246,84 @@ class ServerManager:
                 f"The tenant ({db_entry.name}) is already present in the database with "
                 "identical limitations and capabilities"
             )
+
+        return
+
+    def deactivate_capability(self, method_name):
+        """Deactivate the is_active column for a capability."""
+        query_inp = (
+            select(Quantity)
+            .where(Quantity.method == method_name)
+            .where(Quantity.is_active == 1)
+        )
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+            if len(query_out) == 0:
+                raise ValueError(
+                    "No method with this name is currently active in the map"
+                )
+
+            capability = query_out[0][0]
+            # Updating the is_active column
+            capability.is_active = 0
+
+            session.commit()
+            session.refresh(capability)
+
+        print(f"The method {method_name} has been deactivated in the map")
+        return
+
+    def alter_tenant_state(self, tenant_uuid, new_is_active_state):
+        """Adds new state to a tenant."""
+        query_inp = select(Tenant).where(Tenant.uuid == uuid.UUID(tenant_uuid))
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+            if len(query_out) == 0:
+                raise ValueError("No tenant exists with the provided uuid")
+
+            tenant = query_out[0][0]
+            if tenant.is_active == new_is_active_state:
+                raise ValueError(
+                    "The capability entry already has the desired is_active state "
+                    f"({new_is_active_state})"
+                )
+
+            # Updating the is_active column
+            tenant.status = new_is_active_state
+
+            session.commit()
+            session.refresh(tenant)
+
+        print(
+            f"The is_active state of tenant with uuid ({uuid}) was successfully "
+            f"changed to ({new_is_active_state})"
+        )
+        return
+
+    def retrieve_tenant_uuid(self, tenant_name):
+        """Retrive uuid from tenant with provided tenant_name. If tenant_name is None
+        provide all tenant names with corresponding uuid"""
+        query_inp = select(Tenant)
+        if tenant_name is not None:
+            query_inp = query_inp.where(Tenant.name == tenant_name)
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+            if len(query_out) == 0:
+                if tenant_name is None:
+                    raise ValueError(
+                        f"No tenant exists with the provided name ({tenant_name})"
+                    )
+                else:
+                    raise ValueError("No tenants in the database")
+
+        for (tenant,) in query_out:
+            print(f"tenant: {tenant.name}, uuid: {tenant.uuid}")
 
         return
 
