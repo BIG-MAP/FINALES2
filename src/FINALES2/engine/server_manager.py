@@ -302,18 +302,21 @@ class ServerManager:
         )
         return
 
-    def retrieve_tenant_uuid(self, tenant_uuid):
-        """Adds new state to a capability."""
+    def retrieve_tenant_uuid(self, tenant_name):
+        """Retrive uuid from tenant with provided tenant_name. If tenant_name is None
+        provide all tenant names with corresponding uuid"""
         query_inp = select(Tenant)
-        if tenant_uuid is not None:
-            query_inp = query_inp.where(Tenant.uuid == uuid.UUID(tenant_uuid))
+        if tenant_name is not None:
+            query_inp = query_inp.where(Tenant.name == tenant_name)
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
 
             if len(query_out) == 0:
-                if tenant_uuid is None:
-                    raise ValueError("No tenant exists with the provided name")
+                if tenant_name is None:
+                    raise ValueError(
+                        f"No tenant exists with the provided name ({tenant_name})"
+                    )
                 else:
                     raise ValueError("No tenants in the database")
 

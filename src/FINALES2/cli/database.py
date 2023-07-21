@@ -133,7 +133,7 @@ def cli_retrieve():
 )
 @cli_retrieve.command("tenant-uuid")
 def db_retrieve_tenant_specification(input_name=None):
-    "Alter the is_active state of a tenant"
+    "Retrieve uuid of all tenants, or just the one with an above specified name"
 
     server_manager = ServerManager(database_context=get_db)
     server_manager.retrieve_tenant_uuid(input_name)
