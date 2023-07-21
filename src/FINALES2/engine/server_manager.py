@@ -489,8 +489,16 @@ def parse_schema_for_template(
              values
     :rtype: Dict[str, Any]
     """
-    print("SCHEMA", schema)
-    print("keys", schema.keys())
+
+    # Choose, how the types in the json schema shall be displayed in the template
+    types_dict = {
+        "number": "float",
+        "integer": "int",
+        "string": "str",
+        "boolean": "bool",
+    }
+
+    # Extract, the required fields and definitions from the schema
     try:
         required = schema["required"]
     except KeyError:
@@ -506,14 +514,10 @@ def parse_schema_for_template(
                     requirement = "optional"
                     if prop in required:
                         requirement = "required"
-
                     if "type" in schema["properties"][prop].keys():
-                        if schema["properties"][prop]["type"] == "number":
-                            template[prop] = f"{requirement}, float"
-                            print("number", template)
-                        elif schema["properties"][prop]["type"] == "string":
-                            template[prop] = f"{requirement}, str"
-                            print("str", template)
+                        prop_type = schema["properties"][prop]["type"]
+                        if prop_type in types_dict.keys():
+                            template[prop] = f"{requirement}, {types_dict[prop_type]}"
                         elif schema["properties"][prop]["type"] == "array":
                             template[prop] = []
                             iterator_type = type(schema["properties"][prop]["items"])
@@ -523,14 +527,14 @@ def parse_schema_for_template(
                                 iterator = [schema["properties"][prop]["items"]]
                             for item in iterator:
                                 if "type" in item.keys():
-                                    if item["type"] == "number":
-                                        template[prop].append(f"{requirement}, float")
-                                    elif item["type"] == "str":
-                                        template[prop].append(f"{requirement}, str")
+                                    if item["type"] in types_dict.keys():
+                                        template[prop].append(
+                                            f"{requirement}, {types_dict[item['type']]}"
+                                        )
                                     # TODO: The case of an item being a list is not yet
                                     # covered.
                                 if "$ref" in item.keys():
-                                    detail_key = item["$ref"].lstrip("#").split("/")[-1]
+                                    detail_key = item["$ref"].split("/")[-1]
                                     template[prop].append(
                                         parse_schema_for_template(
                                             definitions[detail_key],
@@ -544,33 +548,45 @@ def parse_schema_for_template(
                                 template={},
                                 definitions=definitions,
                             )
-                        elif schema["properties"][prop]["type"] == "integer":
-                            template[prop] = f"{requirement}, int"
-                            print("int", template)
-                        elif schema["properties"][prop]["type"] == "boolean":
-                            template[prop] = f"{requirement}, bool"
-                            print("bool", template)
                     elif "allOf" in schema["properties"][prop].keys():
                         for allOf_type in schema["properties"][prop]["allOf"]:
-                            detail_key = allOf_type["$ref"].lstrip("#").split("/")[-1]
-                            print(definitions.keys())
+                            detail_key = allOf_type["$ref"].split("/")[-1]
                             template[prop] = parse_schema_for_template(
                                 definitions[detail_key],
                                 template={},
                                 definitions=definitions,
                             )
-
-            elif "additionalProperties" in schema.keys():
-                detail_key = (
-                    schema["additionalProperties"]["$ref"].lstrip("#").split("/")[-1]
-                )
-                requirement = "optional"
-                if detail_key in required:
-                    requirement = "required"
-                template = {
-                    f"{requirement}, str": parse_schema_for_template(
-                        definitions[detail_key], template={}, definitions=definitions
-                    )
-                }
+                    elif "anyOf" in schema["properties"][prop].keys():
+                        types = []
+                        for anyOf_item in schema["properties"][prop]["anyOf"]:
+                            for key in anyOf_item.keys():
+                                anyOf_type = anyOf_item[key]
+                                if "$ref" in key:
+                                    detail_key = anyOf_item["$ref"].split("/")[-1]
+                                    sub_template = parse_schema_for_template(
+                                        definitions[detail_key],
+                                        template={},
+                                        definitions=definitions,
+                                    )
+                                    types.append(str(sub_template))
+                                elif "additionalProperties" in key:
+                                    detail_key = anyOf_item["additionalProperties"][
+                                        "$ref"
+                                    ].split("/")[-1]
+                                    sub_template = {
+                                        f"{requirement}, "
+                                        "str": parse_schema_for_template(
+                                            definitions[detail_key],
+                                            template={},
+                                            definitions=definitions,
+                                        )
+                                    }
+                                    types.append(str(sub_template))
+                                elif "type" == key:
+                                    if anyOf_type in types_dict.keys():
+                                        types.append(types_dict[anyOf_type])
+                                    elif anyOf_type == "null":
+                                        requirement_subprop = "optional"
+                        template[prop] = f"{requirement_subprop}, {' or '.join(types)}"
 
     return template
