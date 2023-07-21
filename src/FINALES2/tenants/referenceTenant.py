@@ -29,7 +29,7 @@ class Tenant(BaseModel):
     FINALES_server_config: ServerConfig
     end_run_time: Optional[datetime]
     authorization_header: Optional[dict]
-    operator: User
+    operator: list[User]
     tenant_user: User
     tenant_uuid: str
 
@@ -195,10 +195,11 @@ class Tenant(BaseModel):
 
     # TODO: implement (input) validations.
     @_login
-    def _post_request(self,
-                      quantity:str,
-                      methods:list[str],
-                      parameters:dict[str, dict[str, Any]],
+    def _post_request(
+        self,
+        quantity: str,
+        methods: list[str],
+        parameters: dict[str, dict[str, Any]],
     ) -> None:
         """This function posts a request.
 
@@ -216,7 +217,7 @@ class Tenant(BaseModel):
             quantity=quantity,
             methods=methods,
             parameters=parameters,
-            tenant_uuid=self.tenant_uuid
+            tenant_uuid=self.tenant_uuid,
         ).dict()
 
         _posted_request = requests.post(
@@ -224,18 +225,19 @@ class Tenant(BaseModel):
             f":{self.FINALES_server_config.port}/requests/",
             json=request,
             params={},
-            headers=self.authorization_header
+            headers=self.authorization_header,
         )
         _posted_request.raise_for_status()
         print(f"Request is posted {_posted_request.json()}!")
 
     # TODO: implement (input) validations.
     @_login
-    def _get_results(self,
-                     quantity:Union[str,None],
-                     method:Union[str,None],
-                     request_id:Union[str,None]=None
-        ) -> Union[list,dict]:
+    def _get_results(
+        self,
+        quantity: Union[str, None],
+        method: Union[str, None],
+        request_id: Union[str, None] = None,
+    ) -> Union[list, dict]:
         """This function queries requests from the FINALES server. It my either provide
         a list of requests, if quantity and method is given, or a single request, if a
         request_id and optionally quantity and method are given. If there is no
@@ -259,17 +261,14 @@ class Tenant(BaseModel):
             results = requests.get(
                 f"http://{self.FINALES_server_config.host}"
                 f":{self.FINALES_server_config.port}/results_requested/",
-                params={
-                    "quantity": quantity,
-                    "method": method
-                },
+                params={"quantity": quantity, "method": method},
                 headers=self.authorization_header,
             )
-            return results
-        
-        elif (((not (request_id is None)) and ((quantity is None) and (method is None)))
-              or
-              (not ((request_id is None) or (quantity is None) or (method is None)))):
+            return results.json()
+
+        elif (
+            (not (request_id is None)) and ((quantity is None) and (method is None))
+        ) or (not ((request_id is None) or (quantity is None) or (method is None))):
             # get the result for this ID from the FINALES server
             result = requests.get(
                 f"http://{self.FINALES_server_config.host}"
@@ -277,12 +276,14 @@ class Tenant(BaseModel):
                 params={},
                 headers=self.authorization_header,
             )
-            return result
+            return result.json()
         else:
-            raise ValueError("The given combination of parameters is invalid."
-                             f"request_id is {request_id} \n"
-                             f"quantity is {quantity} \n"
-                             f"method is{method}")
+            raise ValueError(
+                "The given combination of parameters is invalid."
+                f"request_id is {request_id} \n"
+                f"quantity is {quantity} \n"
+                f"method is{method}"
+            )
 
     @_login
     def _post_result(self, request: Request, data: Any):
