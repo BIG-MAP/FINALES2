@@ -215,7 +215,7 @@ def post_new_status_for_result(
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
-@operations_router.get("/templates/")
+@operations_router.get("/capabilities/templates/")
 def get_templates(
     quantity: Optional[str] = None,
     method: Optional[str] = None,
@@ -232,4 +232,4 @@ def get_templates(
         )
     except ValueError as error_message:
         logging.error(error_message)
-        raise HTTPException(status_code=422, detail=str(error_message))
+        raise HTTPException(status_code=400, detail=str(error_message))
