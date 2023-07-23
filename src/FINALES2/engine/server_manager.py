@@ -346,7 +346,21 @@ def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, A
     # Now I need to set the "items" descriptor of the array, which contains
     # the type of the objects in it.
 
-    if "anyOf" in inputs_schema:
+    if "allOf" in inputs_schema:
+        # For some reason, some of the schemas generated contain the
+        # "allOf" keyword with a single list element instead of just
+        # describing that element.
+        subschemas = inputs_schema["allOf"]
+        if len(subschemas) > 1:
+            raise ValueError(
+                "Schema contains an instance of `allOf` with more than 1 element!"
+            )
+        subschema_translated = limitations_schema_translation(subschemas[0])
+        if "title" in subschema_translated:
+            limitations_schema["title"] = subschema_translated["title"]
+        limitations_schema["items"] = subschema_translated["items"]
+
+    elif "anyOf" in inputs_schema:
         # If the object could have many types, it will not have a "type"
         # descriptor but an "anyOf" list of descriptors. I need to go
         # through all of them and add them as an "anyOf" in the "items".
