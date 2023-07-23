@@ -10,7 +10,6 @@ class Tenant(Base):
     Class defining the tenant table with the following columns:
         uuid CHAR:              uuid of the tenant
         name VARCHAR:           name of tenant
-        capabilities VARCHAR:   capabilities of the tenant, quantity, method
         limitations VARCHAR:    limitations of the tenant within each method
         contact_person VARCHAR: contact person of the tenant
         is_active Boolean:      status if the tenant is currently active
@@ -20,10 +19,6 @@ class Tenant(Base):
 
     uuid = Column(UUIDType(binary=False), primary_key=True, nullable=False)
     name = Column(
-        String,
-        nullable=False,
-    )
-    capabilities = Column(
         String,
         nullable=False,
     )
