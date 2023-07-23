@@ -1,11 +1,12 @@
 import json
 import time
 from datetime import datetime
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 import requests
 from pydantic import BaseModel
 
+from FINALES2.engine.main import RequestStatus
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
 from FINALES2.user_management.classes_user_manager import User
@@ -33,6 +34,41 @@ class Tenant(BaseModel):
     operator: User
     tenant_user: User
     tenant_uuid: str
+
+    def tenant_object_to_json(self):
+        """
+        Funciton for creating the json input file, which is to be forwarded to the admin
+        for registering a tenant.
+
+        The uuid will be returned by the admin, which the user then will add to there
+        Tenant object tenant_uuid field.
+        """
+
+        limitations = []
+        capability_keys = list(self.quantities.keys())
+        for capa_key in capability_keys:
+            method_keys = list(self.quantities[capa_key].methods.keys())
+            for method_key in method_keys:
+                limitations.append(
+                    {
+                        "quantity": capa_key,
+                        "method": method_key,
+                        "limitations": self.quantities[capa_key]
+                        .methods[method_key]
+                        .limitations,
+                    }
+                )
+
+        output_dict = {
+            "name": self.general_meta.name,
+            "limitations": limitations,
+            "contact_person": str([u.username for u in self.operators]),
+        }
+
+        with open(f"{self.general_meta.name}_tenant.json", "w") as fp:
+            json.dump(output_dict, fp, indent=2)
+
+        return
 
     def _login(func: Callable):
         # Impelemented using this tutorial as an example:
@@ -120,18 +156,24 @@ class Tenant(BaseModel):
         within the limitations of the tenant (True) or not (False)
         :rtype: bool
         """
-        parametersCheck = []
-        requestParameters = request.parameters[method]
-        methodForQuantity = self.quantities[request.quantity].methods[method]
-        for p in requestParameters.keys():
-            if isinstance(requestParameters[p], (float, int)):
-                tenantMin = methodForQuantity.limitations[p][0]
-                tenantMax = methodForQuantity.limitations[p][1]
-                minimumOK = requestParameters[p] > tenantMin
-                maximumOK = requestParameters[p] < tenantMax
-                parametersCheck.append(minimumOK and maximumOK)
-        parametersOK: bool = all(parametersCheck)
-        return parametersOK
+        # TODO: Reactivate this check. This requires a parsing of the input and
+        # limitations.
+        # parametersCheck = []
+        # requestParameters = request.parameters[method]
+        # methodForQuantity = self.quantities[request.quantity].methods[method]
+        # for p in requestParameters.keys():
+        #     if isinstance(requestParameters[p], (float, int)):
+        #         if isinstance(methodForQuantity.limitations[p], dict):
+        #             tenantMin = methodForQuantity.limitations[p]["min"]
+        #             tenantMax = methodForQuantity.limitations[p]["max"]
+        #         elif isinstance(methodForQuantity.limitations[p], float):
+
+        #         minimumOK = requestParameters[p] > tenantMin
+        #         maximumOK = requestParameters[p] < tenantMax
+        #         parametersCheck.append(minimumOK and maximumOK)
+        # parametersOK: bool = all(parametersCheck)
+        # return parametersOK
+        return True
 
     @_login
     def _update_queue(self) -> None:
@@ -219,7 +261,7 @@ class Tenant(BaseModel):
             methods=methods,
             parameters=parameters,
             tenant_uuid=self.tenant_uuid,
-        ).dict()
+        ).model_dump()
 
         _posted_request = requests.post(
             f"http://{self.FINALES_server_config.host}"
@@ -287,18 +329,18 @@ class Tenant(BaseModel):
             )
 
     @_login
-    def _post_result(self, request: Request, data: Any):
+    def _post_result(self, request: dict, data: Any):
         """This function posts a result generated in reply to a request.
 
-        :param request: a request specifying the details of the requested data
-        :type request: Request
+        :param request: a request dictionary specifying the details of the requested
+                        data
+        :type request: dict
         :param data: the data generated while serving the request
         :type data: Any
         """
         # transfer the output of your method to a postable result
         result_formatted = self._prepare_results(request=request, data=data)
-        result_formatted.tenant_uuid = self.tenant_uuid
-        result_formatted = result_formatted.dict()
+        result_formatted["tenant_uuid"] = self.tenant_uuid
 
         # post the result
         _posted_result = requests.post(
@@ -316,12 +358,30 @@ class Tenant(BaseModel):
         requestUUID = request["uuid"]
         print(f"Removed request with UUID {requestUUID} from the queue.")
 
+    @_login
     def _run_method(self, request_info: dict[str, Any]):
         print("Running method ...")
-        # mark as in progress
+        # mark the request as "reserved", (cast required to assert mypy, this will be
+        # not None, when this is called)
+        header = cast(dict, self.authorization_header).copy()
+        header["Content-Type"] = "application/x-www-form-urlencoded"
+        _new_status = requests.post(
+            f"http://{self.FINALES_server_config.host}"
+            f":{self.FINALES_server_config.port}/"
+            f"requests/{request_info['uuid']}/update_status/",
+            params={
+                "request_id": request_info["uuid"],
+                "new_status": RequestStatus.RESERVED,
+                "status_change_message": f"Reserved for {self.tenant_user.username}.",
+            },
+            headers=header,
+        )
+
+        _new_status.raise_for_status()
+        print(f"Request status changed to {_new_status.json()}!")
         return self.run_method(request_info)
 
-    def _prepare_results(self, request: dict, data: Any):
+    def _prepare_results(self, request: dict, data: Any) -> dict[str, Any]:
         print("Preparing results ...")
         return self.prepare_results(request, data)
 
