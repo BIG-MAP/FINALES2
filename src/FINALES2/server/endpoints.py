@@ -9,9 +9,10 @@ fetching all pending requests, and obtaining the capabilities of the system.
 The module uses FastAPI's APIRouter to define the routes and handle the requests.
 """
 
+import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from FINALES2.engine.main import Engine, RequestStatus, ResultStatus, get_db
 from FINALES2.engine.server_manager import ServerManager
@@ -35,7 +36,11 @@ def get_request(
 ) -> Optional[RequestInfo]:
     """API endpoint to get requests by id."""
     engine = Engine()
-    return engine.get_request(object_id)
+    try:
+        return engine.get_request(object_id)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/results/{object_id}")
@@ -44,7 +49,11 @@ def get_result(
 ) -> Optional[ResultInfo]:
     """API endpoint to get results by id."""
     engine = Engine()
-    return engine.get_result(object_id)
+    try:
+        return engine.get_result(object_id)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.post("/requests/")
@@ -53,7 +62,11 @@ def post_request(
 ) -> str:
     """API endpoint to post a new request."""
     engine = Engine()
-    return engine.create_request(request_data)
+    try:
+        return engine.create_request(request_data)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.post("/results/")
@@ -62,7 +75,11 @@ def post_result(
 ) -> str:
     """API endpoint to post a new result."""
     engine = Engine()
-    return engine.create_result(result_data)
+    try:
+        return engine.create_result(result_data)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/pending_requests/")
@@ -73,7 +90,11 @@ def get_pending_requests(
 ) -> List[RequestInfo]:
     """API endpoint to get all pending requests."""
     engine = Engine()
-    return engine.get_pending_requests(quantity=quantity, method=method)
+    try:
+        return engine.get_pending_requests(quantity=quantity, method=method)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/results_requested/{request_id}")
@@ -82,7 +103,11 @@ def get_results_requested(
 ) -> Optional[ResultInfo]:
     """API endpoint to get a result by corresponding request ID."""
     engine = Engine()
-    return engine.get_result_by_request(request_id)
+    try:
+        return engine.get_result_by_request(request_id)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/results_requested/")
@@ -93,7 +118,11 @@ def get_results_requested_all(
 ) -> List[ResultInfo]:
     """API endpoint to get all result available to the tenant requesting."""
     engine = Engine()
-    return engine.get_all_results(quantity=quantity, method=method)
+    try:
+        return engine.get_all_results(quantity=quantity, method=method)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/capabilities/")
@@ -111,7 +140,11 @@ def get_capabilities(
         all registered tenants (if False) or only currently available ones (if True).
     """
     server_manager = ServerManager(database_context=get_db)
-    return server_manager.get_capabilities(currently_available=currently_available)
+    try:
+        return server_manager.get_capabilities(currently_available=currently_available)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.get("/limitations/")
@@ -129,10 +162,16 @@ def get_limitations(
         tenants that are currently active (if True)
     """
     server_manager = ServerManager(database_context=get_db)
-    return server_manager.get_limitations(currently_available=currently_available)
+    try:
+        return server_manager.get_limitations(currently_available=currently_available)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
-@operations_router.post("/requests/{object_id}/update_status/")
+@operations_router.post(
+    "/requests/{object_id}/update_status/",
+)
 def post_new_status_for_request(
     request_id: str,
     new_status: RequestStatus,
@@ -143,11 +182,15 @@ def post_new_status_for_request(
     The possible inputs are: pending, reserved, retracted, with resolved being auto-
     matically designed when a result is posted"""
     engine = Engine()
-    return engine.change_status_request(
-        request_id=request_id,
-        status=new_status,
-        status_change_message=status_change_message,
-    )
+    try:
+        return engine.change_status_request(
+            request_id=request_id,
+            status=new_status,
+            status_change_message=status_change_message,
+        )
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
 
 
 @operations_router.post("/results/{object_id}/update_status/")
@@ -161,8 +204,12 @@ def post_new_status_for_result(
     The possible inputs are: deleted and amended, with original being reserved for the
     initial posting"""
     engine = Engine()
-    return engine.change_status_result(
-        result_id=result_id,
-        status=new_status,
-        status_change_message=status_change_message,
-    )
+    try:
+        return engine.change_status_result(
+            result_id=result_id,
+            status=new_status,
+            status_change_message=status_change_message,
+        )
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
