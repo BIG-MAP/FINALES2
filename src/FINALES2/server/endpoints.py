@@ -10,7 +10,7 @@ The module uses FastAPI's APIRouter to define the routes and handle the requests
 """
 
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -209,6 +209,27 @@ def post_new_status_for_result(
             result_id=result_id,
             status=new_status,
             status_change_message=status_change_message,
+        )
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+
+@operations_router.get("/capabilities/templates/")
+def get_templates(
+    quantity: Optional[str] = None,
+    method: Optional[str] = None,
+    currently_available=True,
+) -> Dict[str, Dict[str, Any]]:
+    """API endpoint to get templates for the input and output schemas for the
+    queried quantity and/or method. It can also provide templates for all of the
+    available quantities and methods."""
+    server_manager = ServerManager(database_context=get_db)
+    try:
+        return server_manager.get_schema_template(
+            quantity=quantity,
+            method=method,
+            currently_available=currently_available,
         )
     except ValueError as error_message:
         logging.error(error_message)
