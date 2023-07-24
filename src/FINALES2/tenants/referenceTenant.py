@@ -290,7 +290,7 @@ class Tenant(BaseModel):
         :type quantity: Union[str,None]
         :param method: the name of the method, by which the result was created
         :type method: Union[str,None]
-        :param request_id: the id of hte request, which asked for the result,
+        :param request_id: the id of the request, which asked for the result,
             defaults to None
         :type request_id: Union[str,None], optional
         :raises ValueError: A value error is raised, if information for requesting
