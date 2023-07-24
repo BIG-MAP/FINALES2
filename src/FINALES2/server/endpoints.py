@@ -222,7 +222,8 @@ def get_templates(
     currently_available=True,
 ) -> Dict[str, Dict[str, Any]]:
     """API endpoint to get templates for the input and output schemas for the
-    queried quantity and/or method."""
+    queried quantity and/or method. It can also provide templates for all of the
+    available quantities and methods."""
     server_manager = ServerManager(database_context=get_db)
     try:
         return server_manager.get_schema_template(
