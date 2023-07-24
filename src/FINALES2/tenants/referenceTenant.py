@@ -31,7 +31,7 @@ class Tenant(BaseModel):
     FINALES_server_config: ServerConfig
     end_run_time: Optional[datetime] = None
     authorization_header: Optional[dict] = None
-    operator: User
+    operators: list[User]
     tenant_user: User
     tenant_uuid: str
 
