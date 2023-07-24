@@ -324,6 +324,7 @@ class ServerManager:
             print(f"tenant: {tenant.name}, uuid: {tenant.uuid}")
 
         return
+
     def get_schema_template(
         self,
         quantity: Optional[str] = None,
