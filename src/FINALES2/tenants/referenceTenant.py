@@ -371,7 +371,7 @@ class Tenant(BaseModel):
             f"requests/{request_info['uuid']}/update_status/",
             params={
                 "request_id": request_info["uuid"],
-                "new_status": RequestStatus.RESERVED,
+                "new_status": RequestStatus.RESERVED.value,
                 "status_change_message": f"Reserved for {self.tenant_user.username}.",
             },
             headers=header,
