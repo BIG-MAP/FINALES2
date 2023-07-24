@@ -2,7 +2,7 @@ import json
 import uuid
 from typing import Any, Dict, List, Optional
 
-import jsonref
+from jsonref import JsonRef
 from jsonschema import validate
 from sqlalchemy import select
 
@@ -193,7 +193,7 @@ class ServerManager:
             )
 
         capability_schema = capability_info[0].json_schema_specifications
-        capability_schema = jsonref.replace_refs(capability_schema)
+        capability_schema = JsonRef.replace_refs(capability_schema)
         limitations_schema = limitations_schema_translation(capability_schema)
         limitations = limitations["limitations"]
         validate(instance=limitations, schema=limitations_schema)
@@ -335,25 +335,47 @@ def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, A
     if len(inputs_schema) == 0:
         return {"additionalProperties": False}
 
-    # Every object in the schema becomes an array of objects with the
-    # possible values (or ranges).
-    limitations_schema: Dict[str, Any] = {"type": "array"}
+    limitations_schema: Dict[str, Any] = {}
 
     # The title is not necessary but may be useful for debugging at runtime
     if "title" in inputs_schema:
         limitations_schema["title"] = inputs_schema["title"]
 
-    # Now I need to set the "items" descriptor of the array, which contains
-    # the type of the objects in it.
+    # For some reason, some of the schemas generated contain the "allOf"
+    # keyword with a single list element instead of just that element.
+    # If this is the case, just return the subschema of that.
+    if "allOf" in inputs_schema:
+        limitations_schema["allOf"] = []
+        subschemas = inputs_schema["allOf"]
+        if len(subschemas) > 1:
+            raise ValueError(
+                "Schema contains an instance of `allOf` with more than 1 element!"
+            )
+        subschema_translation = limitations_schema_translation(subschemas[0])
+        limitations_schema["allOf"].append(subschema_translation)
+        return limitations_schema
 
+    # If the schema is actually one of many possible subschemas, there
+    # might be different limitations for the different possible
+    # sub-schemas.
     if "anyOf" in inputs_schema:
-        # If the object could have many types, it will not have a "type"
-        # descriptor but an "anyOf" list of descriptors. I need to go
-        # through all of them and add them as an "anyOf" in the "items".
-        limitations_schema["items"] = {"anyOf": []}
-        for schema_item in inputs_schema["anyOf"]:
-            new_schema = limitations_schema_translation(schema_item)
-            limitations_schema["items"]["anyOf"].append(new_schema)
+        limitations_schema["anyOf"] = []
+        for subschema in inputs_schema["anyOf"]:
+            subschema_translation = limitations_schema_translation(subschema)
+            limitations_schema["anyOf"].append(subschema_translation)
+        return limitations_schema
+
+    # Every object in the schema can now be either an instance of what it
+    # is already described (when that is the only option) or an array of
+    # objects of that same type, with the possible values (or ranges).
+    single_object_schema = {"type": inputs_schema["type"]}
+
+    if inputs_schema["type"] == "array":
+        # If the object was an array, the type is defined inside of "items".
+        new_items = inputs_schema["items"]
+        new_items = limitations_schema_translation(new_items)
+        schema_items = new_items
+        single_object_schema["items"] = new_items
 
     elif inputs_schema["type"] in ["number", "integer"]:
         # If the object was a numeric type, the type of the possibilities
@@ -370,30 +392,35 @@ def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, A
             },
             "additionalProperties": False,
         }
-        limitations_schema["items"] = {"anyOf": [range_schema, cases_schema]}
-
-    elif inputs_schema["type"] == "array":
-        # If the object was an array, the type is defined inside of "items".
-        new_items = inputs_schema["items"]
-        new_items = limitations_schema_translation(new_items)
-        limitations_schema["items"] = new_items
+        schema_items = {"anyOf": [range_schema, cases_schema]}
 
     else:
-        # If the object was a string or any other, the type is defined
-        # inside of "type". If it was a string then this is over, but
-        # if it was another custom type, I need to go throught its
-        # properties and add them recursively.
-        limitations_schema["items"] = {"type": inputs_schema["type"]}
+        # If the object was a string or any other type (except arrays
+        # or numerics) the type is defined inside of "type" (duh). If
+        # it was a string then this is over, but if it was another
+        # custom type, I need to go throught its properties and add
+        # them recursively.
+        schema_items = {"type": inputs_schema["type"]}
 
         if "properties" in inputs_schema:
-            limitations_schema["items"]["properties"] = {}
+            subschema_properties = {}
             for propery_name, property_schema in inputs_schema["properties"].items():
                 new_property = limitations_schema_translation(property_schema)
-                limitations_schema["items"]["properties"][propery_name] = new_property
+                subschema_properties[propery_name] = new_property
+            schema_items["properties"] = subschema_properties
+            single_object_schema["properties"] = subschema_properties
 
         if "additionalProperties" in inputs_schema:
             new_property = inputs_schema["additionalProperties"]
             new_property = limitations_schema_translation(new_property)
-            limitations_schema["items"]["additionalProperties"] = new_property
+            schema_items["additionalProperties"] = new_property
+            single_object_schema["additionalProperties"] = new_property
+
+    # As stated before, the limitations can either be a single possible
+    # instance of the schema, or the array.
+    limitations_schema["anyOf"] = [
+        single_object_schema,
+        {"type": "array", "items": schema_items},
+    ]
 
     return limitations_schema
