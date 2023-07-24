@@ -406,38 +406,3 @@ class Tenant(BaseModel):
                 # post the result
                 self._post_result(request=activeRequest, data=resultData)
             continue
-
-    def tenant_object_to_json(self, TenantInstance):
-        """
-        Funciton for creating the json input file, which is to be forwarded to the admin
-        for registering a tenant.
-
-        The uuid will be returned by the admin, which the user then will add to there
-        Tenant object tenant_uuid field.
-        """
-
-        limitations = []
-        capability_keys = list(TenantInstance.quantities.keys())
-        for capa_key in capability_keys:
-            method_keys = list(TenantInstance.quantities[capa_key].methods.keys())
-            for method_key in method_keys:
-                limitations.append(
-                    {
-                        "quantity": capa_key,
-                        "method": method_key,
-                        "limitations": TenantInstance.quantities[capa_key]
-                        .methods[method_key]
-                        .limitations,
-                    }
-                )
-
-        output_dict = {
-            "name": TenantInstance.general_meta.name,
-            "limitations": limitations,
-            "contact_person": "TODO - add contact person",
-        }
-
-        with open(f"{self.general_meta.name}_tenant.json", "w") as fp:
-            json.dump(output_dict, fp, indent=2)
-
-        return
