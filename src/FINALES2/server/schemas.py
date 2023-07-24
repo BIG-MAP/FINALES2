@@ -1,45 +1,3 @@
-"""
-Note on the use of List for status: in principle, one would like
-to define it like this...
-
-    List[Tuple[datetime, str]]
-
-But...
-
-(1) json has no concept of tuples, so when one uses json dump it
-    will store it as lists, and so using json load won't be
-    directly compatible with the schema and would need extra
-    translation (turning the internal lists into tuples)
-    SEE: https://stackoverflow.com/q/15721363
-
-(2) If using lists, there is no simple way of specifying the size
-    and the specific types for each position.
-    SEE: https://stackoverflow.com/a/44833864
-
-So in the end, we need to keep it generic:
-
-    List[List[Any]]
-
-Although on second thought this schemas may be trying to do too many
-things, perhaps we need 3 different layers:
-
- - (1) DB ORM
- - (2) Pydantic Classes based of the DB ORM
- - (3) Pydantic Classes exposed to the API
-
-Layer 1 to 2 would take care of the translation from python types
-to DB compatible types (for example, converting this list of tupples
-into json and back). Layer 2 to 3 would then filter what we expose
-through the API (we may not want or need to show all the status as
-a list, but perhaps just the last one and without the datetime).
-Also, layer 1 and 2 may be merged together if we find a way to add
-pydantic checks to DB objects and maybe add the automatic translation
-from python to json inside the init of the classes (or with setter
-and getter like methods)
-
-(EXTRA: maybe consider using Mapping instead of Dict)
-(See: https://stackoverflow.com/a/37087556)
-"""
 import datetime
 import json
 from typing import Any, Dict, List
@@ -115,7 +73,7 @@ class Request(BaseModel):
 class RequestInfo(BaseModel):
     uuid: str
     ctime: datetime.datetime
-    status: List[List[Any]]  # List[Tuple[datetime, str]] - see note above
+    status: str
     request: Request
 
     @classmethod
@@ -125,7 +83,7 @@ class RequestInfo(BaseModel):
         init_params = {
             "uuid": str(db_request.uuid),
             "ctime": db_request.requesting_recieved_timestamp,
-            "status": json.loads(db_request.status),
+            "status": db_request.status,
             "request": request_internals,
         }
 
@@ -168,7 +126,7 @@ class Result(BaseModel):
             "method": [method],
             "parameters": json.loads(db_result.parameters),
             "tenant_uuid": str(db_result.posting_tenant_uuid),
-            "request_uuid": str(db_result.posting_tenant_uuid),
+            "request_uuid": str(db_result.request_uuid),
         }
         return cls(**init_params)
 
@@ -176,8 +134,21 @@ class Result(BaseModel):
 class ResultInfo(BaseModel):
     uuid: str
     ctime: datetime.datetime
-    status: List[List[Any]]  # List[Tuple[datetime, str]] - see note above
+    status: str
     result: Result
+
+    @classmethod
+    def from_db_result(cls, db_result: DbResult):
+        """Initializes the object from the data of an orm object"""
+        result_internals = Result.from_db_result(db_result)
+        init_params = {
+            "uuid": str(db_result.uuid),
+            "ctime": db_result.load_time,
+            "status": db_result.status,
+            "result": result_internals,
+        }
+
+        return cls(**init_params)
 
 
 class CapabilityInfo(BaseModel):

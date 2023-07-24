@@ -44,7 +44,7 @@ class UserDB:
         """
         if savepath is None:
             config = get_configuration()
-            savepath = config.user_db
+            savepath = config.safeget_userdb()
 
         # Connect to this database and set the cursor
         self.connection: sqlite3.Connection = sqlite3.connect(savepath)

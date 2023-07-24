@@ -1,10 +1,12 @@
+import json
 import time
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union, cast
 
 import requests
 from pydantic import BaseModel
 
+from FINALES2.engine.main import RequestStatus
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
 from FINALES2.user_management.classes_user_manager import User
@@ -23,15 +25,50 @@ class Tenant(BaseModel):
     quantities: dict[str, Quantity]
     queue: list = []
     sleep_time_s: int = 1
-    tenant_config: Any
+    tenant_config: Any = None
     run_method: Callable
     prepare_results: Callable
     FINALES_server_config: ServerConfig
-    end_run_time: Optional[datetime]
-    authorization_header: Optional[dict]
-    operator: User
+    end_run_time: Optional[datetime] = None
+    authorization_header: Optional[dict] = None
+    operators: list[User]
     tenant_user: User
     tenant_uuid: str
+
+    def tenant_object_to_json(self):
+        """
+        Funciton for creating the json input file, which is to be forwarded to the admin
+        for registering a tenant.
+
+        The uuid will be returned by the admin, which the user then will add to there
+        Tenant object tenant_uuid field.
+        """
+
+        limitations = []
+        capability_keys = list(self.quantities.keys())
+        for capa_key in capability_keys:
+            method_keys = list(self.quantities[capa_key].methods.keys())
+            for method_key in method_keys:
+                limitations.append(
+                    {
+                        "quantity": capa_key,
+                        "method": method_key,
+                        "limitations": self.quantities[capa_key]
+                        .methods[method_key]
+                        .limitations,
+                    }
+                )
+
+        output_dict = {
+            "name": self.general_meta.name,
+            "limitations": limitations,
+            "contact_person": str([u.username for u in self.operators]),
+        }
+
+        with open(f"{self.general_meta.name}_tenant.json", "w") as fp:
+            json.dump(output_dict, fp, indent=2)
+
+        return
 
     def _login(func: Callable):
         # Impelemented using this tutorial as an example:
@@ -119,18 +156,24 @@ class Tenant(BaseModel):
         within the limitations of the tenant (True) or not (False)
         :rtype: bool
         """
-        parametersCheck = []
-        requestParameters = request.parameters[method]
-        methodForQuantity = self.quantities[request.quantity].methods[method]
-        for p in requestParameters.keys():
-            if isinstance(requestParameters[p], (float, int)):
-                tenantMin = methodForQuantity.limitations[p][0]
-                tenantMax = methodForQuantity.limitations[p][1]
-                minimumOK = requestParameters[p] > tenantMin
-                maximumOK = requestParameters[p] < tenantMax
-                parametersCheck.append(minimumOK and maximumOK)
-        parametersOK: bool = all(parametersCheck)
-        return parametersOK
+        # TODO: Reactivate this check. This requires a parsing of the input and
+        # limitations.
+        # parametersCheck = []
+        # requestParameters = request.parameters[method]
+        # methodForQuantity = self.quantities[request.quantity].methods[method]
+        # for p in requestParameters.keys():
+        #     if isinstance(requestParameters[p], (float, int)):
+        #         if isinstance(methodForQuantity.limitations[p], dict):
+        #             tenantMin = methodForQuantity.limitations[p]["min"]
+        #             tenantMax = methodForQuantity.limitations[p]["max"]
+        #         elif isinstance(methodForQuantity.limitations[p], float):
+
+        #         minimumOK = requestParameters[p] > tenantMin
+        #         maximumOK = requestParameters[p] < tenantMax
+        #         parametersCheck.append(minimumOK and maximumOK)
+        # parametersOK: bool = all(parametersCheck)
+        # return parametersOK
+        return True
 
     @_login
     def _update_queue(self) -> None:
@@ -176,6 +219,7 @@ class Tenant(BaseModel):
 
             self.queue.append(pendingItem)
 
+    @_login
     def _get_pending_requests(self) -> list[dict]:
         """This funciton collecte all the pending requests from the server.
 
@@ -192,50 +236,152 @@ class Tenant(BaseModel):
         )
         return pendingRequests.json()
 
-    # TODO: implement these functions once there is an example case, where it needs
-    # to be applied.
-    def _post_request(self):
-        pass
+    # TODO: implement (input) validations.
+    @_login
+    def _post_request(
+        self,
+        quantity: str,
+        methods: list[str],
+        parameters: dict[str, dict[str, Any]],
+    ) -> None:
+        """This function posts a request.
 
-    # TODO: implement these functions once there is an example case, where it needs
-    # to be applied.
-    def _get_results(self):
-        pass
+        :param quantity: the name of the quantity to be requested
+        :type quantity: str
+        :param methods: a list of the method names acceptable for creating the result
+        :type methods: list[str]
+        :param parameters: a dictionary of the parameters, which shall be used when
+            running the method; first key is the name of the method, the second level
+            keys are the names of the parameters
+        :type parameters: dict[str, dict[str, Any]]
+        """
 
-    def _post_result(self, request: Request, data: Any):
+        request = Request(
+            quantity=quantity,
+            methods=methods,
+            parameters=parameters,
+            tenant_uuid=self.tenant_uuid,
+        ).model_dump()
+
+        _posted_request = requests.post(
+            f"http://{self.FINALES_server_config.host}"
+            f":{self.FINALES_server_config.port}/requests/",
+            json=request,
+            params={},
+            headers=self.authorization_header,
+        )
+        _posted_request.raise_for_status()
+        print(f"Request is posted {_posted_request.json()}!")
+
+    # TODO: implement (input) validations.
+    @_login
+    def _get_results(
+        self,
+        quantity: Union[str, None],
+        method: Union[str, None],
+        request_id: Union[str, None] = None,
+    ) -> Union[list, dict]:
+        """This function queries requests from the FINALES server. It my either provide
+        a list of requests, if quantity and method is given, or a single request, if a
+        request_id and optionally quantity and method are given. If there is no
+        request_id and either quantity or method is None, a ValueError is raised
+
+        :param quantity: the name of the quantity to be requested
+        :type quantity: Union[str,None]
+        :param method: the name of the method, by which the result was created
+        :type method: Union[str,None]
+        :param request_id: the id of the request, which asked for the result,
+            defaults to None
+        :type request_id: Union[str,None], optional
+        :raises ValueError: A value error is raised, if information for requesting
+            results by any of the available endpoints is impossible
+        :return: _description_
+        :rtype: Union[list,dict]
+        """
+        print("Looking for results ...")
+        if request_id is None:
+            if (quantity is None) or (method is None):
+                raise ValueError(
+                    "No request ID was passed, therefore a quantity and method must "
+                    "be specified."
+                )
+            # get the results from the FINALES server
+            results = requests.get(
+                f"http://{self.FINALES_server_config.host}"
+                f":{self.FINALES_server_config.port}/results_requested/",
+                params={"quantity": quantity, "method": method},
+                headers=self.authorization_header,
+            )
+            return results.json()
+        else:
+            if (quantity is not None) or (method is not None):
+                raise ValueError(
+                    "A request ID was passed, therefore quantity and method must not "
+                    "be specified."
+                )
+            # get the result for this ID from the FINALES server
+            result = requests.get(
+                f"http://{self.FINALES_server_config.host}"
+                f":{self.FINALES_server_config.port}/results_requested/{request_id}",
+                params={},
+                headers=self.authorization_header,
+            )
+            return result.json()
+
+    @_login
+    def _post_result(self, request: dict, data: Any):
         """This function posts a result generated in reply to a request.
 
-        :param request: a request specifying the details of the requested data
-        :type request: Request
+        :param request: a request dictionary specifying the details of the requested
+                        data
+        :type request: dict
         :param data: the data generated while serving the request
         :type data: Any
         """
         # transfer the output of your method to a postable result
         result_formatted = self._prepare_results(request=request, data=data)
-        result_formatted.tenant_uuid = self.tenant_uuid
-        result_formatted = result_formatted.dict()
+        result_formatted["tenant_uuid"] = self.tenant_uuid
 
         # post the result
-        _postedResult = requests.post(
+        _posted_result = requests.post(
             f"http://{self.FINALES_server_config.host}"
             f":{self.FINALES_server_config.port}/results/",
             json=result_formatted,
             params={},
             headers=self.authorization_header,
         )
-        _postedResult.raise_for_status()
-        print(f"Result is posted {_postedResult.json()}!")
+        _posted_result.raise_for_status()
+        print(f"Result is posted {_posted_result.json()}!")
 
         # delete the request from the queue
         self.queue.remove(request)
         requestUUID = request["uuid"]
         print(f"Removed request with UUID {requestUUID} from the queue.")
 
-    def _run_method(self, method: str, parameters: dict[str, Any]):
+    @_login
+    def _run_method(self, request_info: dict[str, Any]):
         print("Running method ...")
-        return self.run_method(method, parameters)
+        # mark the request as "reserved", (cast required to assert mypy, this will be
+        # not None, when this is called)
+        header = cast(dict, self.authorization_header).copy()
+        header["Content-Type"] = "application/x-www-form-urlencoded"
+        _new_status = requests.post(
+            f"http://{self.FINALES_server_config.host}"
+            f":{self.FINALES_server_config.port}/"
+            f"requests/{request_info['uuid']}/update_status/",
+            params={
+                "request_id": request_info["uuid"],
+                "new_status": RequestStatus.RESERVED.value,
+                "status_change_message": f"Reserved for {self.tenant_user.username}.",
+            },
+            headers=header,
+        )
 
-    def _prepare_results(self, request: dict, data: Any):
+        _new_status.raise_for_status()
+        print(f"Request status changed to {_new_status.json()}!")
+        return self.run_method(request_info)
+
+    def _prepare_results(self, request: dict, data: Any) -> dict[str, Any]:
         print("Preparing results ...")
         return self.prepare_results(request, data)
 
@@ -254,17 +400,9 @@ class Tenant(BaseModel):
             if len(self.queue) > 0:
                 # get the first request in the queue to work on -> first in - first out
                 activeRequest = self.queue[0]
-                # strip the metadata from the request
-                activeRequest_technical = Request(**activeRequest["request"])
-
-                # extract the method and the parameters from the request
-                reqMethod = activeRequest_technical.methods[0]
-                reqParameters = activeRequest_technical.parameters[reqMethod]
 
                 # get the method, which matches
-                resultData = self._run_method(
-                    method=reqMethod, parameters=reqParameters
-                )
+                resultData = self._run_method(request_info=activeRequest)
                 # post the result
                 self._post_result(request=activeRequest, data=resultData)
             continue
