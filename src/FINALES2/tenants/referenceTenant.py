@@ -299,7 +299,12 @@ class Tenant(BaseModel):
         :rtype: Union[list,dict]
         """
         print("Looking for results ...")
-        if (request_id is None) and not ((quantity is None) or (method is None)):
+        if request_id is None:
+            if (quantity is None) or (method is None):
+                raise ValueError(
+                    "No request ID was passed, therefore a quantity and method must "
+                    "be specified."
+                )
             # get the results from the FINALES server
             results = requests.get(
                 f"http://{self.FINALES_server_config.host}"
@@ -308,10 +313,12 @@ class Tenant(BaseModel):
                 headers=self.authorization_header,
             )
             return results.json()
-
-        elif (
-            (not (request_id is None)) and ((quantity is None) and (method is None))
-        ) or (not ((request_id is None) or (quantity is None) or (method is None))):
+        else:
+            if (quantity is not None) or (method is not None):
+                raise ValueError(
+                    "A request ID was passed, therefore quantity and method must not "
+                    "be specified."
+                )
             # get the result for this ID from the FINALES server
             result = requests.get(
                 f"http://{self.FINALES_server_config.host}"
@@ -320,13 +327,6 @@ class Tenant(BaseModel):
                 headers=self.authorization_header,
             )
             return result.json()
-        else:
-            raise ValueError(
-                "The given combination of parameters is invalid."
-                f"request_id is {request_id} \n"
-                f"quantity is {quantity} \n"
-                f"method is{method}"
-            )
 
     @_login
     def _post_result(self, request: dict, data: Any):
