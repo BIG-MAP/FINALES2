@@ -220,6 +220,7 @@ def get_templates(
     quantity: Optional[str] = None,
     method: Optional[str] = None,
     currently_available=True,
+    token: User = Depends(user_manager.get_active_user),
 ) -> Dict[str, Dict[str, Any]]:
     """API endpoint to get templates for the input and output schemas for the
     queried quantity and/or method. It can also provide templates for all of the
