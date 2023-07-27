@@ -219,7 +219,7 @@ def post_new_status_for_result(
 def get_templates(
     quantity: Optional[str] = None,
     method: Optional[str] = None,
-    currently_available=True,
+    currently_available: bool = True,
     token: User = Depends(user_manager.get_active_user),
 ) -> Dict[str, Dict[str, Any]]:
     """API endpoint to get templates for the input and output schemas for the
