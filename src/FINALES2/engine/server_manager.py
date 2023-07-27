@@ -161,16 +161,19 @@ class ServerManager:
                     limitations_accumdict[quantity][method] = []
 
                 limitations_schema = limitations_data["limitations"]
-                limitations_accumdict[quantity][method].append(limitations_schema)
+                if isinstance(limitations_schema, list):
+                    limitations_accumdict[quantity][method].extend(limitations_schema)
+                else:
+                    limitations_accumdict[quantity][method].append(limitations_schema)
 
         api_response = []
         for keyq, limitations_methods in limitations_accumdict.items():
-            for keym, limitations_schemas in limitations_methods.items():
+            for keym, limitations in limitations_methods.items():
                 api_response.append(
                     LimitationsInfo(
                         quantity=keyq,
                         method=keym,
-                        limitations={"anyOf": limitations_schemas},
+                        limitations=limitations,
                     )
                 )
 
