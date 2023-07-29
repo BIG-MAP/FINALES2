@@ -228,25 +228,33 @@ class ServerManager:
 
     def _dublicate_tenant_db_check(self, db_entry):
         """
-        Method for checking if a tenant with the same name and limitations is already
-        present in the database with status active
+        Method for checking if a tenant with the same name is already present in the
+        database with the action dependent on the active staus and uniqueness of the
+        limitations.
         """
 
-        # TODO currently no is_active approach to the tenant
-        query_inp = (
-            select(Tenant)
-            .where(Tenant.name == db_entry.name)
-            .where(Tenant.limitations == db_entry.limitations)
-        )
+        query_inp = select(Tenant).where(Tenant.name == db_entry.name)
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
 
         if len(query_out) > 0:
-            raise ValueError(
-                f"The tenant ({db_entry.name}) is already present in the database with "
-                "identical limitations and capabilities"
-            )
+            for (tenant,) in query_out:
+                if tenant.is_active == 1:
+                    raise ValueError(
+                        f"The tenant ({db_entry.name}) is already present in the "
+                        f"database with status is_active=1 (tenant_uuid={tenant.uuid})."
+                        " New tenant names must be unique compared to other active "
+                        "tenants"
+                    )
+                elif tenant.limitations == db_entry.limitations:
+                    raise ValueError(
+                        f"The tenant ({db_entry.name}) is already present in the "
+                        "database with identical limitations thought with status "
+                        f" is_active=0 (tenant_uuid={tenant.uuid}). Change the status "
+                        "of this tenant to is_active=1, or change the name for the "
+                        "registration of the desired tenant"
+                    )
 
         return
 
