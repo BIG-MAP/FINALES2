@@ -400,6 +400,16 @@ class Engine:
         further/new description.
         """
 
+        # return if status change it not allowed
+        if (
+            status == RequestStatus.RESOLVED
+            or status == RequestStatus.PRO_FORMA_RESULTS
+        ):
+            raise ValueError(
+                f"It is not possible to change the status to {status.value}, since this"
+                " is handled entirely on ther server side"
+            )
+
         # Change status and log change
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
         with get_db() as session:
@@ -411,10 +421,16 @@ class Engine:
             original_request = query_out[0][0]
 
             # Raise error if the status is 'resolved'
-            if original_request.status == RequestStatus.RESOLVED.value:
+            if original_request.status == RequestStatus.RESOLVED:
                 raise ValueError(
                     "The requests is connected to an already posted results and"
                     "therefore has the status 'resolved' which cannot be changed."
+                )
+            if original_request.status == RequestStatus.PRO_FORMA_RESULTS:
+                raise ValueError(
+                    "The requests was created to accomadate posting a result without a "
+                    "request being present, the status can therefore not be changed "
+                    "'pro forma request status'."
                 )
 
             # Update value

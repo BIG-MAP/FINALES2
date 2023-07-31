@@ -202,9 +202,11 @@ def post_new_status_for_request(
     status_change_message: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
 ) -> str:
-    """API endpoint to change the status of a request which is currently not resolved.
-    The possible inputs are: pending, reserved, retracted, with resolved being auto-
-    matically designed when a result is posted"""
+    """API endpoint to change the status of a request which is currently not 'resolved'
+    or 'pro forma request status'.
+    The possible inputs are: 'pending', 'reserved', 'retracted', with 'resolved' being
+    automatically assigned when a result is posted and 'pro forma request status' only
+    being assigned when a result it posted without a request"""
     engine = Engine()
     try:
         return engine.change_status_request(
