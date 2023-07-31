@@ -23,6 +23,7 @@ class RequestStatus(Enum):
     RESERVED = "reserved"
     RESOLVED = "resolved"
     RETRACTED = "retracted"
+    PRO_FORMA_RESULTS = "pro forma request status"
 
 
 class ResultStatus(Enum):
@@ -57,7 +58,9 @@ class Engine:
         api_response = ResultInfo.from_db_result(query_out[0][0])
         return api_response
 
-    def create_request(self, request_data: Request) -> str:
+    def create_request(
+        self, request_data: Request, results_exclusively_tag=False
+    ) -> str:
         """Create a new request entry in the database.
 
         This method will first validate the parameters of the request with
@@ -94,6 +97,12 @@ class Engine:
                 "status_change_message": "The requests was created in the server",
             }
         )
+
+        # Tag reserved for a request that is triggered by posting data with no prior
+        # request
+        if results_exclusively_tag:
+            request_obj.status = RequestStatus.PRO_FORMA_RESULTS.value
+            status_log_obj.status = RequestStatus.PRO_FORMA_RESULTS.value
 
         link_uuid = str(uuid.uuid4())
         with get_db() as session:
@@ -141,7 +150,9 @@ class Engine:
 
         return str(request_obj.uuid)
 
-    def create_result(self, received_data: Result) -> str:
+    def create_result(
+        self, received_data: Result, results_exclusively_tag=False
+    ) -> str:
         """Create a new result entry in the database.
 
         This method will first validate the parameters of the request with
@@ -258,11 +269,14 @@ class Engine:
         # An issue has been raised, concerning that this status update is done after
         # the above commit, leaving the database in an inconsistent state before the
         # below is performed
-        self.change_status_request(
-            request_id=request_uuid,
-            status=RequestStatus.RESOLVED,
-            status_change_message="Result posted for corresponding request",
-        )
+        # Only changes status to resolved if the result posting does not originate from
+        # the endpoint post_results_without_prior_request
+        if not results_exclusively_tag:
+            self.change_status_request(
+                request_id=request_uuid,
+                status=RequestStatus.RESOLVED,
+                status_change_message="Result posted for corresponding request",
+            )
 
         return str(db_obj.uuid)
 

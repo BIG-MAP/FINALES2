@@ -82,6 +82,30 @@ def post_result(
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
+@operations_router.post("/results/post_results_without_prior_request")
+def post_result_with_no_prior_request(
+    result_data: Result, token: User = Depends(user_manager.get_active_user)
+) -> str:
+    """API endpoint to post a new result without a prior request. Leave the request_uuid
+    string input empty."""
+    engine = Engine()
+    try:
+        # create request object
+        request_data = {
+            "quantity": result_data.quantity,
+            "methods": result_data.method,
+            "parameters": result_data.parameters,
+            "tenant_uuid": "",
+        }
+        new_request = Request(**request_data)
+        request_uuid = engine.create_request(new_request, results_exclusively_tag=True)
+        result_data.request_uuid = request_uuid
+        return engine.create_result(result_data, results_exclusively_tag=True)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+
 @operations_router.get("/pending_requests/")
 def get_pending_requests(
     quantity: Optional[str] = None,
