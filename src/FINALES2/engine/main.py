@@ -424,8 +424,8 @@ class Engine:
             if original_request.status == RequestStatus.UNSOLICITED:
                 raise ValueError(
                     "The requests was created to accomadate posting a result without a "
-                    "request being present, the status can therefore not be changed "
-                    "'pro forma request status'."
+                    "request being present, the status 'unsolicited' can therefore not "
+                    "be changed."
                 )
 
             # Update value
