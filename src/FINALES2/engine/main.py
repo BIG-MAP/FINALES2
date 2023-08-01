@@ -23,7 +23,7 @@ class RequestStatus(Enum):
     RESERVED = "reserved"
     RESOLVED = "resolved"
     RETRACTED = "retracted"
-    PRO_FORMA_RESULTS = "pro forma request status"
+    UNSOLICITED = "unsolicited"
 
 
 class ResultStatus(Enum):
@@ -59,7 +59,7 @@ class Engine:
         return api_response
 
     def create_request(
-        self, request_data: Request, results_exclusively_tag=False
+        self, request_data: Request, unsolicited_result_tag=False
     ) -> str:
         """Create a new request entry in the database.
 
@@ -99,10 +99,10 @@ class Engine:
         )
 
         # Tag reserved for a request that is triggered by posting data with no prior
-        # request
-        if results_exclusively_tag:
-            request_obj.status = RequestStatus.PRO_FORMA_RESULTS.value
-            status_log_obj.status = RequestStatus.PRO_FORMA_RESULTS.value
+        # request (unsolicited)
+        if unsolicited_result_tag:
+            request_obj.status = RequestStatus.UNSOLICITED.value
+            status_log_obj.status = RequestStatus.UNSOLICITED.value
 
         link_uuid = str(uuid.uuid4())
         with get_db() as session:
@@ -150,9 +150,7 @@ class Engine:
 
         return str(request_obj.uuid)
 
-    def create_result(
-        self, received_data: Result, results_exclusively_tag=False
-    ) -> str:
+    def create_result(self, received_data: Result, unsolicited_result_tag=False) -> str:
         """Create a new result entry in the database.
 
         This method will first validate the parameters of the request with
@@ -270,8 +268,8 @@ class Engine:
         # the above commit, leaving the database in an inconsistent state before the
         # below is performed
         # Only changes status to resolved if the result posting does not originate from
-        # the endpoint post_results_without_prior_request
-        if not results_exclusively_tag:
+        # the endpoint post_unsolicited_result
+        if not unsolicited_result_tag:
             self.change_status_request(
                 request_id=request_uuid,
                 status=RequestStatus.RESOLVED,
@@ -401,10 +399,7 @@ class Engine:
         """
 
         # return if status change it not allowed
-        if (
-            status == RequestStatus.RESOLVED
-            or status == RequestStatus.PRO_FORMA_RESULTS
-        ):
+        if status == RequestStatus.RESOLVED or status == RequestStatus.UNSOLICITED:
             raise ValueError(
                 f"It is not possible to change the status to {status.value}, since this"
                 " is handled entirely on ther server side"
@@ -426,7 +421,7 @@ class Engine:
                     "The requests is connected to an already posted results and"
                     "therefore has the status 'resolved' which cannot be changed."
                 )
-            if original_request.status == RequestStatus.PRO_FORMA_RESULTS:
+            if original_request.status == RequestStatus.UNSOLICITED:
                 raise ValueError(
                     "The requests was created to accomadate posting a result without a "
                     "request being present, the status can therefore not be changed "
