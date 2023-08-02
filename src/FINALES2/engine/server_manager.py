@@ -284,7 +284,7 @@ class ServerManager:
         print(f"The method {method_name} has been deactivated in the map")
         return
 
-    def alter_tenant_state(self, tenant_uuid, new_is_active_state):
+    def alter_tenant_state(self, tenant_uuid, new_is_active_state: bool):
         """Adds new state to a tenant."""
 
         query_inp = select(Tenant).where(Tenant.uuid == uuid.UUID(tenant_uuid))
@@ -296,6 +296,12 @@ class ServerManager:
             raise ValueError("No tenant exists with the provided uuid")
 
         tenant = query_out[0][0]
+
+        if tenant.is_active == new_is_active_state:
+            raise ValueError(
+                f"The tenant with uuid {tenant_uuid} already has the state is_active "
+                f"{new_is_active_state}"
+            )
 
         # Check that there is no tenant with the same name already active in the db
         if new_is_active_state == 1:
@@ -309,26 +315,21 @@ class ServerManager:
                 if len(query_out_name_check) > 0:
                     raise ValueError(
                         f"A tenant with the name {tenant.name} is already with state "
-                        "is_active=1 in the database, it is therefore not possible to"
+                        "is_active=1 in the database, it is therefore not possible to "
                         "activate this tenant since this breaks the rule for a unique "
                         "tenant name."
                     )
 
-        if tenant.is_active == new_is_active_state:
-            raise ValueError(
-                "The capability entry already has the desired is_active state "
-                f"({new_is_active_state})"
-            )
-
         # Updating the is_active column
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
-            tenant.status = new_is_active_state
+            tenant = query_out[0][0]
+            tenant.is_active = new_is_active_state
             session.commit()
             session.refresh(tenant)
 
         print(
-            f"The is_active state of tenant with uuid ({uuid}) was successfully "
+            f"The is_active state of tenant with uuid ({tenant_uuid}) was successfully "
             f"changed to ({new_is_active_state})"
         )
         return

@@ -127,7 +127,7 @@ def db_deactivate_capability(input_method_name, input_answer):
     "--input-boolean",
     required=True,
     prompt="Please provide the new is_active state as a boolean integer",
-    type=int,
+    type=bool,
     help="Boolean integer the is_active column should be changed to.",
 )
 @click.option(
