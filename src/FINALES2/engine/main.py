@@ -23,6 +23,7 @@ class RequestStatus(Enum):
     RESERVED = "reserved"
     RESOLVED = "resolved"
     RETRACTED = "retracted"
+    UNSOLICITED = "unsolicited"
 
 
 class ResultStatus(Enum):
@@ -57,7 +58,9 @@ class Engine:
         api_response = ResultInfo.from_db_result(query_out[0][0])
         return api_response
 
-    def create_request(self, request_data: Request) -> str:
+    def create_request(
+        self, request_data: Request, unsolicited_result_tag=False
+    ) -> str:
         """Create a new request entry in the database.
 
         This method will first validate the parameters of the request with
@@ -94,6 +97,12 @@ class Engine:
                 "status_change_message": "The requests was created in the server",
             }
         )
+
+        # Tag reserved for a request that is triggered by posting data with no prior
+        # request (unsolicited)
+        if unsolicited_result_tag:
+            request_obj.status = RequestStatus.UNSOLICITED.value
+            status_log_obj.status = RequestStatus.UNSOLICITED.value
 
         link_uuid = str(uuid.uuid4())
         with get_db() as session:
@@ -141,7 +150,7 @@ class Engine:
 
         return str(request_obj.uuid)
 
-    def create_result(self, received_data: Result) -> str:
+    def create_result(self, received_data: Result, unsolicited_result_tag=False) -> str:
         """Create a new result entry in the database.
 
         This method will first validate the parameters of the request with
@@ -250,24 +259,26 @@ class Engine:
             original_request = query_out[0][0]
             # Retrieves the object to be for changing the request status to resolved
             # as well as logging of the change
-            (
-                original_request,
-                request_status_log_obj,
-            ) = self._object_instances_for_request_status_change(
-                original_request=original_request,
-                request_id=request_uuid,
-                status=RequestStatus.RESOLVED,
-                status_change_message="Result posted for corresponding request",
-            )
-            session.add(request_status_log_obj)
+            if not unsolicited_result_tag:
+                (
+                    original_request,
+                    request_status_log_obj,
+                ) = self._object_instances_for_request_status_change(
+                    original_request=original_request,
+                    request_id=request_uuid,
+                    status=RequestStatus.RESOLVED,
+                    status_change_message="Result posted for corresponding request",
+                )
+                session.add(request_status_log_obj)
 
             # Commit all additions and refresh
             session.commit()
             session.refresh(db_obj)
             session.refresh(result_status_log_obj)
             session.refresh(link_quantity_result_obj)
-            session.refresh(original_request)
-            session.refresh(request_status_log_obj)
+            if not unsolicited_result_tag:
+                session.refresh(original_request)
+                session.refresh(request_status_log_obj)
 
         return str(db_obj.uuid)
 
@@ -390,11 +401,12 @@ class Engine:
         error, since a new status_change_message can accompany the new log entry for a
         further/new description.
         """
-        if status == RequestStatus.RESOLVED:
+
+        # return if status change it not allowed
+        if status == RequestStatus.RESOLVED or status == RequestStatus.UNSOLICITED:
             raise ValueError(
-                "The status 'resolved' is automatically assigned when a posted "
-                "result is linked to a request, it can therefore not be changed to "
-                "'resolved' by a user"
+                f"It is not possible to change the status to {status.value}, since this"
+                " is handled entirely on ther server side"
             )
 
         # Change status and log change
@@ -408,10 +420,16 @@ class Engine:
             original_request = query_out[0][0]
 
             # Raise error if the status is 'resolved'
-            if original_request.status == RequestStatus.RESOLVED.value:
+            if original_request.status == RequestStatus.RESOLVED:
                 raise ValueError(
                     "The requests is connected to an already posted results and"
                     "therefore has the status 'resolved' which cannot be changed."
+                )
+            if original_request.status == RequestStatus.UNSOLICITED:
+                raise ValueError(
+                    "The requests was created to accomadate posting a result without a "
+                    "request being present, the status 'unsolicited' can therefore not "
+                    "be changed."
                 )
 
             # Retrieves the object to be for changing the request status as well as
