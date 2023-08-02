@@ -251,7 +251,7 @@ class ServerManager:
                     raise ValueError(
                         f"The tenant ({db_entry.name}) is already present in the "
                         "database with identical limitations thought with status "
-                        f" is_active=0 (tenant_uuid={tenant.uuid}). Change the status "
+                        f"is_active=0 (tenant_uuid={tenant.uuid}). Change the status "
                         "of this tenant to is_active=1, or change the name for the "
                         "registration of the desired tenant"
                     )
