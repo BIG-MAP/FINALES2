@@ -189,7 +189,7 @@ class Engine:
         )
 
         request_uuid = str(received_data.request_uuid)
-        query_inp = select(DbRequest).where(DbRequest.uuid == request_uuid)
+        query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_uuid))
 
         ctime = datetime.now()
 
@@ -255,26 +255,30 @@ class Engine:
 
             session.add(result_status_log_obj)
 
+            # Retrieve original request
+            original_request = query_out[0][0]
+            # Retrieves the object to be for changing the request status to resolved
+            # as well as logging of the change
+            if not unsolicited_result_tag:
+                (
+                    original_request,
+                    request_status_log_obj,
+                ) = self._object_instances_for_request_status_change(
+                    original_request=original_request,
+                    request_id=request_uuid,
+                    status=RequestStatus.RESOLVED,
+                    status_change_message="Result posted for corresponding request",
+                )
+                session.add(request_status_log_obj)
+
             # Commit all additions and refresh
             session.commit()
             session.refresh(db_obj)
             session.refresh(result_status_log_obj)
             session.refresh(link_quantity_result_obj)
-
-        # The following lines changes the status of the request (and logs change)
-        # now that a result associated with the request has been posted.
-
-        # An issue has been raised, concerning that this status update is done after
-        # the above commit, leaving the database in an inconsistent state before the
-        # below is performed
-        # Only changes status to resolved if the result posting does not originate from
-        # the endpoint post_unsolicited_result
-        if not unsolicited_result_tag:
-            self.change_status_request(
-                request_id=request_uuid,
-                status=RequestStatus.RESOLVED,
-                status_change_message="Result posted for corresponding request",
-            )
+            if not unsolicited_result_tag:
+                session.refresh(original_request)
+                session.refresh(request_status_log_obj)
 
         return str(db_obj.uuid)
 
@@ -428,17 +432,15 @@ class Engine:
                     "be changed."
                 )
 
-            # Update value
-            original_request.status = status.value
-
-            request_status_log_obj = DbStatusLogRequest(
-                **{
-                    "uuid": str(uuid.uuid4()),
-                    "request_uuid": request_id,
-                    "status": status.value,
-                    "status_change_message": status_change_message,
-                }
+            # Retrieves the object to be for changing the request status as well as
+            # logging of the change
+            (
+                original_request,
+                request_status_log_obj,
+            ) = self._object_instances_for_request_status_change(
+                original_request, request_id, status, status_change_message
             )
+
             session.add(request_status_log_obj)
             session.commit()
 
@@ -498,3 +500,25 @@ class Engine:
 
         api_response = f"Successful change of status to {status.value}"
         return api_response
+
+    def _object_instances_for_request_status_change(
+        self, original_request, request_id, status, status_change_message
+    ):
+        """
+        Function for returning the request and log object to be stored when changing
+        status of a request
+        """
+
+        # Update value
+        original_request.status = status.value
+
+        request_status_log_obj = DbStatusLogRequest(
+            **{
+                "uuid": str(uuid.uuid4()),
+                "request_uuid": request_id,
+                "status": status.value,
+                "status_change_message": status_change_message,
+            }
+        )
+
+        return original_request, request_status_log_obj
