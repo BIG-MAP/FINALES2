@@ -228,25 +228,33 @@ class ServerManager:
 
     def _dublicate_tenant_db_check(self, db_entry):
         """
-        Method for checking if a tenant with the same name and limitations is already
-        present in the database with status active
+        Method for checking if a tenant with the same name is already present in the
+        database with the action dependent on the active staus and uniqueness of the
+        limitations.
         """
 
-        # TODO currently no is_active approach to the tenant
-        query_inp = (
-            select(Tenant)
-            .where(Tenant.name == db_entry.name)
-            .where(Tenant.limitations == db_entry.limitations)
-        )
+        query_inp = select(Tenant).where(Tenant.name == db_entry.name)
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
 
         if len(query_out) > 0:
-            raise ValueError(
-                f"The tenant ({db_entry.name}) is already present in the database with "
-                "identical limitations and capabilities"
-            )
+            for (tenant,) in query_out:
+                if tenant.is_active == 1:
+                    raise ValueError(
+                        f"The tenant ({db_entry.name}) is already present in the "
+                        f"database with status is_active=1 (tenant_uuid={tenant.uuid})."
+                        " New tenant names must be unique compared to other active "
+                        "tenants"
+                    )
+                elif tenant.limitations == db_entry.limitations:
+                    raise ValueError(
+                        f"The tenant ({db_entry.name}) is already present in the "
+                        "database with identical limitations thought with status "
+                        f"is_active=0 (tenant_uuid={tenant.uuid}). Change the status "
+                        "of this tenant to is_active=1, or change the name for the "
+                        "registration of the desired tenant"
+                    )
 
         return
 
@@ -276,31 +284,52 @@ class ServerManager:
         print(f"The method {method_name} has been deactivated in the map")
         return
 
-    def alter_tenant_state(self, tenant_uuid, new_is_active_state):
+    def alter_tenant_state(self, tenant_uuid, new_is_active_state: bool):
         """Adds new state to a tenant."""
+
         query_inp = select(Tenant).where(Tenant.uuid == uuid.UUID(tenant_uuid))
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
 
-            if len(query_out) == 0:
-                raise ValueError("No tenant exists with the provided uuid")
+        if len(query_out) == 0:
+            raise ValueError("No tenant exists with the provided uuid")
 
+        tenant = query_out[0][0]
+
+        if tenant.is_active == new_is_active_state:
+            raise ValueError(
+                f"The tenant with uuid {tenant_uuid} already has the state is_active "
+                f"{new_is_active_state}"
+            )
+
+        # Check that there is no tenant with the same name already active in the db
+        if new_is_active_state == 1:
+            query_inp_name_check = (
+                select(Tenant)
+                .where(Tenant.name == tenant.name)
+                .where(Tenant.is_active == 1)
+            )
+            with self._database_context() as session:
+                query_out_name_check = session.execute(query_inp_name_check).all()
+                if len(query_out_name_check) > 0:
+                    raise ValueError(
+                        f"A tenant with the name {tenant.name} is already with state "
+                        "is_active=1 in the database, it is therefore not possible to "
+                        "activate this tenant since this breaks the rule for a unique "
+                        "tenant name."
+                    )
+
+        # Updating the is_active column
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
             tenant = query_out[0][0]
-            if tenant.is_active == new_is_active_state:
-                raise ValueError(
-                    "The capability entry already has the desired is_active state "
-                    f"({new_is_active_state})"
-                )
-
-            # Updating the is_active column
-            tenant.status = new_is_active_state
-
+            tenant.is_active = new_is_active_state
             session.commit()
             session.refresh(tenant)
 
         print(
-            f"The is_active state of tenant with uuid ({uuid}) was successfully "
+            f"The is_active state of tenant with uuid ({tenant_uuid}) was successfully "
             f"changed to ({new_is_active_state})"
         )
         return
@@ -324,7 +353,10 @@ class ServerManager:
                     raise ValueError("No tenants in the database")
 
         for (tenant,) in query_out:
-            print(f"tenant: {tenant.name}, uuid: {tenant.uuid}")
+            print(
+                f"tenant: {tenant.name}, uuid: {tenant.uuid},"
+                f"is_active={tenant.is_active}, load_time={tenant.load_time}"
+            )
 
         return
 
