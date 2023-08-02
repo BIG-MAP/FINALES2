@@ -259,7 +259,6 @@ class Engine:
                 status=RequestStatus.RESOLVED,
                 status_change_message="Result posted for corresponding request",
             )
-            # session.add(original_request) TODO not needed?
             session.add(request_status_log_obj)
 
             # Commit all additions and refresh
