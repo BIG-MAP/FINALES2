@@ -82,6 +82,30 @@ def post_result(
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
+@operations_router.post("/results/post_unsolicited_result")
+def post_result_with_no_prior_request(
+    result_data: Result, token: User = Depends(user_manager.get_active_user)
+) -> str:
+    """API endpoint to post a new result without a prior request (unsolicited). Leave
+    the request_uuid string input empty."""
+    engine = Engine()
+    try:
+        # create request object
+        request_data = {
+            "quantity": result_data.quantity,
+            "methods": result_data.method,
+            "parameters": result_data.parameters,
+            "tenant_uuid": result_data.tenant_uuid,
+        }
+        new_request = Request(**request_data)
+        request_uuid = engine.create_request(new_request, unsolicited_result_tag=True)
+        result_data.request_uuid = request_uuid
+        return engine.create_result(result_data, unsolicited_result_tag=True)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+
 @operations_router.get("/pending_requests/")
 def get_pending_requests(
     quantity: Optional[str] = None,
@@ -178,9 +202,11 @@ def post_new_status_for_request(
     status_change_message: Optional[str] = None,
     token: User = Depends(user_manager.get_active_user),
 ) -> str:
-    """API endpoint to change the status of a request which is currently not resolved.
-    The possible inputs are: pending, reserved, retracted, with resolved being auto-
-    matically designed when a result is posted"""
+    """API endpoint to change the status of a request which is currently not 'resolved'
+    or 'unsolicited'.
+    The possible inputs are: 'pending', 'reserved', 'retracted', with 'resolved' being
+    automatically assigned when a result is posted and 'unsolicited' only being assigned
+    when a result it posted without a request"""
     engine = Engine()
     try:
         return engine.change_status_request(
