@@ -1,13 +1,12 @@
 import logging
-import pathlib
+
+from FINALES2.config import get_configuration
 
 
 class loggerConfig:
     def __init__(self):
-        # logging.config.fileConfig('logging.conf')
-
-        DIRPATH_THIS = pathlib.Path(__file__).parent.resolve()
-        FINALES_LOG_PATH = f"{DIRPATH_THIS}/finales_log.log"
+        config = get_configuration()
+        FINALES_LOG_PATH = config.safeget_logpath()
 
         logger = logging.getLogger("FINALES")
 
@@ -17,7 +16,8 @@ class loggerConfig:
 
         # Formatting
         formatter = "%(asctime)s. %(name)s|%(levelname)s| %(message)s"
-        dateFormat = "%m/%d/%Y %I:%M:%S %p"
+        dateFormat = "%d/%m/%Y %I:%M:%S %p %Z"
+
         logging.basicConfig(
             format=formatter, datefmt=dateFormat, filename=FINALES_LOG_PATH
         )
