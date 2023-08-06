@@ -141,49 +141,6 @@ def dummy_result_populate(present_request_id):
 
 
 def dummy_tenant_populate():
-    dummy_capabilities_schema = {
-        "quantity1": {
-            "method1": {
-                "unit_of_measurement": "Dummy_unit1",
-                "necessary_input_for_method": {
-                    "voltage": {
-                        "type": "number",
-                        "unit": "mV",
-                        "description": "Description of the voltage needed",
-                    },
-                    "temperature": {
-                        "type": "number",
-                        "unit": "K",
-                        "description": "Description of the temp. needed",
-                    },
-                },
-            },
-            "method2": {
-                "unit_of_measurement": "Dummy_unit2",
-                "necessary_input_for_method": {
-                    "internal_temperature": {
-                        "type": "number",
-                        "unit": "K",
-                        "description": "Description of the internal temp. needed",
-                    }
-                },
-            },
-        },
-        "quantity2": {
-            "method3": {
-                "unit_of_measurement": "Dummy_unit3",
-                "necessary_input_for_method": {
-                    "functional": {
-                        "type": "str",
-                        "input_str": "PBE",
-                        "description": (
-                            "Description of the functional needed (simulation)"
-                        ),
-                    },
-                },
-            },
-        },
-    }
     # type string for an input will not be accompanied by a unit...
     #  TODO for tenant reference
 
@@ -225,7 +182,6 @@ def dummy_tenant_populate():
         **{
             "uuid": str(uuid.uuid4()),
             "name": "DTU - Dummy Technical University name",
-            "capabilities": json.dumps(dummy_capabilities_schema),
             "limitations": json.dumps(dummy_limitations_schema),
             "contact_person": "Firstname Lastname, email_of_dummy@dtu.dk",
             "load_time": datetime.now(),
