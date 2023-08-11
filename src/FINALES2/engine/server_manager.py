@@ -515,7 +515,6 @@ def parse_list(
 ):
     result = []
     items = list_schema["items"]
-    print("\n\n ITEMS \n", items)
     if "type" in items.keys():
         if items["type"] == "array":
             item_parsed = parse_list(
@@ -617,7 +616,6 @@ def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]
                             definitions[detail_key],
                             definitions=definitions,
                         )
-                        print("\n\n\n HELLO\n\n\n", prop, "\n", sub_template)
                         types.append(str(sub_template))
                     elif "additionalProperties" in key:
                         if "$ref" in anyOf_item["additionalProperties"].keys():
@@ -641,7 +639,6 @@ def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]
                         if anyOf_type in types_dict.keys():
                             types.append(types_dict[anyOf_type])
                         elif anyOf_type == "array":
-                            print("\n\n\n prop\n", prop, anyOf_item)
                             typelist = []
                             if "prefixItems" in anyOf_item.keys():
                                 for prefix_item in anyOf_item["prefixItems"]:
