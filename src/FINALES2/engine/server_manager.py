@@ -510,6 +510,33 @@ def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, A
     return limitations_schema
 
 
+def parse_list(
+    list_schema: dict, types_dict: dict[str, str], requirement: str, definitions: dict
+):
+    result = []
+    items = list_schema["items"]
+    if "type" in items.keys():
+        if items["type"] == "array":
+            item_parsed = parse_list(
+                list_schema=items,
+                types_dict=types_dict,
+                requirement=requirement,
+                definitions=definitions,
+            )
+        elif items["type"] in types_dict.keys():
+            item_parsed = f"{requirement}, {types_dict[items['type']]}"
+        result.append(item_parsed)
+    elif "$ref" in items.keys():
+        detail_key = items["$ref"].split("/")[-1]
+        result.append(
+            parse_schema_for_template(
+                definitions[detail_key],
+                definitions=definitions,
+            )
+        )
+    return result
+
+
 def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]:
     """This function takes a json schema in and parses it to generate a template of the
     respective dictionary described in the schema.
@@ -560,28 +587,12 @@ def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]
             if prop_type in types_dict.keys():
                 template[prop] = f"{requirement}, {types_dict[prop_type]}"
             elif schema["properties"][prop]["type"] == "array":
-                template[prop] = []
-                iterator_type = type(schema["properties"][prop]["items"])
-                if iterator_type == list:
-                    iterator = schema["properties"][prop]["items"]
-                elif iterator_type == dict:
-                    iterator = [schema["properties"][prop]["items"]]
-                for item in iterator:
-                    if "type" in item.keys():
-                        if item["type"] in types_dict.keys():
-                            template[prop].append(
-                                f"{requirement}, {types_dict[item['type']]}"
-                            )
-                        # TODO: The case of an item being a list is not yet
-                        # covered.
-                    if "$ref" in item.keys():
-                        detail_key = item["$ref"].split("/")[-1]
-                        template[prop].append(
-                            parse_schema_for_template(
-                                definitions[detail_key],
-                                definitions=definitions,
-                            )
-                        )
+                template[prop] = parse_list(
+                    list_schema=schema["properties"][prop],
+                    types_dict=types_dict,
+                    requirement=requirement,
+                    definitions=definitions,
+                )
             elif schema["properties"][prop]["type"] == "object":
                 template[prop] = parse_schema_for_template(
                     schema["properties"][prop],
@@ -607,32 +618,46 @@ def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]
                         )
                         types.append(str(sub_template))
                     elif "additionalProperties" in key:
-                        detail_key = anyOf_item["additionalProperties"]["$ref"].split(
-                            "/"
-                        )[-1]
-                        sub_template = {
-                            f"{requirement}, "
-                            "str": parse_schema_for_template(
-                                definitions[detail_key],
-                                definitions=definitions,
-                            )
-                        }
-                        types.append(str(sub_template))
+                        if "$ref" in anyOf_item["additionalProperties"].keys():
+                            detail_key = anyOf_item["additionalProperties"][
+                                "$ref"
+                            ].split("/")[-1]
+                            sub_template = {
+                                f"{requirement}, "
+                                "str": parse_schema_for_template(
+                                    definitions[detail_key],
+                                    definitions=definitions,
+                                )
+                            }
+                            types.append(str(sub_template))
+                        elif "type" in anyOf_item["additionalProperties"].keys():
+                            str_type = types_dict[
+                                anyOf_item["additionalProperties"]["type"]
+                            ]
+                            types.append(str(str_type))
                     elif "type" == key:
                         if anyOf_type in types_dict.keys():
                             types.append(types_dict[anyOf_type])
                         elif anyOf_type == "array":
                             typelist = []
-                            for prefix_item in anyOf_item["prefixItems"]:
-                                typelist.append(types_dict[prefix_item["type"]])
-                            if ("maxItems" in anyOf_item.keys()) and (
-                                "minItems" in anyOf_item.keys()
-                            ):
-                                if anyOf_item["maxItems"] == anyOf_item["minItems"]:
-                                    typestuple = tuple(typelist)
-                                    types.append(str(typestuple))
-                                else:
-                                    types.append(str(typelist))
+                            if "prefixItems" in anyOf_item.keys():
+                                for prefix_item in anyOf_item["prefixItems"]:
+                                    typelist.append(types_dict[prefix_item["type"]])
+                            else:
+                                typelist = parse_list(
+                                    list_schema=anyOf_item,
+                                    types_dict=types_dict,
+                                    requirement=requirement,
+                                    definitions=definitions,
+                                )
+                            if anyOf_item.get("maxItems", 1) == anyOf_item.get(
+                                "minItems", 0
+                            ):  # if the keys do not exist, they are not the same and
+                                # the array will be treated as a list
+                                typestuple = tuple(typelist)
+                                types.append(str(typestuple))
+                            else:
+                                types.append(str(typelist))
                         elif anyOf_type == "null":
                             requirement_subprop = "optional"
             template[prop] = f"{requirement_subprop}, {' or '.join(types)}"
