@@ -410,7 +410,7 @@ class Tenant(BaseModel):
         # not None, when this is called)
         self._change_status(
             req_res_dict=request_info,
-            new_status=RequestStatus.RESERVED.value,
+            new_status=RequestStatus.RESERVED,
             status_change_message=f"Reserved for {self.tenant_user.username}.",
         )
         return self.run_method(request_info)
