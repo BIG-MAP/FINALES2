@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, Union, cast
 import requests
 from pydantic import BaseModel
 
-from FINALES2.engine.main import RequestStatus
+from FINALES2.engine.main import RequestStatus, ResultStatus
 from FINALES2.schemas import GeneralMetaData, Quantity, ServerConfig
 from FINALES2.server.schemas import Request
 from FINALES2.user_management.classes_user_manager import User
@@ -174,6 +174,51 @@ class Tenant(BaseModel):
         # parametersOK: bool = all(parametersCheck)
         # return parametersOK
         return True
+
+    @_login
+    def _change_status(
+        self,
+        req_res_dict: dict,
+        new_status: Union[RequestStatus, ResultStatus],
+        status_change_message: Optional[str] = None,
+    ):
+        """This function changes the status of either a request or a result. It takes
+        a dictionary of either a RequestInfo or a ResultInfo object as an input and
+        selects the respective endpoint accordingly."""
+        if "request" in req_res_dict.keys():
+            obj_type = "request"
+            if type(new_status) != RequestStatus:
+                raise ValueError(
+                    f"Wrong status type. The type given is "
+                    f"{type(new_status)} instead of RequestStatus."
+                )
+        elif "result" in req_res_dict.keys():
+            obj_type = "result"
+            if type(new_status) != ResultStatus:
+                raise ValueError(
+                    f"Wrong status type. The type given is "
+                    f"{type(new_status)} instead of ResultStatus."
+                )
+
+        params = {
+            "request_id": req_res_dict["uuid"],
+            "new_status": new_status.value,
+        }
+        if status_change_message is not None:
+            params["status_change_message"] = status_change_message
+
+        header = cast(dict, self.authorization_header).copy()
+        header["Content-Type"] = "application/x-www-form-urlencoded"
+
+        _new_status = requests.post(
+            f"http://{self.FINALES_server_config.host}"
+            f":{self.FINALES_server_config.port}/"
+            f"{obj_type}s/{req_res_dict['uuid']}/update_status/",
+            params=params,
+            headers=header,
+        )
+        _new_status.raise_for_status()
+        print(f"{req_res_dict['uuid']}: {_new_status.json()}!")
 
     @_login
     def _update_queue(self) -> None:
@@ -363,22 +408,11 @@ class Tenant(BaseModel):
         print("Running method ...")
         # mark the request as "reserved", (cast required to assert mypy, this will be
         # not None, when this is called)
-        header = cast(dict, self.authorization_header).copy()
-        header["Content-Type"] = "application/x-www-form-urlencoded"
-        _new_status = requests.post(
-            f"http://{self.FINALES_server_config.host}"
-            f":{self.FINALES_server_config.port}/"
-            f"requests/{request_info['uuid']}/update_status/",
-            params={
-                "request_id": request_info["uuid"],
-                "new_status": RequestStatus.RESERVED.value,
-                "status_change_message": f"Reserved for {self.tenant_user.username}.",
-            },
-            headers=header,
+        self._change_status(
+            req_res_dict=request_info,
+            new_status=RequestStatus.RESERVED,
+            status_change_message=f"Reserved for {self.tenant_user.username}.",
         )
-
-        _new_status.raise_for_status()
-        print(f"Request status changed to {_new_status.json()}!")
         return self.run_method(request_info)
 
     def _prepare_results(self, request: dict, data: Any) -> dict[str, Any]:
@@ -401,8 +435,21 @@ class Tenant(BaseModel):
                 # get the first request in the queue to work on -> first in - first out
                 activeRequest = self.queue[0]
 
-                # get the method, which matches
-                resultData = self._run_method(request_info=activeRequest)
-                # post the result
-                self._post_result(request=activeRequest, data=resultData)
+                try:
+                    # get the method, which matches
+                    resultData = self._run_method(request_info=activeRequest)
+                    # post the result
+                    self._post_result(request=activeRequest, data=resultData)
+                # To catch errors during the execution of the method or if the
+                # execution is interrupted intentionally by the user
+                # using KeyboardInterrupt
+                except (Exception, KeyboardInterrupt):
+                    self._change_status(
+                        req_res_dict=activeRequest,
+                        new_status=RequestStatus.PENDING,
+                        status_change_message=(
+                            f"Processing of request {activeRequest['uuid']} failed."
+                        ),
+                    )
+                    raise
             continue
