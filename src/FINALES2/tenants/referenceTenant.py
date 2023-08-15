@@ -218,7 +218,7 @@ class Tenant(BaseModel):
             headers=header,
         )
         _new_status.raise_for_status()
-        print(f"Request status changed to {_new_status.json()}!")
+        print(f"{req_res_dict['uuid']}: {_new_status.json()}!")
 
     @_login
     def _update_queue(self) -> None:
@@ -448,7 +448,7 @@ class Tenant(BaseModel):
                         req_res_dict=activeRequest,
                         new_status=RequestStatus.PENDING,
                         status_change_message=(
-                            f"Processing of request " f"{activeRequest['uuid']} failed."
+                            f"Processing of request {activeRequest['uuid']} failed."
                         ),
                     )
                     raise
