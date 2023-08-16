@@ -23,6 +23,7 @@ class RequestStatus(Enum):
     RESERVED = "reserved"
     RESOLVED = "resolved"
     RETRACTED = "retracted"
+    UNSOLICITED = "unsolicited"
 
 
 class ResultStatus(Enum):
@@ -57,7 +58,9 @@ class Engine:
         api_response = ResultInfo.from_db_result(query_out[0][0])
         return api_response
 
-    def create_request(self, request_data: Request) -> str:
+    def create_request(
+        self, request_data: Request, unsolicited_result_tag=False
+    ) -> str:
         """Create a new request entry in the database.
 
         This method will first validate the parameters of the request with
@@ -79,7 +82,7 @@ class Engine:
             **{
                 "uuid": request_uuid,
                 "parameters": json.dumps(request_data.parameters),
-                "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
+                "requesting_tenant_uuid": request_data.tenant_uuid,
                 "requesting_recieved_timestamp": ctime,
                 "budget": "not currently implemented in the API",
                 "status": RequestStatus.PENDING.value,
@@ -94,6 +97,12 @@ class Engine:
                 "status_change_message": "The requests was created in the server",
             }
         )
+
+        # Tag reserved for a request that is triggered by posting data with no prior
+        # request (unsolicited)
+        if unsolicited_result_tag:
+            request_obj.status = RequestStatus.UNSOLICITED.value
+            status_log_obj.status = RequestStatus.UNSOLICITED.value
 
         link_uuid = str(uuid.uuid4())
         with get_db() as session:
@@ -141,7 +150,7 @@ class Engine:
 
         return str(request_obj.uuid)
 
-    def create_result(self, received_data: Result) -> str:
+    def create_result(self, received_data: Result, unsolicited_result_tag=False) -> str:
         """Create a new result entry in the database.
 
         This method will first validate the parameters of the request with
@@ -179,8 +188,8 @@ class Engine:
             received_data.quantity, received_data.method, wrapped_params
         )
 
-        request_uuid = str(received_data.request_uuid)
-        query_inp = select(DbRequest).where(DbRequest.uuid == request_uuid)
+        request_uuid = received_data.request_uuid
+        query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_uuid))
 
         ctime = datetime.now()
 
@@ -191,7 +200,7 @@ class Engine:
                 "request_uuid": request_uuid,  # get from received data and check
                 "parameters": json.dumps(received_data.parameters),
                 "data": json.dumps(received_data.data),
-                "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
+                "posting_tenant_uuid": received_data.tenant_uuid,
                 "cost": "Not implemented in the API yet",
                 "status": ResultStatus.ORIGINAL.value,
                 "posting_recieved_timestamp": ctime,
@@ -246,23 +255,30 @@ class Engine:
 
             session.add(result_status_log_obj)
 
+            # Retrieve original request
+            original_request = query_out[0][0]
+            # Retrieves the object to be for changing the request status to resolved
+            # as well as logging of the change
+            if not unsolicited_result_tag:
+                (
+                    original_request,
+                    request_status_log_obj,
+                ) = self._object_instances_for_request_status_change(
+                    original_request=original_request,
+                    request_id=request_uuid,
+                    status=RequestStatus.RESOLVED,
+                    status_change_message="Result posted for corresponding request",
+                )
+                session.add(request_status_log_obj)
+
             # Commit all additions and refresh
             session.commit()
             session.refresh(db_obj)
             session.refresh(result_status_log_obj)
             session.refresh(link_quantity_result_obj)
-
-        # The following lines changes the status of the request (and logs change)
-        # now that a result associated with the request has been posted.
-
-        # An issue has been raised, concerning that this status update is done after
-        # the above commit, leaving the database in an inconsistent state before the
-        # below is performed
-        self.change_status_request(
-            request_id=request_uuid,
-            status=RequestStatus.RESOLVED,
-            status_change_message="Result posted for corresponding request",
-        )
+            if not unsolicited_result_tag:
+                session.refresh(original_request)
+                session.refresh(request_status_log_obj)
 
         return str(db_obj.uuid)
 
@@ -386,6 +402,13 @@ class Engine:
         further/new description.
         """
 
+        # return if status change it not allowed
+        if status == RequestStatus.RESOLVED or status == RequestStatus.UNSOLICITED:
+            raise ValueError(
+                f"It is not possible to change the status to {status.value}, since this"
+                " is handled entirely on ther server side"
+            )
+
         # Change status and log change
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
         with get_db() as session:
@@ -397,23 +420,27 @@ class Engine:
             original_request = query_out[0][0]
 
             # Raise error if the status is 'resolved'
-            if original_request.status == RequestStatus.RESOLVED.value:
+            if original_request.status == RequestStatus.RESOLVED:
                 raise ValueError(
                     "The requests is connected to an already posted results and"
                     "therefore has the status 'resolved' which cannot be changed."
                 )
+            if original_request.status == RequestStatus.UNSOLICITED:
+                raise ValueError(
+                    "The requests was created to accomadate posting a result without a "
+                    "request being present, the status 'unsolicited' can therefore not "
+                    "be changed."
+                )
 
-            # Update value
-            original_request.status = status.value
-
-            request_status_log_obj = DbStatusLogRequest(
-                **{
-                    "uuid": str(uuid.uuid4()),
-                    "request_uuid": request_id,
-                    "status": status.value,
-                    "status_change_message": status_change_message,
-                }
+            # Retrieves the object to be for changing the request status as well as
+            # logging of the change
+            (
+                original_request,
+                request_status_log_obj,
+            ) = self._object_instances_for_request_status_change(
+                original_request, request_id, status, status_change_message
             )
+
             session.add(request_status_log_obj)
             session.commit()
 
@@ -473,3 +500,25 @@ class Engine:
 
         api_response = f"Successful change of status to {status.value}"
         return api_response
+
+    def _object_instances_for_request_status_change(
+        self, original_request, request_id, status, status_change_message
+    ):
+        """
+        Function for returning the request and log object to be stored when changing
+        status of a request
+        """
+
+        # Update value
+        original_request.status = status.value
+
+        request_status_log_obj = DbStatusLogRequest(
+            **{
+                "uuid": str(uuid.uuid4()),
+                "request_uuid": request_id,
+                "status": status.value,
+                "status_change_message": status_change_message,
+            }
+        )
+
+        return original_request, request_status_log_obj

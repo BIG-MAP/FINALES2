@@ -172,4 +172,4 @@ class CapabilityInfo(BaseModel):
 class LimitationsInfo(BaseModel):
     quantity: str
     method: str
-    limitations: Dict[str, Any]
+    limitations: List[Dict[str, Any]]

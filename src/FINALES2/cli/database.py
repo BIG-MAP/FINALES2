@@ -15,8 +15,6 @@ def cli_db():
 @cli_db.command("init")
 def db_init():
     "Initialize the database, with the tables for FINALES"
-
-    click.echo("here")
     Base.metadata.create_all(bind=engine)
     click.echo("Initialized the database with the following tables:")
 
@@ -27,6 +25,34 @@ def db_init():
 @cli_db.group("add")
 def cli_add():
     """Commands to add data to the database."""
+
+
+@click.argument(
+    "username",
+    type=str,
+)
+@click.option(
+    "--password",
+    required=True,
+    prompt="Choose a password",
+    hide_input=True,
+    confirmation_prompt=True,
+    type=str,
+    help="Password for the new user.",
+)
+@click.option(
+    "--usergroup",
+    type=str,
+    multiple=True,
+    help="Usergroup the user will belong to (may be used multiple times).",
+)
+@cli_add.command("user")
+def db_add_user(username, password, usergroup):
+    "Add an new user to the user management table."
+    from FINALES2.user_management.user_manager import new_user
+
+    message = new_user(username=username, password=password, usergroups=usergroup)
+    click.echo(message)
 
 
 @click.option(
@@ -101,7 +127,7 @@ def db_deactivate_capability(input_method_name, input_answer):
     "--input-boolean",
     required=True,
     prompt="Please provide the new is_active state as a boolean integer",
-    type=int,
+    type=bool,
     help="Boolean integer the is_active column should be changed to.",
 )
 @click.option(
