@@ -181,7 +181,7 @@ def dummy_tenant_populate():
     new_tenant = Tenant(
         **{
             "uuid": str(uuid.uuid4()),
-            "name": "DTU - Dummy Technical University name",
+            "name": "TestUniversity - Technical University name",
             "limitations": json.dumps(dummy_limitations_schema),
             "contact_person": "Firstname Lastname, email_of_dummy@dtu.dk",
             "load_time": datetime.now(),
