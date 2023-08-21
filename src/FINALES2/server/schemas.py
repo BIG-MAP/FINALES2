@@ -10,6 +10,7 @@ from FINALES2.db import LinkQuantityResult as DBLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
+from FINALES2.db import Tenant as DbTenant
 from FINALES2.db.session import get_db
 
 
@@ -173,3 +174,23 @@ class LimitationsInfo(BaseModel):
     quantity: str
     method: str
     limitations: List[Dict[str, Any]]
+
+
+class TenantInfo(BaseModel):
+    tenant_uuid: str
+    name: str
+    limitations: List[Dict[str, Any]]
+    contact_person: str
+    is_active: str
+
+    @classmethod
+    def from_db_tenant(cls, db_tenant: DbTenant):
+        """Initializes the object from the data of an orm object"""
+        init_params = {
+            "tenant_uuid": str(db_tenant.uuid),
+            "name": db_tenant.name,
+            "limitations": json.loads(db_tenant.limitations),
+            "contact_person": db_tenant.contact_person,
+            "is_active": db_tenant.is_active,
+        }
+        return cls(**init_params)

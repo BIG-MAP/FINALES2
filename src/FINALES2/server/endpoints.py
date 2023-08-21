@@ -23,6 +23,7 @@ from FINALES2.server.schemas import (
     RequestInfo,
     Result,
     ResultInfo,
+    TenantInfo,
 )
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
@@ -116,6 +117,19 @@ def get_pending_requests(
     engine = Engine()
     try:
         return engine.get_pending_requests(quantity=quantity, method=method)
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+
+@operations_router.get("/all_requests/")
+def get_all_requests(
+    token: User = Depends(user_manager.get_active_user),
+) -> List[RequestInfo]:
+    """API endpoint to get all requests."""
+    engine = Engine()
+    try:
+        return engine.get_all_requests()
     except ValueError as error_message:
         logging.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
@@ -258,6 +272,22 @@ def get_templates(
             method=method,
             currently_available=currently_available,
         )
+    except ValueError as error_message:
+        logging.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+
+@operations_router.get("/tenants/")
+def get_tenants(
+    token: User = Depends(user_manager.get_active_user),
+) -> List[TenantInfo]:
+    """
+    API endpoint to return all tenants in MAP. Is necessary for creating the possibility
+    of a data dump with sufficient information
+    """
+    server_manager = ServerManager(database_context=get_db)
+    try:
+        return server_manager.get_tenants()
     except ValueError as error_message:
         logging.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
