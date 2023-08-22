@@ -45,8 +45,3 @@ class loggerConfig:
 
     def get_logger(self):
         return self.logger
-
-
-def raise_value_error(logger, msg):
-    logger.error("ValueError", stack_info=True)
-    raise ValueError(msg)
