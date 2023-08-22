@@ -14,6 +14,7 @@ class LoggerExtension(LoggerBase):
 
     def raise_value_error(self, logger, msg):
         logger.error("ValueError", stack_info=True)
+        logger.error(msg)
         raise ValueError(msg)
 
 
