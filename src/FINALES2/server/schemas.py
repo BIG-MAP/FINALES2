@@ -181,7 +181,7 @@ class TenantInfo(BaseModel):
     name: str
     limitations: List[Dict[str, Any]]
     contact_person: str
-    is_active: str
+    is_active: bool
 
     @classmethod
     def from_db_tenant(cls, db_tenant: DbTenant):
