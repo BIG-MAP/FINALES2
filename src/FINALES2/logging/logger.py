@@ -17,6 +17,11 @@ class LoggerExtension(LoggerBase):
         logger.error(msg)
         raise ValueError(msg)
 
+    def raise_runtime_error(self, logger, msg):
+        logger.error("Runtime", stack_info=True)
+        logger.error(msg)
+        raise RuntimeError(msg)
+
 
 class loggerConfig:
     def __init__(self):
