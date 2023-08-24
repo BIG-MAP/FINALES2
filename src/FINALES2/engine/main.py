@@ -288,7 +288,6 @@ class Engine:
         method: Optional[str] = None,
     ) -> List[RequestInfo]:
         """Return all pending requests."""
-        # Currently it just gets all requests, status check pending
         query_inp = (
             select(DbRequest)
             .join(DbLinkQuantityRequest)
@@ -300,6 +299,20 @@ class Engine:
             query_inp = query_inp.where(DbQuantity.quantity == quantity)
         if method is not None:
             query_inp = query_inp.where(DbQuantity.method == method)
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        api_response = []
+        for (request_info,) in query_out:
+            request_obj = RequestInfo.from_db_request(request_info)
+            api_response.append(request_obj)
+
+        return api_response
+
+    def get_all_requests(self) -> List[RequestInfo]:
+        """Return all requests."""
+        query_inp = select(DbRequest)
 
         with get_db() as session:
             query_out = session.execute(query_inp).all()

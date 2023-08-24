@@ -7,7 +7,7 @@ from jsonschema import validate
 from sqlalchemy import select
 
 from FINALES2.db import Quantity, Tenant
-from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo
+from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo, TenantInfo
 
 
 class ServerManager:
@@ -176,6 +176,20 @@ class ServerManager:
                         limitations=limitations,
                     )
                 )
+
+        return api_response
+
+    def get_tenants(self) -> List[TenantInfo]:
+        """Return all tenants in the database."""
+        query_inp = select(Tenant)
+
+        with self._database_context() as session:
+            query_out = session.execute(query_inp).all()
+
+        api_response = []
+        for (tenant,) in query_out:
+            new_object = TenantInfo.from_db_tenant(tenant)
+            api_response.append(new_object)
 
         return api_response
 
