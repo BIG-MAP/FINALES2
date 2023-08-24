@@ -9,8 +9,6 @@ from sqlalchemy import select
 from FINALES2.db import Quantity, Tenant
 from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo
 
-# from FINALES2.logging.logger import loggerConfig
-# logger = loggerConfig().get_logger()
 from . import logger
 
 
