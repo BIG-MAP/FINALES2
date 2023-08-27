@@ -9,7 +9,6 @@ fetching all pending requests, and obtaining the capabilities of the system.
 The module uses FastAPI's APIRouter to define the routes and handle the requests.
 """
 
-import logging
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,8 +29,6 @@ from FINALES2.user_management.classes_user_manager import User
 from . import logger
 
 operations_router = APIRouter(tags=["Data Operations"])
-
-logging.info("works?")
 
 
 @operations_router.get("/requests/{object_id}")
