@@ -17,10 +17,15 @@ DEFAULT_USERDB_PATH = SCRIPT_FOLDER.parent / "user_management"
 DEFAULT_USERDB_PATH = DEFAULT_USERDB_PATH / "files_user_management"
 DEFAULT_USERDB_PATH = DEFAULT_USERDB_PATH / "users.db"
 
+# Path for log file
+DEFAULT_LOG_PATH = SCRIPT_FOLDER.parent / "logging"
+DEFAULT_LOG_PATH = DEFAULT_LOG_PATH / "finales_log.log"
+
 
 class FinalesConfiguration(BaseModel):
     secret_key: str = ""
     user_db: str = str(DEFAULT_USERDB_PATH)
+    log_path: str = str(DEFAULT_LOG_PATH)
     algorithm: str = "HS256"
     token_expiration_min: int = 1440
 
@@ -39,6 +44,17 @@ class FinalesConfiguration(BaseModel):
             )
             userdb_dirpath.mkdir(parents=True)
         return self.user_db
+
+    def safeget_logpath(self):
+        """Safe get function for the log finale for the server run"""
+        log_path_dirpath = Path(self.log_path).resolve().parent
+        if not log_path_dirpath.exists():
+            print(
+                f"Parent path {log_path_dirpath} for the log file does not exist,"
+                f"creating it."
+            )
+            log_path_dirpath.mkdir(parents=True)
+        return self.log_path
 
 
 def get_configuration():
