@@ -17,6 +17,8 @@ from FINALES2.db import StatusLogResult as DbStatusLogResult
 from FINALES2.db.session import get_db
 from FINALES2.server.schemas import Request, RequestInfo, Result, ResultInfo
 
+from . import logger
+
 
 class RequestStatus(Enum):
     PENDING = "pending"
@@ -82,7 +84,7 @@ class Engine:
             **{
                 "uuid": request_uuid,
                 "parameters": json.dumps(request_data.parameters),
-                "requesting_tenant_uuid": request_data.tenant_uuid,
+                "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "requesting_recieved_timestamp": ctime,
                 "budget": "not currently implemented in the API",
                 "status": RequestStatus.PENDING.value,
@@ -124,10 +126,13 @@ class Engine:
 
                 # Check that the query output sizes is as intended
                 if len(query_out) != 1:
-                    raise ValueError(
-                        f"The method {method_name} for quantity {request_data.quantity}"
-                        f" has several entries ({len(query_out)}) in the quantity table"
-                        f" which are active"
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"The method {method_name} for quantity "
+                            f"{request_data.quantity} has several entries "
+                            f"({len(query_out)}) in the quantity table which are active"
+                        ),
                     )
 
                 uuid_method = query_out[0][0]
@@ -169,17 +174,23 @@ class Engine:
 
         # Validations specific to posting results
         if len(received_data.method) != 1:
-            raise ValueError(
-                "Wrong length of method string for recieved result. "
-                "A list with a single method is expected, the recieved list "
-                f"{received_data.method} does not comply with this"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    "Wrong length of method string for recieved result. "
+                    "A list with a single method is expected, the recieved list "
+                    f"{received_data.method} does not comply with this"
+                ),
             )
         if len(received_data.parameters) != 1:
-            raise ValueError(
-                "Wrong number of keys in passed parameters. A single key with the "
-                "specific method was expected, the recieved parameters has the "
-                f"following keys {list(received_data.parameters.keys())} and does not "
-                "comply with this"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    "Wrong number of keys in passed parameters. A single key with the "
+                    "specific method was expected, the recieved parameters has the "
+                    f"following keys {list(received_data.parameters.keys())} and does "
+                    "not comply with this"
+                ),
             )
 
         method_name = received_data.method[0]
@@ -188,7 +199,7 @@ class Engine:
             received_data.quantity, received_data.method, wrapped_params
         )
 
-        request_uuid = received_data.request_uuid
+        request_uuid = str(received_data.request_uuid)
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_uuid))
 
         ctime = datetime.now()
@@ -200,7 +211,7 @@ class Engine:
                 "request_uuid": request_uuid,  # get from received data and check
                 "parameters": json.dumps(received_data.parameters),
                 "data": json.dumps(received_data.data),
-                "posting_tenant_uuid": received_data.tenant_uuid,
+                "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
                 "cost": "Not implemented in the API yet",
                 "status": ResultStatus.ORIGINAL.value,
                 "posting_recieved_timestamp": ctime,
@@ -211,7 +222,10 @@ class Engine:
             # Retrieve original request for the result and update request status
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
-                raise ValueError(f"Submitted result has no request: {request_uuid}")
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=f"Submitted result has no request: {request_uuid}",
+                )
 
             session.add(db_obj)
 
@@ -227,10 +241,14 @@ class Engine:
 
             # Check that the query output sizes is as intended
             if len(query_out_method) != 1:
-                raise ValueError(
-                    f"The method {method_name} for quantity {received_data.quantity} "
-                    f"has several entries ({len(query_out_method)}) in the quantity "
-                    f"table which are active"
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=(
+                        f"The method {method_name} for quantity "
+                        f"{received_data.quantity} has several entries "
+                        f"({len(query_out_method)}) in the quantity "
+                        f"table which are active"
+                    ),
                 )
 
             uuid_method = query_out_method[0][0]
@@ -288,6 +306,7 @@ class Engine:
         method: Optional[str] = None,
     ) -> List[RequestInfo]:
         """Return all pending requests."""
+        # Currently it just gets all requests, status check pending
         query_inp = (
             select(DbRequest)
             .join(DbLinkQuantityRequest)
@@ -310,20 +329,6 @@ class Engine:
 
         return api_response
 
-    def get_all_requests(self) -> List[RequestInfo]:
-        """Return all requests."""
-        query_inp = select(DbRequest)
-
-        with get_db() as session:
-            query_out = session.execute(query_inp).all()
-
-        api_response = []
-        for (request_info,) in query_out:
-            request_obj = RequestInfo.from_db_request(request_info)
-            api_response.append(request_obj)
-
-        return api_response
-
     def validate_submission(
         self, quantity: str, methods: List[str], parameters: Dict[str, dict]
     ):
@@ -333,18 +338,25 @@ class Engine:
             query_out = session.execute(query_inp).all()
 
         if len(query_out) == 0:
-            raise ValueError(f"No records for this quantity: {quantity}")
+            logger.raise_value_error(
+                logger=logger, msg=f"No records for this quantity: {quantity}"
+            )
 
         for method in parameters.keys():
             if method not in methods:
-                raise ValueError(
-                    f"Method for params with key {method} not found in list: {methods}"
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=(
+                        f"Method for params with key {method} not found in list: "
+                        f"{methods}"
+                    ),
                 )
 
         for method in methods:
             if method not in parameters.keys():
-                raise ValueError(
-                    f"Method {method} not found in parameters: {parameters.keys()}"
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=f"Method {method} not found in parameters: {parameters.keys()}",
                 )
 
             match_found = False
@@ -356,7 +368,9 @@ class Engine:
                     match_found = True
                     break
             if not match_found:
-                raise ValueError(f"No records for this method: {method}")
+                logger.raise_value_error(
+                    logger=logger, msg=f"No records for this method: {method}"
+                )
 
     def get_result_by_request(self, request_id: str) -> Optional[ResultInfo]:
         """Return the result corresponding to a given request ID."""
@@ -417,9 +431,12 @@ class Engine:
 
         # return if status change it not allowed
         if status == RequestStatus.RESOLVED or status == RequestStatus.UNSOLICITED:
-            raise ValueError(
-                f"It is not possible to change the status to {status.value}, since this"
-                " is handled entirely on ther server side"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"It is not possible to change the status to {status.value}, "
+                    "since this is handled entirely on ther server side"
+                ),
             )
 
         # Change status and log change
@@ -428,21 +445,29 @@ class Engine:
             # Retrieve original request and update request status
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
-                raise ValueError(f"No request with id: {request_id}")
+                logger.raise_value_error(
+                    logger=logger, msg=f"No request with id: {request_id}"
+                )
 
             original_request = query_out[0][0]
 
             # Raise error if the status is 'resolved'
             if original_request.status == RequestStatus.RESOLVED:
-                raise ValueError(
-                    "The requests is connected to an already posted results and"
-                    "therefore has the status 'resolved' which cannot be changed."
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=(
+                        "The requests is connected to an already posted results and"
+                        "therefore has the status 'resolved' which cannot be changed."
+                    ),
                 )
             if original_request.status == RequestStatus.UNSOLICITED:
-                raise ValueError(
-                    "The requests was created to accomadate posting a result without a "
-                    "request being present, the status 'unsolicited' can therefore not "
-                    "be changed."
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=(
+                        "The requests was created to accomadate posting a result "
+                        "without a request being present, the status 'unsolicited' can "
+                        "therefore not be changed."
+                    ),
                 )
 
             # Retrieves the object to be for changing the request status as well as
@@ -481,9 +506,12 @@ class Engine:
         # Here it is enforced that it is not possible to change status to 'original'
         # since this is reserved for the status when the data is initially posted
         if status == ResultStatus.ORIGINAL:
-            raise ValueError(
-                f"Not possible to change status to '{ResultStatus.ORIGINAL.value}' "
-                "since this is reserved only for the initial posting"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"Not possible to change status to '{ResultStatus.ORIGINAL.value}' "
+                    "since this is reserved only for the initial posting"
+                ),
             )
 
         # Change status and log change
@@ -492,7 +520,9 @@ class Engine:
             # Retrieve original result and update result status
             query_out = session.execute(query_inp).all()
             if len(query_out) == 0:
-                raise ValueError(f"No result with id: {result_id}")
+                logger.raise_value_error(
+                    logger=logger, msg=f"No result with id: {result_id}"
+                )
             original_result = query_out[0][0]
 
             # Update value
