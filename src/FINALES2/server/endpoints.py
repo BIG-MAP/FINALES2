@@ -262,3 +262,6 @@ def get_templates(
     except ValueError as error_message:
         logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
+
+
+# dummy commit
