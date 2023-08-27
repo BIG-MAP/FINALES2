@@ -31,6 +31,8 @@ from . import logger
 
 operations_router = APIRouter(tags=["Data Operations"])
 
+logging.info("works?")
+
 
 @operations_router.get("/requests/{object_id}")
 def get_request(
@@ -41,7 +43,7 @@ def get_request(
     try:
         return engine.get_request(object_id)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -54,7 +56,7 @@ def get_result(
     try:
         return engine.get_result(object_id)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -67,7 +69,7 @@ def post_request(
     try:
         return engine.create_request(request_data)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -80,7 +82,7 @@ def post_result(
     try:
         return engine.create_result(result_data)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -104,7 +106,7 @@ def post_result_with_no_prior_request(
         result_data.request_uuid = request_uuid
         return engine.create_result(result_data, unsolicited_result_tag=True)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -119,7 +121,7 @@ def get_pending_requests(
     try:
         return engine.get_pending_requests(quantity=quantity, method=method)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -132,7 +134,7 @@ def get_results_requested(
     try:
         return engine.get_result_by_request(request_id)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -147,7 +149,7 @@ def get_results_requested_all(
     try:
         return engine.get_all_results(quantity=quantity, method=method)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -169,7 +171,7 @@ def get_capabilities(
     try:
         return server_manager.get_capabilities(currently_available=currently_available)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -191,7 +193,7 @@ def get_limitations(
     try:
         return server_manager.get_limitations(currently_available=currently_available)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -217,7 +219,7 @@ def post_new_status_for_request(
             status_change_message=status_change_message,
         )
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -239,7 +241,7 @@ def post_new_status_for_result(
             status_change_message=status_change_message,
         )
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
