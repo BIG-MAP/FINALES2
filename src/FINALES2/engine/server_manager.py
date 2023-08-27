@@ -7,7 +7,9 @@ from jsonschema import validate
 from sqlalchemy import select
 
 from FINALES2.db import Quantity, Tenant
-from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo, TenantInfo
+from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo
+
+from . import logger
 
 
 class ServerManager:
@@ -179,20 +181,6 @@ class ServerManager:
 
         return api_response
 
-    def get_tenants(self) -> List[TenantInfo]:
-        """Return all tenants in the database."""
-        query_inp = select(Tenant)
-
-        with self._database_context() as session:
-            query_out = session.execute(query_inp).all()
-
-        api_response = []
-        for (tenant,) in query_out:
-            new_object = TenantInfo.from_db_tenant(tenant)
-            api_response.append(new_object)
-
-        return api_response
-
     def validate_limitations(self, limitations: LimitationsInfo):
         """Validates a set of limitations."""
 
@@ -203,10 +191,13 @@ class ServerManager:
         )
 
         if len(capability_info) == 0:
-            raise ValueError(
-                f"The quantity ({limitations['quantity']}) and method "
-                f"({limitations['method']}) are not currently present in the "
-                "capabilities and the tenant can therefore not be added"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"The quantity ({limitations['quantity']}) and method "
+                    f"({limitations['method']}) are not currently present in the "
+                    "capabilities and the tenant can therefore not be added"
+                ),
             )
 
         capability_schema = capability_info[0].json_schema_specifications
@@ -232,10 +223,13 @@ class ServerManager:
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
         if len(query_out) > 0:
-            raise ValueError(
-                f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
-                "already present in the database with same is_active state "
-                f"({db_entry.is_active})"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
+                    "already present in the database with same is_active state "
+                    f"({db_entry.is_active})"
+                ),
             )
 
         return
@@ -255,19 +249,26 @@ class ServerManager:
         if len(query_out) > 0:
             for (tenant,) in query_out:
                 if tenant.is_active == 1:
-                    raise ValueError(
-                        f"The tenant ({db_entry.name}) is already present in the "
-                        f"database with status is_active=1 (tenant_uuid={tenant.uuid})."
-                        " New tenant names must be unique compared to other active "
-                        "tenants"
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"The tenant ({db_entry.name}) is already present in the "
+                            "database with status is_active=1 "
+                            f"(tenant_uuid={tenant.uuid})."
+                            " New tenant names must be unique compared to other active "
+                            "tenants"
+                        ),
                     )
                 elif tenant.limitations == db_entry.limitations:
-                    raise ValueError(
-                        f"The tenant ({db_entry.name}) is already present in the "
-                        "database with identical limitations thought with status "
-                        f"is_active=0 (tenant_uuid={tenant.uuid}). Change the status "
-                        "of this tenant to is_active=1, or change the name for the "
-                        "registration of the desired tenant"
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"The tenant ({db_entry.name}) is already present in the "
+                            "database with identical limitations thought with status "
+                            f"is_active=0 (tenant_uuid={tenant.uuid}). Change the "
+                            "status of this tenant to is_active=1, or change the name "
+                            "for the registration of the desired tenant"
+                        ),
                     )
 
         return
@@ -284,8 +285,9 @@ class ServerManager:
             query_out = session.execute(query_inp).all()
 
             if len(query_out) == 0:
-                raise ValueError(
-                    "No method with this name is currently active in the map"
+                logger.raise_value_error(
+                    logger=logger,
+                    msg="No method with this name is currently active in the map",
                 )
 
             capability = query_out[0][0]
@@ -295,7 +297,7 @@ class ServerManager:
             session.commit()
             session.refresh(capability)
 
-        print(f"The method {method_name} has been deactivated in the map")
+        logger.info(f"The method {method_name} has been deactivated in the map")
         return
 
     def alter_tenant_state(self, tenant_uuid, new_is_active_state: bool):
@@ -307,14 +309,19 @@ class ServerManager:
             query_out = session.execute(query_inp).all()
 
         if len(query_out) == 0:
-            raise ValueError("No tenant exists with the provided uuid")
+            logger.raise_value_error(
+                logger=logger, msg="No tenant exists with the provided uuid"
+            )
 
         tenant = query_out[0][0]
 
         if tenant.is_active == new_is_active_state:
-            raise ValueError(
-                f"The tenant with uuid {tenant_uuid} already has the state is_active "
-                f"{new_is_active_state}"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"The tenant with uuid {tenant_uuid} already has the state "
+                    f"is_active {new_is_active_state}"
+                ),
             )
 
         # Check that there is no tenant with the same name already active in the db
@@ -327,11 +334,14 @@ class ServerManager:
             with self._database_context() as session:
                 query_out_name_check = session.execute(query_inp_name_check).all()
                 if len(query_out_name_check) > 0:
-                    raise ValueError(
-                        f"A tenant with the name {tenant.name} is already with state "
-                        "is_active=1 in the database, it is therefore not possible to "
-                        "activate this tenant since this breaks the rule for a unique "
-                        "tenant name."
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"A tenant with the name {tenant.name} is already with "
+                            "state is_active=1 in the database, it is therefore not "
+                            "possible to activate this tenant since this breaks the "
+                            "rule for a unique tenant name."
+                        ),
                     )
 
         # Updating the is_active column
@@ -342,7 +352,7 @@ class ServerManager:
             session.commit()
             session.refresh(tenant)
 
-        print(
+        logger.info(
             f"The is_active state of tenant with uuid ({tenant_uuid}) was successfully "
             f"changed to ({new_is_active_state})"
         )
@@ -360,14 +370,17 @@ class ServerManager:
 
             if len(query_out) == 0:
                 if tenant_name is None:
-                    raise ValueError(
-                        f"No tenant exists with the provided name ({tenant_name})"
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=f"No tenant exists with the provided name ({tenant_name})",
                     )
                 else:
-                    raise ValueError("No tenants in the database")
+                    logger.raise_value_error(
+                        logger=logger, msg="No tenants in the database"
+                    )
 
         for (tenant,) in query_out:
-            print(
+            logger.info(
                 f"tenant: {tenant.name}, uuid: {tenant.uuid},"
                 f"is_active={tenant.is_active}, load_time={tenant.load_time}"
             )
@@ -446,9 +459,11 @@ def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, A
         limitations_schema["allOf"] = []
         subschemas = inputs_schema["allOf"]
         if len(subschemas) > 1:
-            raise ValueError(
-                "Schema contains an instance of `allOf` with more than 1 element!"
+            logger.raise_value_error(
+                logger=logger,
+                msg="Schema contains an instance of `allOf` with more than 1 element!",
             )
+
         subschema_translation = limitations_schema_translation(subschemas[0])
         limitations_schema["allOf"].append(subschema_translation)
         return limitations_schema
@@ -524,33 +539,6 @@ def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, A
     return limitations_schema
 
 
-def parse_list(
-    list_schema: dict, types_dict: dict[str, str], requirement: str, definitions: dict
-):
-    result = []
-    items = list_schema["items"]
-    if "type" in items.keys():
-        if items["type"] == "array":
-            item_parsed = parse_list(
-                list_schema=items,
-                types_dict=types_dict,
-                requirement=requirement,
-                definitions=definitions,
-            )
-        elif items["type"] in types_dict.keys():
-            item_parsed = f"{requirement}, {types_dict[items['type']]}"
-        result.append(item_parsed)
-    elif "$ref" in items.keys():
-        detail_key = items["$ref"].split("/")[-1]
-        result.append(
-            parse_schema_for_template(
-                definitions[detail_key],
-                definitions=definitions,
-            )
-        )
-    return result
-
-
 def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]:
     """This function takes a json schema in and parses it to generate a template of the
     respective dictionary described in the schema.
@@ -601,12 +589,28 @@ def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]
             if prop_type in types_dict.keys():
                 template[prop] = f"{requirement}, {types_dict[prop_type]}"
             elif schema["properties"][prop]["type"] == "array":
-                template[prop] = parse_list(
-                    list_schema=schema["properties"][prop],
-                    types_dict=types_dict,
-                    requirement=requirement,
-                    definitions=definitions,
-                )
+                template[prop] = []
+                iterator_type = type(schema["properties"][prop]["items"])
+                if iterator_type == list:
+                    iterator = schema["properties"][prop]["items"]
+                elif iterator_type == dict:
+                    iterator = [schema["properties"][prop]["items"]]
+                for item in iterator:
+                    if "type" in item.keys():
+                        if item["type"] in types_dict.keys():
+                            template[prop].append(
+                                f"{requirement}, {types_dict[item['type']]}"
+                            )
+                        # TODO: The case of an item being a list is not yet
+                        # covered.
+                    if "$ref" in item.keys():
+                        detail_key = item["$ref"].split("/")[-1]
+                        template[prop].append(
+                            parse_schema_for_template(
+                                definitions[detail_key],
+                                definitions=definitions,
+                            )
+                        )
             elif schema["properties"][prop]["type"] == "object":
                 template[prop] = parse_schema_for_template(
                     schema["properties"][prop],
@@ -632,46 +636,32 @@ def parse_schema_for_template(schema: dict, definitions: dict) -> Dict[str, Any]
                         )
                         types.append(str(sub_template))
                     elif "additionalProperties" in key:
-                        if "$ref" in anyOf_item["additionalProperties"].keys():
-                            detail_key = anyOf_item["additionalProperties"][
-                                "$ref"
-                            ].split("/")[-1]
-                            sub_template = {
-                                f"{requirement}, "
-                                "str": parse_schema_for_template(
-                                    definitions[detail_key],
-                                    definitions=definitions,
-                                )
-                            }
-                            types.append(str(sub_template))
-                        elif "type" in anyOf_item["additionalProperties"].keys():
-                            str_type = types_dict[
-                                anyOf_item["additionalProperties"]["type"]
-                            ]
-                            types.append(str(str_type))
+                        detail_key = anyOf_item["additionalProperties"]["$ref"].split(
+                            "/"
+                        )[-1]
+                        sub_template = {
+                            f"{requirement}, "
+                            "str": parse_schema_for_template(
+                                definitions[detail_key],
+                                definitions=definitions,
+                            )
+                        }
+                        types.append(str(sub_template))
                     elif "type" == key:
                         if anyOf_type in types_dict.keys():
                             types.append(types_dict[anyOf_type])
                         elif anyOf_type == "array":
                             typelist = []
-                            if "prefixItems" in anyOf_item.keys():
-                                for prefix_item in anyOf_item["prefixItems"]:
-                                    typelist.append(types_dict[prefix_item["type"]])
-                            else:
-                                typelist = parse_list(
-                                    list_schema=anyOf_item,
-                                    types_dict=types_dict,
-                                    requirement=requirement,
-                                    definitions=definitions,
-                                )
-                            if anyOf_item.get("maxItems", 1) == anyOf_item.get(
-                                "minItems", 0
-                            ):  # if the keys do not exist, they are not the same and
-                                # the array will be treated as a list
-                                typestuple = tuple(typelist)
-                                types.append(str(typestuple))
-                            else:
-                                types.append(str(typelist))
+                            for prefix_item in anyOf_item["prefixItems"]:
+                                typelist.append(types_dict[prefix_item["type"]])
+                            if ("maxItems" in anyOf_item.keys()) and (
+                                "minItems" in anyOf_item.keys()
+                            ):
+                                if anyOf_item["maxItems"] == anyOf_item["minItems"]:
+                                    typestuple = tuple(typelist)
+                                    types.append(str(typestuple))
+                                else:
+                                    types.append(str(typelist))
                         elif anyOf_type == "null":
                             requirement_subprop = "optional"
             template[prop] = f"{requirement_subprop}, {' or '.join(types)}"
