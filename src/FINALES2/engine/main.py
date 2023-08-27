@@ -84,7 +84,7 @@ class Engine:
             **{
                 "uuid": request_uuid,
                 "parameters": json.dumps(request_data.parameters),
-                "requesting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
+                "requesting_tenant_uuid": request_data.tenant_uuid,
                 "requesting_recieved_timestamp": ctime,
                 "budget": "not currently implemented in the API",
                 "status": RequestStatus.PENDING.value,
@@ -199,7 +199,7 @@ class Engine:
             received_data.quantity, received_data.method, wrapped_params
         )
 
-        request_uuid = str(received_data.request_uuid)
+        request_uuid = received_data.request_uuid
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_uuid))
 
         ctime = datetime.now()
@@ -211,7 +211,7 @@ class Engine:
                 "request_uuid": request_uuid,  # get from received data and check
                 "parameters": json.dumps(received_data.parameters),
                 "data": json.dumps(received_data.data),
-                "posting_tenant_uuid": str(uuid.uuid4()),  # get from auth metadata
+                "posting_tenant_uuid": received_data.tenant_uuid,
                 "cost": "Not implemented in the API yet",
                 "status": ResultStatus.ORIGINAL.value,
                 "posting_recieved_timestamp": ctime,
@@ -306,7 +306,6 @@ class Engine:
         method: Optional[str] = None,
     ) -> List[RequestInfo]:
         """Return all pending requests."""
-        # Currently it just gets all requests, status check pending
         query_inp = (
             select(DbRequest)
             .join(DbLinkQuantityRequest)
@@ -318,6 +317,20 @@ class Engine:
             query_inp = query_inp.where(DbQuantity.quantity == quantity)
         if method is not None:
             query_inp = query_inp.where(DbQuantity.method == method)
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).all()
+
+        api_response = []
+        for (request_info,) in query_out:
+            request_obj = RequestInfo.from_db_request(request_info)
+            api_response.append(request_obj)
+
+        return api_response
+
+    def get_all_requests(self) -> List[RequestInfo]:
+        """Return all requests."""
+        query_inp = select(DbRequest)
 
         with get_db() as session:
             query_out = session.execute(query_inp).all()
