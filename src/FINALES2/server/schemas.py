@@ -205,3 +205,4 @@ class TenantInfo(BaseModel):
             "is_active": db_tenant.is_active,
         }
         return cls(**init_params)
+      
