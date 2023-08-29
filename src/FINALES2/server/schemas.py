@@ -187,6 +187,7 @@ class LimitationsInfo(BaseModel):
     limitations: List[Dict[str, Any]]
 
 
+
 class TenantInfo(BaseModel):
     tenant_uuid: str
     name: str
@@ -205,3 +206,4 @@ class TenantInfo(BaseModel):
             "is_active": db_tenant.is_active,
         }
         return cls(**init_params)
+
