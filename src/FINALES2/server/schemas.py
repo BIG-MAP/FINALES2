@@ -15,6 +15,8 @@ from FINALES2.db.session import get_db
 
 from . import logger
 
+# a
+
 
 class Request(BaseModel):
     quantity: str
@@ -187,7 +189,6 @@ class LimitationsInfo(BaseModel):
     limitations: List[Dict[str, Any]]
 
 
-
 class TenantInfo(BaseModel):
     tenant_uuid: str
     name: str
@@ -206,4 +207,3 @@ class TenantInfo(BaseModel):
             "is_active": db_tenant.is_active,
         }
         return cls(**init_params)
-
