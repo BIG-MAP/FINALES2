@@ -9,6 +9,8 @@ from sqlalchemy import select
 from FINALES2.db import Quantity, Tenant
 from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo, TenantInfo
 
+from . import logger
+
 
 class ServerManager:
     """Class to manage the general aspects of the server."""
@@ -203,10 +205,13 @@ class ServerManager:
         )
 
         if len(capability_info) == 0:
-            raise ValueError(
-                f"The quantity ({limitations['quantity']}) and method "
-                f"({limitations['method']}) are not currently present in the "
-                "capabilities and the tenant can therefore not be added"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"The quantity ({limitations['quantity']}) and method "
+                    f"({limitations['method']}) are not currently present in the "
+                    "capabilities and the tenant can therefore not be added"
+                ),
             )
 
         capability_schema = capability_info[0].json_schema_specifications
@@ -232,10 +237,13 @@ class ServerManager:
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
         if len(query_out) > 0:
-            raise ValueError(
-                f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
-                "already present in the database with same is_active state "
-                f"({db_entry.is_active})"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
+                    "already present in the database with same is_active state "
+                    f"({db_entry.is_active})"
+                ),
             )
 
         return
@@ -255,19 +263,26 @@ class ServerManager:
         if len(query_out) > 0:
             for (tenant,) in query_out:
                 if tenant.is_active == 1:
-                    raise ValueError(
-                        f"The tenant ({db_entry.name}) is already present in the "
-                        f"database with status is_active=1 (tenant_uuid={tenant.uuid})."
-                        " New tenant names must be unique compared to other active "
-                        "tenants"
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"The tenant ({db_entry.name}) is already present in the "
+                            "database with status is_active=1 "
+                            f"(tenant_uuid={tenant.uuid})."
+                            " New tenant names must be unique compared to other active "
+                            "tenants"
+                        ),
                     )
                 elif tenant.limitations == db_entry.limitations:
-                    raise ValueError(
-                        f"The tenant ({db_entry.name}) is already present in the "
-                        "database with identical limitations thought with status "
-                        f"is_active=0 (tenant_uuid={tenant.uuid}). Change the status "
-                        "of this tenant to is_active=1, or change the name for the "
-                        "registration of the desired tenant"
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"The tenant ({db_entry.name}) is already present in the "
+                            "database with identical limitations thought with status "
+                            f"is_active=0 (tenant_uuid={tenant.uuid}). Change the "
+                            "status of this tenant to is_active=1, or change the name "
+                            "for the registration of the desired tenant"
+                        ),
                     )
 
         return
@@ -284,8 +299,9 @@ class ServerManager:
             query_out = session.execute(query_inp).all()
 
             if len(query_out) == 0:
-                raise ValueError(
-                    "No method with this name is currently active in the map"
+                logger.raise_value_error(
+                    logger=logger,
+                    msg="No method with this name is currently active in the map",
                 )
 
             capability = query_out[0][0]
@@ -295,7 +311,7 @@ class ServerManager:
             session.commit()
             session.refresh(capability)
 
-        print(f"The method {method_name} has been deactivated in the map")
+        logger.info(f"The method {method_name} has been deactivated in the map")
         return
 
     def alter_tenant_state(self, tenant_uuid, new_is_active_state: bool):
@@ -307,14 +323,19 @@ class ServerManager:
             query_out = session.execute(query_inp).all()
 
         if len(query_out) == 0:
-            raise ValueError("No tenant exists with the provided uuid")
+            logger.raise_value_error(
+                logger=logger, msg="No tenant exists with the provided uuid"
+            )
 
         tenant = query_out[0][0]
 
         if tenant.is_active == new_is_active_state:
-            raise ValueError(
-                f"The tenant with uuid {tenant_uuid} already has the state is_active "
-                f"{new_is_active_state}"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"The tenant with uuid {tenant_uuid} already has the state "
+                    f"is_active {new_is_active_state}"
+                ),
             )
 
         # Check that there is no tenant with the same name already active in the db
@@ -327,11 +348,14 @@ class ServerManager:
             with self._database_context() as session:
                 query_out_name_check = session.execute(query_inp_name_check).all()
                 if len(query_out_name_check) > 0:
-                    raise ValueError(
-                        f"A tenant with the name {tenant.name} is already with state "
-                        "is_active=1 in the database, it is therefore not possible to "
-                        "activate this tenant since this breaks the rule for a unique "
-                        "tenant name."
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"A tenant with the name {tenant.name} is already with "
+                            "state is_active=1 in the database, it is therefore not "
+                            "possible to activate this tenant since this breaks the "
+                            "rule for a unique tenant name."
+                        ),
                     )
 
         # Updating the is_active column
@@ -342,7 +366,7 @@ class ServerManager:
             session.commit()
             session.refresh(tenant)
 
-        print(
+        logger.info(
             f"The is_active state of tenant with uuid ({tenant_uuid}) was successfully "
             f"changed to ({new_is_active_state})"
         )
@@ -360,14 +384,17 @@ class ServerManager:
 
             if len(query_out) == 0:
                 if tenant_name is None:
-                    raise ValueError(
-                        f"No tenant exists with the provided name ({tenant_name})"
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=f"No tenant exists with the provided name ({tenant_name})",
                     )
                 else:
-                    raise ValueError("No tenants in the database")
+                    logger.raise_value_error(
+                        logger=logger, msg="No tenants in the database"
+                    )
 
         for (tenant,) in query_out:
-            print(
+            logger.info(
                 f"tenant: {tenant.name}, uuid: {tenant.uuid},"
                 f"is_active={tenant.is_active}, load_time={tenant.load_time}"
             )
@@ -446,8 +473,9 @@ def limitations_schema_translation(inputs_schema: Dict[str, Any]) -> Dict[str, A
         limitations_schema["allOf"] = []
         subschemas = inputs_schema["allOf"]
         if len(subschemas) > 1:
-            raise ValueError(
-                "Schema contains an instance of `allOf` with more than 1 element!"
+            logger.raise_value_error(
+                logger=logger,
+                msg="Schema contains an instance of `allOf` with more than 1 element!",
             )
         subschema_translation = limitations_schema_translation(subschemas[0])
         limitations_schema["allOf"].append(subschema_translation)
