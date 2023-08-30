@@ -9,7 +9,6 @@ fetching all pending requests, and obtaining the capabilities of the system.
 The module uses FastAPI's APIRouter to define the routes and handle the requests.
 """
 
-import logging
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,9 +22,12 @@ from FINALES2.server.schemas import (
     RequestInfo,
     Result,
     ResultInfo,
+    TenantInfo,
 )
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
+
+from . import logger
 
 operations_router = APIRouter(tags=["Data Operations"])
 
@@ -39,7 +41,7 @@ def get_request(
     try:
         return engine.get_request(object_id)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -52,7 +54,7 @@ def get_result(
     try:
         return engine.get_result(object_id)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -65,7 +67,7 @@ def post_request(
     try:
         return engine.create_request(request_data)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -78,7 +80,7 @@ def post_result(
     try:
         return engine.create_result(result_data)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -102,7 +104,7 @@ def post_result_with_no_prior_request(
         result_data.request_uuid = request_uuid
         return engine.create_result(result_data, unsolicited_result_tag=True)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -117,7 +119,20 @@ def get_pending_requests(
     try:
         return engine.get_pending_requests(quantity=quantity, method=method)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+
+@operations_router.get("/all_requests/")
+def get_all_requests(
+    token: User = Depends(user_manager.get_active_user),
+) -> List[RequestInfo]:
+    """API endpoint to get all requests."""
+    engine = Engine()
+    try:
+        return engine.get_all_requests()
+    except ValueError as error_message:
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -130,7 +145,7 @@ def get_results_requested(
     try:
         return engine.get_result_by_request(request_id)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -145,7 +160,7 @@ def get_results_requested_all(
     try:
         return engine.get_all_results(quantity=quantity, method=method)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -167,7 +182,7 @@ def get_capabilities(
     try:
         return server_manager.get_capabilities(currently_available=currently_available)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -189,7 +204,7 @@ def get_limitations(
     try:
         return server_manager.get_limitations(currently_available=currently_available)
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -215,7 +230,7 @@ def post_new_status_for_request(
             status_change_message=status_change_message,
         )
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -237,7 +252,7 @@ def post_new_status_for_result(
             status_change_message=status_change_message,
         )
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
 
 
@@ -259,5 +274,21 @@ def get_templates(
             currently_available=currently_available,
         )
     except ValueError as error_message:
-        logging.error(error_message)
+        logger.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+
+@operations_router.get("/tenants/")
+def get_tenants(
+    token: User = Depends(user_manager.get_active_user),
+) -> List[TenantInfo]:
+    """
+    API endpoint to return all tenants in MAP. Is necessary for creating the possibility
+    of a data dump with sufficient information
+    """
+    server_manager = ServerManager(database_context=get_db)
+    try:
+        return server_manager.get_tenants()
+    except ValueError as error_message:
+        logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))

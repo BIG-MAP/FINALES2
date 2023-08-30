@@ -6,6 +6,8 @@ from FINALES2.server.endpoints import operations_router
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
 
+from . import logger
+
 
 @click.group("server")
 def cli_server():
@@ -33,6 +35,7 @@ def cli_server():
 )
 def server_start(ip, port):
     """Start the finales server with given ip and host."""
+    logger.info("Starting FINALES server")
     app = FastAPI(
         title="FINALES2",
         description="FINALES2 accepting requests, managing queues and serving queries",
@@ -52,3 +55,4 @@ def server_start(ip, port):
         return token
 
     uvicorn.run(app=app, host=ip, port=port)
+    logger.info("Shutting FINALES server down")

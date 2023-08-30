@@ -10,7 +10,10 @@ from FINALES2.db import LinkQuantityResult as DBLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
+from FINALES2.db import Tenant as DbTenant
 from FINALES2.db.session import get_db
+
+from . import logger
 
 
 class Request(BaseModel):
@@ -36,8 +39,11 @@ class Request(BaseModel):
             query_out = session.execute(query_inp).all()
 
         if len(query_out) < 1:
-            raise RuntimeError(
-                f"Corrupted DB! No quantity was found for request {db_request.uuid}."
+            logger.raise_runtime_error(
+                logger=logger,
+                msg=(
+                    f"Corrupted DB! No quantity was found for request {db_request.uuid}"
+                ),
             )
 
         # Constructs methods list
@@ -52,11 +58,14 @@ class Request(BaseModel):
             if quantity_former_iteration == "":
                 quantity_former_iteration = quantity_iter
             elif quantity_former_iteration != quantity_iter:
-                raise RuntimeError(
-                    f"Corrupted DB! Several quantities ({quantity_former_iteration}, "
-                    f"{quantity_iter}) exists when retrieving the list of methods for"
-                    f"request. Only a single quantity with numerous possible methods"
-                    f"is expected"
+                logger.raise_runtime_error(
+                    logger=logger,
+                    msg=(
+                        f"Corrupted DB! Several quantities ({quantity_former_iteration}"
+                        f", {quantity_iter}) exists when retrieving the list of methods"
+                        " for request. Only a single quantity with numerous possible "
+                        "methods is expected"
+                    ),
                 )
             methods.append(methods_iter)
         quantity = quantity_iter
@@ -114,9 +123,12 @@ class Result(BaseModel):
             query_out = session.execute(query_inp).all()
 
         if len(query_out) != 1:
-            raise ValueError(
-                f"Db corrupted: Several output ({len(query_out)}) for retrieval of "
-                f"method and quantity related to a result, only 1 output expected"
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"Db corrupted: Several output ({len(query_out)}) for retrieval of "
+                    f"method and quantity related to a result, only 1 output expected"
+                ),
             )
 
         quantity, method = query_out[0]
@@ -173,3 +185,23 @@ class LimitationsInfo(BaseModel):
     quantity: str
     method: str
     limitations: List[Dict[str, Any]]
+
+
+class TenantInfo(BaseModel):
+    tenant_uuid: str
+    name: str
+    limitations: List[Dict[str, Any]]
+    contact_person: str
+    is_active: bool
+
+    @classmethod
+    def from_db_tenant(cls, db_tenant: DbTenant):
+        """Initializes the object from the data of an orm object"""
+        init_params = {
+            "tenant_uuid": str(db_tenant.uuid),
+            "name": db_tenant.name,
+            "limitations": json.loads(db_tenant.limitations),
+            "contact_person": db_tenant.contact_person,
+            "is_active": db_tenant.is_active,
+        }
+        return cls(**init_params)
