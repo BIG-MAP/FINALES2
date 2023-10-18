@@ -401,8 +401,10 @@ class Tenant(BaseModel):
         # delete the request from the queue
         self.queue.remove(request)
         requestUUID = request["uuid"]
-        print(f"\n\n\nQueue after removing request {requestUUID}:\n {self.queue}\n\n\n")
-        print(f"Removed request with UUID {requestUUID} from the queue.")
+        if request not in self.queue:
+            print(f"Removed request with UUID {requestUUID} from the queue.")
+        else:
+            print(f"Request with UUID {requestUUID} still in queue!")
 
     @_login
     def _run_method(self, request_info: dict[str, Any]):
