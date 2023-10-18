@@ -227,6 +227,7 @@ class Tenant(BaseModel):
         # listed in the queue are still pending and were not worked on by another
         # tenant
         self.queue.clear
+        print("Queue after clearing:\n", self.queue)
 
         # get the pending requests from the FINALES server
         pendingRequests = self._get_pending_requests()
@@ -401,6 +402,7 @@ class Tenant(BaseModel):
         # delete the request from the queue
         self.queue.remove(request)
         requestUUID = request["uuid"]
+        print(f"Queue after removing active request {requestUUID}: \n", self.queue)
         print(f"Removed request with UUID {requestUUID} from the queue.")
 
     @_login
@@ -431,6 +433,7 @@ class Tenant(BaseModel):
             # wait in between two requests to the server
             time.sleep(self.sleep_time_s)
             self._update_queue()
+            print("Queue after updating:", self.queue)
             if len(self.queue) > 0:
                 # get the first request in the queue to work on -> first in - first out
                 activeRequest = self.queue[0]
