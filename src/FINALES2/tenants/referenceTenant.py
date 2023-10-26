@@ -226,7 +226,7 @@ class Tenant(BaseModel):
         # empty the queue before recreating it to make sure, that all the requests
         # listed in the queue are still pending and were not worked on by another
         # tenant
-        self.queue.clear
+        self.queue.clear()
 
         # get the pending requests from the FINALES server
         pendingRequests = self._get_pending_requests()
@@ -401,7 +401,10 @@ class Tenant(BaseModel):
         # delete the request from the queue
         self.queue.remove(request)
         requestUUID = request["uuid"]
-        print(f"Removed request with UUID {requestUUID} from the queue.")
+        if request not in self.queue:
+            print(f"Removed request with UUID {requestUUID} from the queue.")
+        else:
+            print(f"Request with UUID {requestUUID} still in queue!")
 
     @_login
     def _run_method(self, request_info: dict[str, Any]):
