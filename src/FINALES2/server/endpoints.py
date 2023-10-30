@@ -12,6 +12,7 @@ The module uses FastAPI's APIRouter to define the routes and handle the requests
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 
 from FINALES2.engine.main import Engine, RequestStatus, ResultStatus, get_db
 from FINALES2.engine.server_manager import ServerManager
@@ -30,6 +31,19 @@ from FINALES2.user_management.classes_user_manager import User
 from . import logger
 
 operations_router = APIRouter(tags=["Data Operations"])
+
+
+@operations_router.get("/database_dump/")
+def get_db_for_dump(
+    token: User = Depends(user_manager.get_active_user),
+) -> FileResponse:
+    """
+    API endpoint to recieve entire database
+    """
+    file_path = "/root/data/FINALES2/src/FINALES2/db/sql_app.db"
+    return FileResponse(
+        path=file_path, filename=file_path, media_type="application/octet-stream"
+    )
 
 
 @operations_router.get("/requests/{object_id}")
