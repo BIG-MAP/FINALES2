@@ -601,7 +601,7 @@ class Engine:
                 logger=logger,
                 msg=(
                     "The key for accessing the endpoint has not been initiated "
-                    "correctly, contact the server team by"
+                    "correctly, contact the server team"
                 ),
             )
 
