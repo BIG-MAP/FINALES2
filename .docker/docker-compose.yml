@@ -12,6 +12,7 @@ services:
     environment:
       JUPYTER_TOKEN: "qwerty0123"
       SHELL: "/bin/bash"
+      KEY_DATABASE_DUMP_ENDPOINT_ACCESS: "DEFAULT_KEY_PLACEHOLDER" # Placeholder key must be changed to open the endpoint
 
 volumes:
   finales_data:

@@ -33,17 +33,40 @@ from . import logger
 operations_router = APIRouter(tags=["Data Operations"])
 
 
-@operations_router.get("/database_dump/")
+@operations_router.get("/database_dump/{access_key}")
 def get_db_for_dump(
+    access_key: str,
     token: User = Depends(user_manager.get_active_user),
 ) -> FileResponse:
     """
-    API endpoint to recieve entire database
+    API endpoint to recieve entire database as a file. Access is granted by the server
+    team to allow for archiving and backup. For access to the endpoint contact the
+    server team. For correct funtionality for file format call the endpoint
+    directly instead of using the download interface in the docs.
     """
-    file_path = "/root/data/FINALES2/src/FINALES2/db/sql_app.db"
-    return FileResponse(
-        path=file_path, filename=file_path, media_type="application/octet-stream"
+
+    # Authenticating key
+    engine = Engine()
+    try:
+        engine.database_dump_key_authentication(access_key)
+    except ValueError as error_message:
+        logger.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+    logger.info(
+        "KEY_DATABASE_ARCHIVE key authenticated, database dump endpoint accessed"
     )
+    file_path = "/root/data/FINALES2/src/FINALES2/db/sql_app.db"
+
+    # Returning file
+    try:
+        return FileResponse(
+            path=file_path, filename=file_path, media_type="application/octet-stream"
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=400, detail="Error occured during transfer of database."
+        )
 
 
 @operations_router.get("/requests/{object_id}")

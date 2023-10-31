@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from datetime import datetime
 from enum import Enum
@@ -578,3 +579,41 @@ class Engine:
         )
 
         return original_request, request_status_log_obj
+
+    def database_dump_key_authentication(self, access_key_user_provided):
+        """
+        Authenticating the key from the user with the environment variable key.
+        The key is not allowed to be the default from the repo, due to secruity aspect.
+        Function will return without error if key is authenticated.
+        """
+
+        ACCESS_KEY_ENVIRONMENT_VARIABLE = os.environ.get(
+            "KEY_DATABASE_DUMP_ENDPOINT_ACCESS"
+        )
+
+        # Check that access key exists and is not the default
+        # which does not allow access
+        if (
+            ACCESS_KEY_ENVIRONMENT_VARIABLE is None
+            or ACCESS_KEY_ENVIRONMENT_VARIABLE == "DEFAULT_KEY_PLACEHOLDER"
+        ):
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    "The key for accessing the endpoint has not been initiated "
+                    "correctly, contact the server team by"
+                ),
+            )
+
+        # Check that the provided and environment key match
+        if access_key_user_provided != ACCESS_KEY_ENVIRONMENT_VARIABLE:
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"The key {access_key_user_provided} is not a variable present in "
+                    "the server instance, access to the database-dump endpoint denied"
+                ),
+            )
+
+        # Access granted, database is dumped through the API
+        return
