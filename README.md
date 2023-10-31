@@ -29,6 +29,9 @@ Follow these steps to set up Docker for deplying the latest development version 
     1. Run `docker-compose up`\
     The first two commands are only ran the first time and are used to create the image and the volume (for data persistence) respectively. The third command uses the image to start a container: it will block the terminal when it is executed but it can be stopped by pressing the <CTRL + C> keys. This will also stop the container, but then it can be restarted by running the command again. Once again, you don't need to re-create the image and the volume each time you restart the container (unless you specifically want to update the software inside the container or delete the old data), you just need to re-run this last command `docker-compose up`.
 
+        1. If one wish to open the endpoint database-dump in the API for a user, allowing the user to download the entire database e.g. for an archiving tenant, first open the docker-compose.yml file. Here the environment variable KEY_DATABASE_DUMP_ENDPOINT_ACCESS defines the key the user needs to access the endpoint. The default variable is called "DEFAULT_KEY_PLACEHOLDER", which is the only string not allowed for secruity measure. Change the key and run 'docker-compose up' to initiate the newly defined environment variable as the key
+
+
     1. Visit http://127.0.0.1:8888/lab?token=qwerty0123 in your browser to check, if the container is running or use the Docker desktop app for this
 
 1. If you use VS code, download and install the following extensions:
