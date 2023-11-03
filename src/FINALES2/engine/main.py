@@ -580,6 +580,7 @@ class Engine:
 
         return original_request, request_status_log_obj
 
+
     def database_dump_key_authentication(self, access_key_user_provided):
         """
         Authenticating the key from the user with the environment variable key.
