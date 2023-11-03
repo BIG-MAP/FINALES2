@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
+from FINALES2.db.session import get_db_path
 from FINALES2.engine.main import Engine, RequestStatus, ResultStatus, get_db
 from FINALES2.engine.server_manager import ServerManager
 from FINALES2.server.schemas import (
@@ -303,8 +304,7 @@ def get_db_for_dump(
     """
     API endpoint to recieve entire database as a file. Access is granted by the server
     team to allow for archiving and backup. For access to the endpoint contact the
-    server team. For correct funtionality for file format call the endpoint
-    directly instead of using the download interface in the docs.
+    server team.
     """
 
     # Authenticating key
@@ -318,7 +318,7 @@ def get_db_for_dump(
     logger.info(
         "KEY_DATABASE_ARCHIVE key authenticated, database dump endpoint accessed"
     )
-    file_path = "/root/data/FINALES2/src/FINALES2/db/sql_app.db"
+    file_path = get_db_path()
 
     # Returning file
     try:
