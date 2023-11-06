@@ -5,8 +5,15 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-DIRPATH_THIS = pathlib.Path(__file__).parent.resolve()
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DIRPATH_THIS}/sql_app.db"
+
+def get_db_path():
+    """Allowing easy access for the file path of the db file."""
+    DIRPATH_THIS = pathlib.Path(__file__).parent.resolve()
+    return f"{DIRPATH_THIS}/sql_app.db"
+
+
+db_path = get_db_path()
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_path}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, echo=True, connect_args={"check_same_thread": False}

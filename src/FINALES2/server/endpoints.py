@@ -12,7 +12,9 @@ The module uses FastAPI's APIRouter to define the routes and handle the requests
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 
+from FINALES2.db.session import get_db_path
 from FINALES2.engine.main import Engine, RequestStatus, ResultStatus, get_db
 from FINALES2.engine.server_manager import ServerManager
 from FINALES2.server.schemas import (
@@ -292,3 +294,38 @@ def get_tenants(
     except ValueError as error_message:
         logger.error(error_message)
         raise HTTPException(status_code=400, detail=str(error_message))
+
+
+@operations_router.get("/database_dump/{access_key}")
+def get_db_for_dump(
+    access_key: str,
+    token: User = Depends(user_manager.get_active_user),
+) -> FileResponse:
+    """
+    API endpoint to recieve entire database as a file. Access is granted by the server
+    team to allow for archiving and backup. For access to the endpoint contact the
+    server team.
+    """
+
+    # Authenticating key
+    engine = Engine()
+    try:
+        engine.database_dump_key_authentication(access_key)
+    except ValueError as error_message:
+        logger.error(error_message)
+        raise HTTPException(status_code=400, detail=str(error_message))
+
+    logger.info(
+        "KEY_DATABASE_ARCHIVE key authenticated, database dump endpoint accessed"
+    )
+    file_path = get_db_path()
+
+    # Returning file
+    try:
+        return FileResponse(
+            path=file_path, filename=file_path, media_type="application/octet-stream"
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=400, detail="Error occured during transfer of database."
+        )
