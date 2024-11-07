@@ -351,9 +351,11 @@ class Engine:
         # followed by inactive ones in reverse chronological order (newest first).
         # In this way, FINALES will check new submissions agains either the
         # currently active specification or the one that was last registered.
-        query_inp = select(DbQuantity).order_by(
-            DbQuantity.is_active.desc(), DbQuantity.load_time.desc()
-            ).where(DbQuantity.quantity == quantity)
+        query_inp = (
+            select(DbQuantity)
+            .order_by(DbQuantity.is_active.desc(), DbQuantity.load_time.desc())
+            .where(DbQuantity.quantity == quantity)
+        )
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
@@ -367,7 +369,8 @@ class Engine:
                 logger.raise_value_error(
                     logger=logger,
                     msg=(
-                        f"Method for params with key {method} not found in list: "
+                        f"Method for params with key {method} "
+                        "not found in list: "
                         f"{methods}"
                     ),
                 )
@@ -376,7 +379,11 @@ class Engine:
             if method not in parameters.keys():
                 logger.raise_value_error(
                     logger=logger,
-                    msg=f"Method {method} not found in parameters: {parameters.keys()}",
+                    msg=(
+                        f"Method {method} "
+                        "not found in parameters: "
+                        f"{parameters.keys()}"
+                    ),
                 )
 
             match_found = False
