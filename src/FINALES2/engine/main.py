@@ -347,14 +347,11 @@ class Engine:
         self, quantity: str, methods: List[str], parameters: Dict[str, dict]
     ):
         """Validates"""
-        # Find all specifications of this quantity and fist list the active one
-        # followed by inactive ones in reverse chronological order (newest first).
-        # In this way, FINALES will check new submissions agains either the
-        # currently active specification or the one that was last registered.
-        query_inp = (
-            select(DbQuantity)
-            .order_by(DbQuantity.is_active.desc(), DbQuantity.load_time.desc())
-            .where(DbQuantity.quantity == quantity)
+        # Find the active specification for this quantity.
+        # In this way, FINALES will check new submissions agains the
+        # currently active specification.
+        query_inp = select(DbQuantity).where(
+            (DbQuantity.quantity == quantity) & (DbQuantity.is_active == 1)
         )
         with get_db() as session:
             query_out = session.execute(query_inp).all()
