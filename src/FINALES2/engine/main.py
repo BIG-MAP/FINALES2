@@ -358,7 +358,7 @@ class Engine:
 
         if len(query_out) == 0:
             logger.raise_value_error(
-                logger=logger, msg=f"No records for this quantity: {quantity}"
+                logger=logger, msg=f"No active records for this quantity: {quantity}"
             )
 
         for method in parameters.keys():
