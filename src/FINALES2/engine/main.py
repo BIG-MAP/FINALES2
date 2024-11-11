@@ -347,13 +347,18 @@ class Engine:
         self, quantity: str, methods: List[str], parameters: Dict[str, dict]
     ):
         """Validates"""
-        query_inp = select(DbQuantity).where(DbQuantity.quantity == quantity)
+        # Find the active specification for this quantity.
+        # In this way, FINALES will check new submissions agains the
+        # currently active specification.
+        query_inp = select(DbQuantity).where(
+            (DbQuantity.quantity == quantity) & (DbQuantity.is_active == 1)
+        )
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
         if len(query_out) == 0:
             logger.raise_value_error(
-                logger=logger, msg=f"No records for this quantity: {quantity}"
+                logger=logger, msg=f"No active records for this quantity: {quantity}"
             )
 
         for method in parameters.keys():
@@ -361,7 +366,8 @@ class Engine:
                 logger.raise_value_error(
                     logger=logger,
                     msg=(
-                        f"Method for params with key {method} not found in list: "
+                        f"Method for params with key {method} "
+                        "not found in list: "
                         f"{methods}"
                     ),
                 )
@@ -370,7 +376,11 @@ class Engine:
             if method not in parameters.keys():
                 logger.raise_value_error(
                     logger=logger,
-                    msg=f"Method {method} not found in parameters: {parameters.keys()}",
+                    msg=(
+                        f"Method {method} "
+                        "not found in parameters: "
+                        f"{parameters.keys()}"
+                    ),
                 )
 
             match_found = False
