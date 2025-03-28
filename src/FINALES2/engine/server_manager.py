@@ -4,9 +4,10 @@ from typing import Any, Dict, List, Optional
 
 from jsonref import JsonRef
 from jsonschema import validate
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.orm import aliased
 
-from FINALES2.db import Quantity, Tenant
+from FINALES2.db import IsActiveLogQuantity, IsActiveLogTenant, Quantity, Tenant
 from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo, TenantInfo
 
 from . import logger
@@ -21,9 +22,10 @@ class ServerManager:
 
     def add_capability(self, capability_specs):
         """Adds new capability to the server."""
+        uuid_capability = str(uuid.uuid4())
 
         capability_data = {
-            "uuid": str(uuid.uuid4()),
+            "uuid": uuid_capability,
             "quantity": capability_specs["quantity"],
             "method": capability_specs["method"],
             "specifications": json.dumps(
@@ -32,17 +34,28 @@ class ServerManager:
             "result_output": json.dumps(
                 capability_specs["json_schema_result_output"],
             ),
-            "is_active": capability_specs["is_active"],
         }
+
+        # Make corresponding is_active log for the quantity
+        is_active_data = {
+            "uuid": str(uuid.uuid4()),
+            "uuid_quantity": uuid_capability,
+            "is_active": capability_specs["is_active"],
+            "is_active_change_message": "Initial registration of capability",
+        }
+
         new_capability = Quantity(**capability_data)
+        new_is_active_log = IsActiveLogQuantity(**is_active_data)
 
         # Check if entry already exists in database
         self._dublicate_capability_db_check(new_capability)
 
         with self._database_context() as session:
             session.add(new_capability)
+            session.add(new_is_active_log)
             session.commit()
             session.refresh(new_capability)
+            session.refresh(new_is_active_log)
 
     def add_tenant(self, tenant_specs):
         """Adds new tenant to the server."""
@@ -51,22 +64,34 @@ class ServerManager:
             self.validate_limitations(limitations)
 
         is_active = 1
+        uuid_tenant = str(uuid.uuid4())
         tenant_data = {
-            "uuid": str(uuid.uuid4()),
+            "uuid": uuid_tenant,
             "name": tenant_specs["name"],
             "limitations": json.dumps(tenant_limitations),
             "contact_person": tenant_specs["contact_person"],
-            "is_active": is_active,
         }
+
+        # Make corresponding is_active log for the quantity
+        is_active_data = {
+            "uuid": str(uuid.uuid4()),
+            "uuid_tenant": uuid_tenant,
+            "is_active": is_active,
+            "is_active_change_message": "Initial registration of capability",
+        }
+
         new_tenant = Tenant(**tenant_data)
+        new_is_active_log = IsActiveLogTenant(**is_active_data)
 
         # Check if entry already exists in database
         self._dublicate_tenant_db_check(new_tenant)
 
         with self._database_context() as session:
             session.add(new_tenant)
+            session.add(new_is_active_log)
             session.commit()
             session.refresh(new_tenant)
+            session.refresh(new_is_active_log)
 
     def get_capabilities(
         self,
@@ -82,8 +107,38 @@ class ServerManager:
             (if True).
         """
 
-        # Filter for the quantities tenants can register for
-        query_inp = select(Quantity).where(Quantity.is_active == 1)
+        # Make subquery of the latest is_active log entry for each quantity.uuid
+        sub_query = (
+            select(
+                IsActiveLogQuantity.quantity_uuid,
+                func.max(IsActiveLogQuantity.load_time),
+            )
+            .label("latest_load_time")
+            .group_by(IsActiveLogQuantity.quantity_uuid)
+            .subquery()
+        )
+
+        # Alias for Y to allow a clean join
+        IsActiveLogQuantity_latest = aliased(IsActiveLogQuantity)
+
+        query_inp = (
+            select(
+                Quantity,
+                IsActiveLogQuantity_latest.uuid,
+                IsActiveLogQuantity_latest.load_time,
+            )
+            .join(
+                IsActiveLogQuantity_latest,
+                Quantity.uuid == IsActiveLogQuantity.quantity_uuid,
+            )
+            .join(
+                sub_query,
+                (IsActiveLogQuantity_latest.load_time == sub_query.latest_load_time)
+                & (Quantity.uuid == sub_query.quantity_uuid),
+            )
+            .where(IsActiveLogQuantity_latest.is_active == 1)
+        )
+
         if quantity is not None:
             query_inp = query_inp.where(Quantity.quantity == quantity)
         if method is not None:
@@ -93,7 +148,32 @@ class ServerManager:
             query_out = session.execute(query_inp).all()
 
         # Retrieve all current active tenants
-        query_inp_tenant = select(Tenant).where(Tenant.is_active == 1)
+        # Subquery: Get the latest time per tenant_uuid
+        subquery = (
+            select(
+                IsActiveLogTenant.tenant_uuid,  # Grouping key
+                func.max(IsActiveLogTenant.load_time).label(
+                    "latest_time"
+                ),  # Get latest timestamp
+            )
+            .group_by(IsActiveLogTenant.tenant_uuid)
+            .subquery()
+        )
+
+        # Alias for table to join with the subquery
+        IsActiveLogTenant_latest = aliased(IsActiveLogTenant)
+
+        query_inp_tenant = (
+            select(Tenant)
+            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
+            .join(
+                subquery,
+                (IsActiveLogTenant_latest.load_time == sub_query.latest_load_time)
+                & (Tenant.uuid == sub_query.tenant_uuid),
+            )
+            .where(IsActiveLogTenant_latest.is_active == 1)
+        )
+
         with self._database_context() as session:
             query_out_tenant = session.execute(query_inp_tenant).all()
 
@@ -127,10 +207,33 @@ class ServerManager:
             tenants that are currently active (if True)
         """
 
-        query_inp = select(Tenant)
+        sub_query = (
+            select(
+                IsActiveLogTenant.tenant_uuid,  # Grouping key
+                func.max(IsActiveLogTenant.load_time).label(
+                    "latest_time"
+                ),  # Get latest timestamp
+            )
+            .group_by(IsActiveLogTenant.tenant_uuid)
+            .subquery()
+        )
+
+        # Alias for table to join with the subquery
+        IsActiveLogTenant_latest = aliased(IsActiveLogTenant)
+
+        query_inp = (
+            select(Tenant)
+            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
+            .join(
+                sub_query,
+                (IsActiveLogTenant_latest.load_time == sub_query.latest_load_time)
+                & (Tenant.uuid == sub_query.tenant_uuid),
+            )
+        )
+
         # Filters for all currently available tenants
         if currently_available:
-            query_inp = query_inp.where(Tenant.is_active == 1)
+            query_inp = query_inp.where(IsActiveLogTenant_latest.is_active == 1)
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
@@ -225,13 +328,33 @@ class ServerManager:
         Method for checking if the method being added to the capabilities is already
         present in the database with status active
         """
+        sub_query = (
+            select(
+                IsActiveLogQuantity.quantity_uuid,
+                func.max(IsActiveLogQuantity.load_time),
+            )
+            .label("latest_load_time")
+            .group_by(IsActiveLogQuantity.quantity_uuid)
+            .subquery()
+        )
 
-        active_entry = True
+        # Alias for Y to allow a clean join
+        IsActiveLogQuantity_latest = aliased(IsActiveLogQuantity)
+
         query_inp = (
             select(Quantity)
+            .join(
+                IsActiveLogQuantity_latest,
+                Quantity.uuid == IsActiveLogQuantity.quantity_uuid,
+            )
+            .join(
+                sub_query,
+                (IsActiveLogQuantity_latest.load_time == sub_query.latest_load_time)
+                & (Quantity.uuid == sub_query.quantity_uuid),
+            )
             .where(Quantity.quantity == db_entry.quantity)
             .where(Quantity.method == db_entry.method)
-            .where(Quantity.is_active == active_entry)
+            .where(IsActiveLogQuantity_latest.is_active == 1)
         )
 
         with self._database_context() as session:
@@ -255,7 +378,13 @@ class ServerManager:
         limitations.
         """
 
-        query_inp = select(Tenant).where(Tenant.name == db_entry.name)
+        query_inp = (
+            select(Tenant, IsActiveLogTenant.is_active)
+            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
+            .where(Tenant.name == db_entry.name)
+            .order_by(IsActiveLogTenant.load_time.desc())
+            .first()
+        )
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
@@ -290,9 +419,13 @@ class ServerManager:
     def deactivate_capability(self, method_name):
         """Deactivate the is_active column for a capability."""
         query_inp = (
-            select(Quantity)
+            select(Quantity.uuid, IsActiveLogQuantity.is_active)
+            .join(
+                IsActiveLogQuantity, IsActiveLogQuantity.quantity_uuid == Quantity.uuid
+            )
             .where(Quantity.method == method_name)
-            .where(Quantity.is_active == 1)
+            .order_by(IsActiveLogTenant.load_time.desc())
+            .first()
         )
 
         with self._database_context() as session:
@@ -303,13 +436,29 @@ class ServerManager:
                     logger=logger,
                     msg="No method with this name is currently active in the map",
                 )
+            elif len(query_out) == 1 and query_out[0][-1] != 1:
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=(
+                        "No method with this name is currently active in the map. "
+                        "There is only an inactive capability, which cannot be reopened"
+                    ),
+                )
 
-            capability = query_out[0][0]
-            # Updating the is_active column
-            capability.is_active = 0
+            uuid_capability = query_out[0][0]
+            # Make corresponding is_active log for the quantity
+            is_active_data = {
+                "uuid": str(uuid.uuid4()),
+                "uuid_quantity": uuid_capability,
+                "is_active": 0,
+                "is_active_change_message": "Deactivation of capability",
+            }
 
+            new_is_active_log = IsActiveLogQuantity(**is_active_data)
+            # Add to session
+            session.add(new_is_active_log)
             session.commit()
-            session.refresh(capability)
+            session.refresh(new_is_active_log)
 
         logger.info(f"The method {method_name} has been deactivated in the map")
         return
@@ -317,7 +466,13 @@ class ServerManager:
     def alter_tenant_state(self, tenant_uuid, new_is_active_state: bool):
         """Adds new state to a tenant."""
 
-        query_inp = select(Tenant).where(Tenant.uuid == uuid.UUID(tenant_uuid))
+        query_inp = (
+            select(Tenant, IsActiveLogTenant.is_active)
+            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
+            .where(Tenant.uuid == uuid.UUID(tenant_uuid))
+            .order_by(IsActiveLogTenant.load_time.desc())
+            .first()
+        )
 
         with self._database_context() as session:
             query_out = session.execute(query_inp).all()
@@ -341,13 +496,19 @@ class ServerManager:
         # Check that there is no tenant with the same name already active in the db
         if new_is_active_state == 1:
             query_inp_name_check = (
-                select(Tenant)
+                select(Tenant, IsActiveLogTenant.is_active)
+                .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
                 .where(Tenant.name == tenant.name)
-                .where(Tenant.is_active == 1)
+                .order_by(IsActiveLogTenant.load_time.desc())
+                .first()
             )
+
             with self._database_context() as session:
                 query_out_name_check = session.execute(query_inp_name_check).all()
-                if len(query_out_name_check) > 0:
+                if (
+                    len(query_out_name_check) > 0
+                    and query_out_name_check[0][0].is_active == 1
+                ):
                     logger.raise_value_error(
                         logger=logger,
                         msg=(
@@ -358,13 +519,21 @@ class ServerManager:
                         ),
                     )
 
+        uuid_tenant = tenant_uuid
+        is_active_data = {
+            "uuid": str(uuid.uuid4()),
+            "uuid_tenant": uuid_tenant,
+            "is_active": new_is_active_state,
+            "is_active_change_message": f"Changed status to {new_is_active_state}",
+        }
+
+        new_is_active_log = IsActiveLogQuantity(**is_active_data)
+
         # Updating the is_active column
         with self._database_context() as session:
-            query_out = session.execute(query_inp).all()
-            tenant = query_out[0][0]
-            tenant.is_active = new_is_active_state
+            session.add(new_is_active_log)
             session.commit()
-            session.refresh(tenant)
+            session.refresh(new_is_active_log)
 
         logger.info(
             f"The is_active state of tenant with uuid ({tenant_uuid}) was successfully "
@@ -375,7 +544,31 @@ class ServerManager:
     def retrieve_tenant_uuid(self, tenant_name):
         """Retrive uuid from tenant with provided tenant_name. If tenant_name is None
         provide all tenant names with corresponding uuid"""
-        query_inp = select(Tenant)
+        sub_query = (
+            select(
+                IsActiveLogTenant.tenant_uuid,  # Grouping key
+                func.max(IsActiveLogTenant.load_time).label(
+                    "latest_time"
+                ),  # Get latest timestamp
+            )
+            .group_by(IsActiveLogTenant.tenant_uuid)
+            .subquery()
+        )
+
+        # Alias for table to join with the subquery
+        IsActiveLogTenant_latest = aliased(IsActiveLogTenant)
+
+        query_inp = (
+            select(Tenant)
+            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
+            .join(
+                sub_query,
+                (IsActiveLogTenant_latest.load_time == sub_query.latest_load_time)
+                & (Tenant.uuid == sub_query.tenant_uuid),
+            )
+            .where(IsActiveLogTenant_latest.is_active == 1)
+        )
+
         if tenant_name is not None:
             query_inp = query_inp.where(Tenant.name == tenant_name)
 

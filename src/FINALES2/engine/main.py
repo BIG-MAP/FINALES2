@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from jsonschema import validate
 from sqlalchemy import select
 
+from FINALES2.db import IsActiveLogQuantity as DbIsActiveLogQuantity
 from FINALES2.db import LinkQuantityRequest as DbLinkQuantityRequest
 from FINALES2.db import LinkQuantityResult as DbLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
@@ -118,21 +119,42 @@ class Engine:
             for method_name in request_data.methods:
                 # Find uuid for method in quantity table
                 query_inp_method = (
-                    select(DbQuantity.uuid)
+                    select(DbQuantity.uuid, DbIsActiveLogQuantity.is_active)
+                    .join(
+                        DbIsActiveLogQuantity,
+                        DbQuantity.uuid == DbIsActiveLogQuantity.quantity_uuid,
+                    )
                     .where(DbQuantity.quantity == request_data.quantity)
                     .where(DbQuantity.method == method_name)
-                    .where(DbQuantity.is_active == 1)
+                    .order_by(DbIsActiveLogQuantity.load_time.desc())
+                    .first()  # Only taking the newest entry in the order of load_time
                 )
                 query_out = session.execute(query_inp_method).all()
 
                 # Check that the query output sizes is as intended
-                if len(query_out) != 1:
+                if query_out is None:
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"The method {method_name} for quantity "
+                            f"{request_data.quantity} has no entries - returns None "
+                        ),
+                    )
+                elif len(query_out) != 1:
                     logger.raise_value_error(
                         logger=logger,
                         msg=(
                             f"The method {method_name} for quantity "
                             f"{request_data.quantity} has several entries "
                             f"({len(query_out)}) in the quantity table which are active"
+                        ),
+                    )
+                elif query_out[0][-1] != 0:
+                    logger.raise_value_error(
+                        logger=logger,
+                        msg=(
+                            f"The most revent method {method_name} for quantity "
+                            f"{request_data.quantity} is not active!"
                         ),
                     )
 
@@ -235,7 +257,6 @@ class Engine:
                 select(DbQuantity.uuid)
                 .where(DbQuantity.quantity == received_data.quantity)
                 .where(DbQuantity.method == method_name)
-                .where(DbQuantity.is_active == 1)
             )
 
             query_out_method = session.execute(query_inp_method).all()
@@ -348,17 +369,35 @@ class Engine:
     ):
         """Validates"""
         # Find the active specification for this quantity.
-        # In this way, FINALES will check new submissions agains the
+        # In this way, FINALES will check new submissions against the
         # currently active specification.
-        query_inp = select(DbQuantity).where(
-            (DbQuantity.quantity == quantity) & (DbQuantity.is_active == 1)
+        query_inp = (
+            select(DbQuantity, DbIsActiveLogQuantity.is_active)
+            .join(
+                DbIsActiveLogQuantity,
+                DbQuantity.uuid == DbIsActiveLogQuantity.quantity_uuid,
+            )
+            .where(DbQuantity.uuid == DbIsActiveLogQuantity.quantity_uuid)
+            .where(DbQuantity.quantity == quantity)
+            .order_by(DbIsActiveLogQuantity.load_time.desc())  # descending load_time
+            .first()
         )
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
-        if len(query_out) == 0:
+        if query_out is None:
             logger.raise_value_error(
                 logger=logger, msg=f"No active records for this quantity: {quantity}"
+            )
+        elif len(query_out) == 0:
+            logger.raise_value_error(
+                logger=logger, msg=f"No active records for this quantity: {quantity}"
+            )
+        elif query_out[0][-1] == 0:
+            logger.raise_value_error(
+                logger=logger,
+                msg=f"""No active records for this quantity: {quantity}. Only
+                is_active=0 present""",
             )
 
         for method in parameters.keys():
