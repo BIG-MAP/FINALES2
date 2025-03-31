@@ -202,15 +202,12 @@ class TenantInfo(BaseModel):
         # Retrieving methods and quantity
         query_inp = (
             select(DbIsActiveLogTenant.is_active)
-            .join(DbTenant)
-            .join(DbIsActiveLogTenant)
             .where(db_tenant.uuid == DbIsActiveLogTenant.tenant_uuid)
             .order_by(DbIsActiveLogTenant.load_time.desc())  # Descending load_time
-            .first()
         )
 
         with get_db() as session:
-            query_out = session.execute(query_inp).all()
+            query_out = session.execute(query_inp).first()
 
         if query_out is None:
             logger.raise_runtime_error(

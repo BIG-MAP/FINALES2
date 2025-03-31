@@ -75,7 +75,7 @@ class ServerManager:
         # Make corresponding is_active log for the quantity
         is_active_data = {
             "uuid": str(uuid.uuid4()),
-            "uuid_tenant": uuid_tenant,
+            "tenant_uuid": uuid_tenant,
             "is_active": is_active,
             "is_active_change_message": "Initial registration of capability",
         }
@@ -213,7 +213,7 @@ class ServerManager:
             select(
                 IsActiveLogTenant.tenant_uuid,  # Grouping key
                 func.max(IsActiveLogTenant.load_time).label(
-                    "latest_time"
+                    "latest_load_time"
                 ),  # Get latest timestamp
             )
             .group_by(IsActiveLogTenant.tenant_uuid)
@@ -225,7 +225,10 @@ class ServerManager:
 
         query_inp = (
             select(Tenant)
-            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
+            .join(
+                IsActiveLogTenant_latest,
+                IsActiveLogTenant_latest.tenant_uuid == Tenant.uuid,
+            )
             .join(
                 sub_query,
                 (IsActiveLogTenant_latest.load_time == sub_query.c.latest_load_time)
@@ -384,13 +387,14 @@ class ServerManager:
             .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
             .where(Tenant.name == db_entry.name)
             .order_by(IsActiveLogTenant.load_time.desc())
-            .first()
         )
 
         with self._database_context() as session:
-            query_out = session.execute(query_inp).all()
+            query_out = session.execute(query_inp).first()
 
-        if len(query_out) > 0:
+        if query_out is None:
+            logger.info(msg="No active tenant of the same name")
+        elif len(query_out) > 0:
             for (tenant,) in query_out:
                 if tenant.is_active == 1:
                     logger.raise_value_error(
@@ -471,20 +475,20 @@ class ServerManager:
             .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
             .where(Tenant.uuid == uuid.UUID(tenant_uuid))
             .order_by(IsActiveLogTenant.load_time.desc())
-            .first()
         )
 
         with self._database_context() as session:
-            query_out = session.execute(query_inp).all()
+            query_out = session.execute(query_inp).first()
 
         if len(query_out) == 0:
             logger.raise_value_error(
                 logger=logger, msg="No tenant exists with the provided uuid"
             )
 
-        tenant = query_out[0][0]
+        tenant = query_out[0]
+        is_active = query_out[1]
 
-        if tenant.is_active == new_is_active_state:
+        if is_active == new_is_active_state:
             logger.raise_value_error(
                 logger=logger,
                 msg=(
@@ -500,11 +504,10 @@ class ServerManager:
                 .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
                 .where(Tenant.name == tenant.name)
                 .order_by(IsActiveLogTenant.load_time.desc())
-                .first()
             )
 
             with self._database_context() as session:
-                query_out_name_check = session.execute(query_inp_name_check).all()
+                query_out_name_check = session.execute(query_inp_name_check).first()
                 if (
                     len(query_out_name_check) > 0
                     and query_out_name_check[0][0].is_active == 1
@@ -522,12 +525,12 @@ class ServerManager:
         uuid_tenant = tenant_uuid
         is_active_data = {
             "uuid": str(uuid.uuid4()),
-            "uuid_tenant": uuid_tenant,
+            "tenant_uuid": uuid_tenant,
             "is_active": new_is_active_state,
             "is_active_change_message": f"Changed status to {new_is_active_state}",
         }
 
-        new_is_active_log = IsActiveLogQuantity(**is_active_data)
+        new_is_active_log = IsActiveLogTenant(**is_active_data)
 
         # Updating the is_active column
         with self._database_context() as session:
