@@ -39,7 +39,7 @@ class ServerManager:
         # Make corresponding is_active log for the quantity
         is_active_data = {
             "uuid": str(uuid.uuid4()),
-            "uuid_quantity": uuid_capability,
+            "quantity_uuid": uuid_capability,
             "is_active": capability_specs["is_active"],
             "is_active_change_message": "Initial registration of capability",
         }
@@ -111,9 +111,8 @@ class ServerManager:
         sub_query = (
             select(
                 IsActiveLogQuantity.quantity_uuid,
-                func.max(IsActiveLogQuantity.load_time),
+                func.max(IsActiveLogQuantity.load_time).label("latest_load_time"),
             )
-            .label("latest_load_time")
             .group_by(IsActiveLogQuantity.quantity_uuid)
             .subquery()
         )
@@ -124,17 +123,17 @@ class ServerManager:
         query_inp = (
             select(
                 Quantity,
-                IsActiveLogQuantity_latest.uuid,
-                IsActiveLogQuantity_latest.load_time,
+                # IsActiveLogQuantity_latest.uuid,
+                # IsActiveLogQuantity_latest.load_time,
             )
             .join(
                 IsActiveLogQuantity_latest,
-                Quantity.uuid == IsActiveLogQuantity.quantity_uuid,
+                Quantity.uuid == IsActiveLogQuantity_latest.quantity_uuid,
             )
             .join(
                 sub_query,
-                (IsActiveLogQuantity_latest.load_time == sub_query.latest_load_time)
-                & (Quantity.uuid == sub_query.quantity_uuid),
+                (IsActiveLogQuantity_latest.load_time == sub_query.c.latest_load_time)
+                & (Quantity.uuid == sub_query.c.quantity_uuid),
             )
             .where(IsActiveLogQuantity_latest.is_active == 1)
         )
@@ -149,11 +148,11 @@ class ServerManager:
 
         # Retrieve all current active tenants
         # Subquery: Get the latest time per tenant_uuid
-        subquery = (
+        sub_query = (
             select(
                 IsActiveLogTenant.tenant_uuid,  # Grouping key
                 func.max(IsActiveLogTenant.load_time).label(
-                    "latest_time"
+                    "latest_load_time"
                 ),  # Get latest timestamp
             )
             .group_by(IsActiveLogTenant.tenant_uuid)
@@ -165,11 +164,14 @@ class ServerManager:
 
         query_inp_tenant = (
             select(Tenant)
-            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
             .join(
-                subquery,
-                (IsActiveLogTenant_latest.load_time == sub_query.latest_load_time)
-                & (Tenant.uuid == sub_query.tenant_uuid),
+                IsActiveLogTenant_latest,
+                IsActiveLogTenant_latest.tenant_uuid == Tenant.uuid,
+            )
+            .join(
+                sub_query,
+                (IsActiveLogTenant_latest.load_time == sub_query.c.latest_load_time)
+                & (Tenant.uuid == sub_query.c.tenant_uuid),
             )
             .where(IsActiveLogTenant_latest.is_active == 1)
         )
@@ -226,8 +228,8 @@ class ServerManager:
             .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
             .join(
                 sub_query,
-                (IsActiveLogTenant_latest.load_time == sub_query.latest_load_time)
-                & (Tenant.uuid == sub_query.tenant_uuid),
+                (IsActiveLogTenant_latest.load_time == sub_query.c.latest_load_time)
+                & (Tenant.uuid == sub_query.c.tenant_uuid),
             )
         )
 
@@ -331,9 +333,8 @@ class ServerManager:
         sub_query = (
             select(
                 IsActiveLogQuantity.quantity_uuid,
-                func.max(IsActiveLogQuantity.load_time),
+                func.max(IsActiveLogQuantity.load_time).label("latest_load_time"),
             )
-            .label("latest_load_time")
             .group_by(IsActiveLogQuantity.quantity_uuid)
             .subquery()
         )
@@ -345,12 +346,12 @@ class ServerManager:
             select(Quantity)
             .join(
                 IsActiveLogQuantity_latest,
-                Quantity.uuid == IsActiveLogQuantity.quantity_uuid,
+                Quantity.uuid == IsActiveLogQuantity_latest.quantity_uuid,
             )
             .join(
                 sub_query,
-                (IsActiveLogQuantity_latest.load_time == sub_query.latest_load_time)
-                & (Quantity.uuid == sub_query.quantity_uuid),
+                (IsActiveLogQuantity_latest.load_time == sub_query.c.latest_load_time)
+                & (Quantity.uuid == sub_query.c.quantity_uuid),
             )
             .where(Quantity.quantity == db_entry.quantity)
             .where(Quantity.method == db_entry.method)
@@ -424,12 +425,11 @@ class ServerManager:
                 IsActiveLogQuantity, IsActiveLogQuantity.quantity_uuid == Quantity.uuid
             )
             .where(Quantity.method == method_name)
-            .order_by(IsActiveLogTenant.load_time.desc())
-            .first()
+            .order_by(IsActiveLogQuantity.load_time.desc())
         )
 
         with self._database_context() as session:
-            query_out = session.execute(query_inp).all()
+            query_out = session.execute(query_inp).first()
 
             if len(query_out) == 0:
                 logger.raise_value_error(
@@ -445,11 +445,11 @@ class ServerManager:
                     ),
                 )
 
-            uuid_capability = query_out[0][0]
+            uuid_capability = str(query_out[0])
             # Make corresponding is_active log for the quantity
             is_active_data = {
                 "uuid": str(uuid.uuid4()),
-                "uuid_quantity": uuid_capability,
+                "quantity_uuid": uuid_capability,
                 "is_active": 0,
                 "is_active_change_message": "Deactivation of capability",
             }
@@ -563,8 +563,8 @@ class ServerManager:
             .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
             .join(
                 sub_query,
-                (IsActiveLogTenant_latest.load_time == sub_query.latest_load_time)
-                & (Tenant.uuid == sub_query.tenant_uuid),
+                (IsActiveLogTenant_latest.load_time == sub_query.c.latest_load_time)
+                & (Tenant.uuid == sub_query.c.tenant_uuid),
             )
             .where(IsActiveLogTenant_latest.is_active == 1)
         )
