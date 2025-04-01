@@ -11,6 +11,8 @@ from FINALES2.db import LinkQuantityResult as DbLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
+from FINALES2.db import StatusLogRequest as DbStatusLogRequest
+from FINALES2.db import StatusLogResult as DbStatusLogResult
 from FINALES2.db import Tenant as DbTenant
 from FINALES2.db.session import get_db
 
@@ -89,11 +91,23 @@ class RequestInfo(BaseModel):
     @classmethod
     def from_db_request(cls, db_request: DbRequest):
         """Initializes the object from the data of an orm object"""
+
+        # Retrieve current status for a request
+        query_inp = (
+            select(DbStatusLogRequest)
+            .where(DbStatusLogRequest.request_uuid == db_request.uuid)
+            .order_by(DbStatusLogRequest.load_time.desc())
+        )
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).first()
+
+        reqeust_status = query_out[0].status
         request_internals = Request.from_db_request(db_request)
         init_params = {
             "uuid": str(db_request.uuid),
             "ctime": db_request.requesting_recieved_timestamp,
-            "status": db_request.status,
+            "status": reqeust_status,
             "request": request_internals,
         }
 
@@ -152,12 +166,24 @@ class ResultInfo(BaseModel):
 
     @classmethod
     def from_db_result(cls, db_result: DbResult):
+        # Retrieve current status for a result
+        query_inp = (
+            select(DbStatusLogResult)
+            .where(DbStatusLogResult.result_uuid == db_result.uuid)
+            .order_by(DbStatusLogResult.load_time.desc())
+        )
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).first()
+
+        result_status = query_out[0].status
+
         """Initializes the object from the data of an orm object"""
         result_internals = Result.from_db_result(db_result)
         init_params = {
             "uuid": str(db_result.uuid),
             "ctime": db_result.load_time,
-            "status": db_result.status,
+            "status": result_status,
             "result": result_internals,
         }
 

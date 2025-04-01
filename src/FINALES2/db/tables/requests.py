@@ -15,7 +15,6 @@ class Request(Base):
         requesting_recieved_timestamp (Boolean): Timestamp for when the request was
                                                  recieved
         bugdet (String):        Budget associated with the request...
-        status (String):        String representing the current status of the entry
         load_time (Datetime):   Timestamp for when the row is added
     """
 
@@ -32,7 +31,6 @@ class Request(Base):
     )
     requesting_recieved_timestamp = Column(DateTime, nullable=False)
     budget = Column(String, nullable=True)
-    status = Column(String, nullable=False)
     load_time = Column(
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )

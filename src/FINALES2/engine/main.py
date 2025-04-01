@@ -6,7 +6,8 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 from jsonschema import validate
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.orm import aliased
 
 from FINALES2.db import IsActiveLogQuantity as DbIsActiveLogQuantity
 from FINALES2.db import LinkQuantityRequest as DbLinkQuantityRequest
@@ -41,6 +42,7 @@ class Engine:
 
     def get_request(self, object_id: str) -> Optional[RequestInfo]:
         """Retrieve a request entry from the database by id."""
+
         query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(object_id))
         with get_db() as session:
             query_out = session.execute(query_inp).all()
@@ -89,7 +91,6 @@ class Engine:
                 "requesting_tenant_uuid": request_data.tenant_uuid,
                 "requesting_recieved_timestamp": ctime,
                 "budget": "not currently implemented in the API",
-                "status": RequestStatus.PENDING.value,
             }
         )
 
@@ -105,7 +106,6 @@ class Engine:
         # Tag reserved for a request that is triggered by posting data with no prior
         # request (unsolicited)
         if unsolicited_result_tag:
-            request_obj.status = RequestStatus.UNSOLICITED.value
             status_log_obj.status = RequestStatus.UNSOLICITED.value
 
         link_uuid = str(uuid.uuid4())
@@ -127,9 +127,8 @@ class Engine:
                     .where(DbQuantity.quantity == request_data.quantity)
                     .where(DbQuantity.method == method_name)
                     .order_by(DbIsActiveLogQuantity.load_time.desc())
-                    .first()  # Only taking the newest entry in the order of load_time
                 )
-                query_out = session.execute(query_inp_method).all()
+                query_out = session.execute(query_inp_method).first()
 
                 # Check that the query output sizes is as intended
                 if query_out is None:
@@ -140,30 +139,20 @@ class Engine:
                             f"{request_data.quantity} has no entries - returns None "
                         ),
                     )
-                elif len(query_out) != 1:
+                elif query_out[-1] != 1:
                     logger.raise_value_error(
                         logger=logger,
                         msg=(
-                            f"The method {method_name} for quantity "
-                            f"{request_data.quantity} has several entries "
-                            f"({len(query_out)}) in the quantity table which are active"
-                        ),
-                    )
-                elif query_out[0][-1] != 0:
-                    logger.raise_value_error(
-                        logger=logger,
-                        msg=(
-                            f"The most revent method {method_name} for quantity "
+                            f"The most recent method {method_name} for quantity "
                             f"{request_data.quantity} is not active!"
                         ),
                     )
 
-                uuid_method = query_out[0][0]
-
+                uuid_method = query_out[0]
                 link_quantity_request_obj = DbLinkQuantityRequest(
                     **{
                         "link_uuid": link_uuid,
-                        "method_uuid": uuid_method,
+                        "method_uuid": str(uuid_method),
                         "request_uuid": request_uuid,
                     }
                 )
@@ -236,7 +225,6 @@ class Engine:
                 "data": json.dumps(received_data.data),
                 "posting_tenant_uuid": received_data.tenant_uuid,
                 "cost": "Not implemented in the API yet",
-                "status": ResultStatus.ORIGINAL.value,
                 "posting_recieved_timestamp": ctime,
             }
         )
@@ -300,14 +288,12 @@ class Engine:
             # Retrieves the object to be for changing the request status to resolved
             # as well as logging of the change
             if not unsolicited_result_tag:
-                (
-                    original_request,
-                    request_status_log_obj,
-                ) = self._object_instances_for_request_status_change(
-                    original_request=original_request,
-                    request_id=request_uuid,
-                    status=RequestStatus.RESOLVED,
-                    status_change_message="Result posted for corresponding request",
+                request_status_log_obj = (
+                    self._object_instances_for_request_status_change(
+                        request_id=request_uuid,
+                        status=RequestStatus.RESOLVED,
+                        status_change_message="Result posted for corresponding request",
+                    )
                 )
                 session.add(request_status_log_obj)
 
@@ -328,11 +314,34 @@ class Engine:
         method: Optional[str] = None,
     ) -> List[RequestInfo]:
         """Return all pending requests."""
+
+        # Subquery: Get the latest time for each x
+        sub_query = (
+            select(
+                DbStatusLogRequest.request_uuid,
+                func.max(DbStatusLogRequest.load_time).label("latest_load_time"),
+            )
+            .group_by(DbStatusLogRequest.request_uuid)
+            .subquery()
+        )
+
+        # Alias the table to join
+        DbStatusLogRequest_latest = aliased(DbStatusLogRequest)
+
         query_inp = (
             select(DbRequest)
             .join(DbLinkQuantityRequest)
             .join(DbQuantity)
-            .where(DbRequest.status == RequestStatus.PENDING.value)
+            .join(
+                DbStatusLogRequest_latest,
+                DbStatusLogRequest_latest.request_uuid == DbRequest.uuid,
+            )
+            .join(
+                sub_query,
+                (DbStatusLogRequest_latest.request_uuid == sub_query.c.request_uuid)
+                & (DbStatusLogRequest_latest.load_time == sub_query.c.latest_load_time),
+            )
+            .where(DbStatusLogRequest_latest.status == RequestStatus.PENDING.value)
         )
 
         if quantity is not None:
@@ -372,15 +381,15 @@ class Engine:
         # In this way, FINALES will check new submissions against the
         # currently active specification.
         query_inp = (
-            select(DbQuantity, DbIsActiveLogQuantity.is_active)
+            select(DbQuantity)
             .join(
                 DbIsActiveLogQuantity,
                 DbQuantity.uuid == DbIsActiveLogQuantity.quantity_uuid,
             )
             .where(DbQuantity.uuid == DbIsActiveLogQuantity.quantity_uuid)
+            .where(DbIsActiveLogQuantity.is_active == 1)
             .where(DbQuantity.quantity == quantity)
-            .order_by(DbIsActiveLogQuantity.load_time.desc())  # descending load_time
-            .first()
+            .order_by(DbIsActiveLogQuantity.load_time.desc())
         )
         with get_db() as session:
             query_out = session.execute(query_inp).all()
@@ -392,12 +401,6 @@ class Engine:
         elif len(query_out) == 0:
             logger.raise_value_error(
                 logger=logger, msg=f"No active records for this quantity: {quantity}"
-            )
-        elif query_out[0][-1] == 0:
-            logger.raise_value_error(
-                logger=logger,
-                msg=f"""No active records for this quantity: {quantity}. Only
-                is_active=0 present""",
             )
 
         for method in parameters.keys():
@@ -424,6 +427,7 @@ class Engine:
 
             match_found = False
             specific_params = parameters[method]
+
             for (quantity_dbobj,) in query_out:
                 schema_specs = json.loads(quantity_dbobj.specifications)
                 if method == quantity_dbobj.method:
@@ -477,6 +481,46 @@ class Engine:
 
         return api_response
 
+    def _get_latest_status_request(self, request_id: str):
+        query_inp = (
+            select(
+                DbStatusLogRequest,
+            )
+            .where(DbStatusLogRequest.request_uuid == uuid.UUID(request_id))
+            .order_by(DbStatusLogRequest.load_time.desc())
+        )
+        with get_db() as session:
+            # Retrieve original request and update request status
+            query_out = session.execute(query_inp).first()
+
+        if query_out is None:
+            logger.raise_value_error(
+                logger=logger, msg=f"No request with id: {request_id}"
+            )
+        status = query_out[0].status
+
+        return status
+
+    def _get_latest_status_result(self, result_id: str):
+        query_inp = (
+            select(
+                DbStatusLogResult,
+            )
+            .where(DbStatusLogResult.result_uuid == uuid.UUID(result_id))
+            .order_by(DbStatusLogResult.load_time.desc())
+        )
+        with get_db() as session:
+            # Retrieve original request and update request status
+            query_out = session.execute(query_inp).first()
+
+        if query_out is None:
+            logger.raise_value_error(
+                logger=logger, msg=f"No result with id: {result_id}"
+            )
+        status = query_out[0].status
+
+        return status
+
     def change_status_request(
         self,
         request_id: str,
@@ -491,6 +535,7 @@ class Engine:
         error, since a new status_change_message can accompany the new log entry for a
         further/new description.
         """
+        current_status = self._get_latest_status_request(request_id=request_id)
 
         # return if status change it not allowed
         if status == RequestStatus.RESOLVED or status == RequestStatus.UNSOLICITED:
@@ -503,7 +548,9 @@ class Engine:
             )
 
         # Change status and log change
-        query_inp = select(DbRequest).where(DbRequest.uuid == uuid.UUID(request_id))
+        query_inp = select(DbStatusLogRequest).where(
+            DbStatusLogRequest.request_uuid == uuid.UUID(request_id)
+        )
         with get_db() as session:
             # Retrieve original request and update request status
             query_out = session.execute(query_inp).all()
@@ -512,10 +559,8 @@ class Engine:
                     logger=logger, msg=f"No request with id: {request_id}"
                 )
 
-            original_request = query_out[0][0]
-
             # Raise error if the status is 'resolved'
-            if original_request.status == RequestStatus.RESOLVED:
+            if current_status == RequestStatus.RESOLVED:
                 logger.raise_value_error(
                     logger=logger,
                     msg=(
@@ -523,7 +568,7 @@ class Engine:
                         "therefore has the status 'resolved' which cannot be changed."
                     ),
                 )
-            if original_request.status == RequestStatus.UNSOLICITED:
+            if current_status == RequestStatus.UNSOLICITED:
                 logger.raise_value_error(
                     logger=logger,
                     msg=(
@@ -533,20 +578,24 @@ class Engine:
                     ),
                 )
 
+            if current_status == status.value:
+                logger.raise_value_error(
+                    logger=logger,
+                    msg=(
+                        "This action is redundant since the current_status already is "
+                        f"{current_status}. Action cancelled"
+                    ),
+                )
+
             # Retrieves the object to be for changing the request status as well as
             # logging of the change
-            (
-                original_request,
-                request_status_log_obj,
-            ) = self._object_instances_for_request_status_change(
-                original_request, request_id, status, status_change_message
+            request_status_log_obj = self._object_instances_for_request_status_change(
+                request_id, status, status_change_message
             )
 
             session.add(request_status_log_obj)
             session.commit()
-
             session.refresh(request_status_log_obj)
-            session.refresh(original_request)
 
         api_response = f"Successful change of status to {status.value}"
         return api_response
@@ -565,6 +614,8 @@ class Engine:
         error, since a new status_change_message can accompany the new log entry for a
         further/new description.
         """
+        # Get latest status
+        current_status = self._get_latest_status_result(result_id=result_id)
 
         # Here it is enforced that it is not possible to change status to 'original'
         # since this is reserved for the status when the data is initially posted
@@ -576,9 +627,19 @@ class Engine:
                     "since this is reserved only for the initial posting"
                 ),
             )
+        if current_status == status.value:
+            logger.raise_value_error(
+                logger=logger,
+                msg=(
+                    f"Not possible to change status to '{current_status}' "
+                    "since this is already the current status"
+                ),
+            )
 
         # Change status and log change
-        query_inp = select(DbResult).where(DbResult.uuid == uuid.UUID(result_id))
+        query_inp = select(DbStatusLogResult).where(
+            DbStatusLogResult.result_uuid == uuid.UUID(result_id)
+        )
         with get_db() as session:
             # Retrieve original result and update result status
             query_out = session.execute(query_inp).all()
@@ -586,10 +647,8 @@ class Engine:
                 logger.raise_value_error(
                     logger=logger, msg=f"No result with id: {result_id}"
                 )
-            original_result = query_out[0][0]
 
             # Update value
-            original_result.status = status.value
             result_status_log_obj = DbStatusLogResult(
                 **{
                     "uuid": str(uuid.uuid4()),
@@ -602,21 +661,17 @@ class Engine:
             session.add(result_status_log_obj)
             session.commit()
             session.refresh(result_status_log_obj)
-            session.refresh(original_result)
 
         api_response = f"Successful change of status to {status.value}"
         return api_response
 
     def _object_instances_for_request_status_change(
-        self, original_request, request_id, status, status_change_message
+        self, request_id, status, status_change_message
     ):
         """
         Function for returning the request and log object to be stored when changing
         status of a request
         """
-
-        # Update value
-        original_request.status = status.value
 
         request_status_log_obj = DbStatusLogRequest(
             **{
@@ -627,7 +682,7 @@ class Engine:
             }
         )
 
-        return original_request, request_status_log_obj
+        return request_status_log_obj
 
     def database_dump_key_authentication(self, access_key_user_provided):
         """
