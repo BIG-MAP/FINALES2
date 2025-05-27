@@ -548,7 +548,7 @@ class ServerManager:
             select(
                 IsActiveLogTenant.tenant_uuid,  # Grouping key
                 func.max(IsActiveLogTenant.load_time).label(
-                    "latest_time"
+                    "latest_load_time"
                 ),  # Get latest timestamp
             )
             .group_by(IsActiveLogTenant.tenant_uuid)
