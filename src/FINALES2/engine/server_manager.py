@@ -366,8 +366,7 @@ class ServerManager:
                 logger=logger,
                 msg=(
                     f"The quantity ({db_entry.quantity}) method ({db_entry.method}) is "
-                    "already present in the database with same is_active state "
-                    f"({db_entry.is_active})"
+                    "already present in the database with same is_active state of 1"
                 ),
             )
 
@@ -388,13 +387,13 @@ class ServerManager:
         )
 
         with self._database_context() as session:
-            query_out = session.execute(query_inp).first()
+            query_out = session.execute(query_inp).all()
 
         if query_out is None:
             logger.info(msg="No active tenant of the same name")
         elif len(query_out) > 0:
-            for (tenant,) in query_out:
-                if tenant.is_active == 1:
+            for tenant, is_active in query_out:
+                if is_active == 1:
                     logger.raise_value_error(
                         logger=logger,
                         msg=(
