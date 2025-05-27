@@ -35,7 +35,7 @@ class IsActiveLogQuantity(Base):
     is_active = Column(Boolean(), default=True)
     is_active_change_message = Column(
         String,
-        nullable=False,
+        nullable=True,
     )
     load_time = Column(
         TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
