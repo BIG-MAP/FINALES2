@@ -394,11 +394,7 @@ class Engine:
         with get_db() as session:
             query_out = session.execute(query_inp).all()
 
-        if query_out is None:
-            logger.raise_value_error(
-                logger=logger, msg=f"No active records for this quantity: {quantity}"
-            )
-        elif len(query_out) == 0:
+        if (query_out is None) or (len(query_out) == 0):
             logger.raise_value_error(
                 logger=logger, msg=f"No active records for this quantity: {quantity}"
             )
