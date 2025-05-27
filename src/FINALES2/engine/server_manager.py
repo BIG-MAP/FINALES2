@@ -123,8 +123,6 @@ class ServerManager:
         query_inp = (
             select(
                 Quantity,
-                # IsActiveLogQuantity_latest.uuid,
-                # IsActiveLogQuantity_latest.load_time,
             )
             .join(
                 IsActiveLogQuantity_latest,
@@ -449,11 +447,11 @@ class ServerManager:
                     ),
                 )
 
-            uuid_capability = str(query_out[0])
+            uuid_quantity = str(query_out[0])
             # Make corresponding is_active log for the quantity
             is_active_data = {
                 "uuid": str(uuid.uuid4()),
-                "quantity_uuid": uuid_capability,
+                "quantity_uuid": uuid_quantity,
                 "is_active": 0,
                 "is_active_change_message": "Deactivation of capability",
             }
