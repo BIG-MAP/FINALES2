@@ -547,13 +547,15 @@ class ServerManager:
 
         query_inp = (
             select(Tenant, IsActiveLogTenant_latest.is_active)
-            .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
+            .join(
+                IsActiveLogTenant_latest,
+                IsActiveLogTenant_latest.tenant_uuid == Tenant.uuid,
+            )
             .join(
                 sub_query,
                 (IsActiveLogTenant_latest.load_time == sub_query.c.latest_load_time)
                 & (Tenant.uuid == sub_query.c.tenant_uuid),
             )
-            .where(IsActiveLogTenant_latest.is_active == 1)
         )
 
         if tenant_name is not None:
@@ -570,7 +572,7 @@ class ServerManager:
                     )
                 else:
                     logger.raise_value_error(
-                        logger=logger, msg="No tenants in the database"
+                        logger=logger, msg="No tenants in the database."
                     )
 
         for tenant, is_active in query_out:
