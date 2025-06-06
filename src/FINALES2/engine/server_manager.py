@@ -146,16 +146,7 @@ class ServerManager:
 
         # Retrieve all current active tenants
         # Subquery: Get the latest time per tenant_uuid
-        sub_query = (
-            select(
-                IsActiveLogTenant.tenant_uuid,  # Grouping key
-                func.max(IsActiveLogTenant.load_time).label(
-                    "latest_load_time"
-                ),  # Get latest timestamp
-            )
-            .group_by(IsActiveLogTenant.tenant_uuid)
-            .subquery()
-        )
+        sub_query = self._latest_active_log_tenant_sub_query()
 
         # Alias for table to join with the subquery
         IsActiveLogTenant_latest = aliased(IsActiveLogTenant)
@@ -195,6 +186,20 @@ class ServerManager:
 
         return api_response
 
+    def _latest_active_log_tenant_sub_query(self):
+        sub_query = (
+            select(
+                IsActiveLogTenant.tenant_uuid,  # Grouping key
+                func.max(IsActiveLogTenant.load_time).label(
+                    "latest_load_time"
+                ),  # Get latest timestamp
+            )
+            .group_by(IsActiveLogTenant.tenant_uuid)
+            .subquery()
+        )
+
+        return sub_query
+
     def get_limitations(
         self, currently_available: bool = True
     ) -> List[LimitationsInfo]:
@@ -207,16 +212,7 @@ class ServerManager:
             tenants that are currently active (if True)
         """
 
-        sub_query = (
-            select(
-                IsActiveLogTenant.tenant_uuid,  # Grouping key
-                func.max(IsActiveLogTenant.load_time).label(
-                    "latest_load_time"
-                ),  # Get latest timestamp
-            )
-            .group_by(IsActiveLogTenant.tenant_uuid)
-            .subquery()
-        )
+        sub_query = self._latest_active_log_tenant_sub_query()
 
         # Alias for table to join with the subquery
         IsActiveLogTenant_latest = aliased(IsActiveLogTenant)
@@ -497,7 +493,7 @@ class ServerManager:
         # Check that there is no tenant with the same name already active in the db
         if new_is_active_state == 1:
             query_inp_name_check = (
-                select(Tenant, IsActiveLogTenant.is_active)
+                select(Tenant, IsActiveLogTenant)
                 .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
                 .where(Tenant.name == tenant.name)
                 .order_by(IsActiveLogTenant.load_time.desc())
@@ -507,7 +503,7 @@ class ServerManager:
                 query_out_name_check = session.execute(query_inp_name_check).first()
                 if (
                     len(query_out_name_check) > 0
-                    and query_out_name_check[0][0].is_active == 1
+                    and query_out_name_check[1].is_active == 1
                 ):
                     logger.raise_value_error(
                         logger=logger,
@@ -544,22 +540,13 @@ class ServerManager:
     def retrieve_tenant_uuid(self, tenant_name):
         """Retrive uuid from tenant with provided tenant_name. If tenant_name is None
         provide all tenant names with corresponding uuid"""
-        sub_query = (
-            select(
-                IsActiveLogTenant.tenant_uuid,  # Grouping key
-                func.max(IsActiveLogTenant.load_time).label(
-                    "latest_load_time"
-                ),  # Get latest timestamp
-            )
-            .group_by(IsActiveLogTenant.tenant_uuid)
-            .subquery()
-        )
+        sub_query = self._latest_active_log_tenant_sub_query()
 
         # Alias for table to join with the subquery
         IsActiveLogTenant_latest = aliased(IsActiveLogTenant)
 
         query_inp = (
-            select(Tenant)
+            select(Tenant, IsActiveLogTenant_latest.is_active)
             .join(IsActiveLogTenant, IsActiveLogTenant.tenant_uuid == Tenant.uuid)
             .join(
                 sub_query,
@@ -586,10 +573,10 @@ class ServerManager:
                         logger=logger, msg="No tenants in the database"
                     )
 
-        for (tenant,) in query_out:
+        for tenant, is_active in query_out:
             logger.info(
-                f"tenant: {tenant.name}, uuid: {tenant.uuid},"
-                f"is_active={tenant.is_active}, load_time={tenant.load_time}"
+                f"tenant: {tenant.name}, uuid: {tenant.uuid}, "
+                f"is_active={is_active}, load_time={tenant.load_time}"
             )
 
         return
