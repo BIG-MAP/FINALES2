@@ -152,14 +152,20 @@ def cli_retrieve():
 
 @click.option(
     "--input-name",
-    required=False,
+    # required=False,
+    # default=None,
+    # show_default=True,
     prompt="Provide input the name of the tenant to retrieve the uuid for",
     type=str,
+    is_flag=False,
+    flag_value="None",
+    default="None",
     help=("Possible way to filter the name of a tenant to retrieve the uuid."),
 )
 @cli_retrieve.command("tenant-uuid")
 def db_retrieve_tenant_specification(input_name=None):
     "Retrieve uuid of all tenants, or just the one with an above specified name"
-
+    if input_name == "None":
+        input_name = None
     server_manager = ServerManager(database_context=get_db)
     server_manager.retrieve_tenant_uuid(input_name)
