@@ -6,7 +6,7 @@ from FINALES2.server.endpoints import operations_router
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
 
-from . import logger
+from ..logging import logger
 
 
 @click.group("server")

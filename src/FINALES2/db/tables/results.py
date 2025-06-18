@@ -15,7 +15,6 @@ class Result(Base):
         posting_tenant_uuid CHAR:   uuid of the tenant posting the result
         posting_recieved_timestamp: Timestamp of the when the posting was recieved
         cost VARCHAR:               Cost associated with the result...
-        status (String):            String representing the current status of the entry
         load_time(DateTime):        Timestamp for when the row is added
     """
 
@@ -40,7 +39,6 @@ class Result(Base):
     )
 
     cost = Column(String, nullable=True)
-    status = Column(String, nullable=False)
     posting_recieved_timestamp = Column(
         DateTime,
         nullable=False,

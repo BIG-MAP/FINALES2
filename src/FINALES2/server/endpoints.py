@@ -29,7 +29,7 @@ from FINALES2.server.schemas import (
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
 
-from . import logger
+from ..logging import logger
 
 operations_router = APIRouter(tags=["Data Operations"])
 

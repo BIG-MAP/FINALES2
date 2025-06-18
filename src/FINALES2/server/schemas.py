@@ -5,15 +5,18 @@ from typing import Any, Dict, List
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from FINALES2.db import LinkQuantityRequest as DBLinkQuantityRequest
-from FINALES2.db import LinkQuantityResult as DBLinkQuantityResult
+from FINALES2.db import IsActiveLogTenant as DbIsActiveLogTenant
+from FINALES2.db import LinkQuantityRequest as DbLinkQuantityRequest
+from FINALES2.db import LinkQuantityResult as DbLinkQuantityResult
 from FINALES2.db import Quantity as DbQuantity
 from FINALES2.db import Request as DbRequest
 from FINALES2.db import Result as DbResult
+from FINALES2.db import StatusLogRequest as DbStatusLogRequest
+from FINALES2.db import StatusLogResult as DbStatusLogResult
 from FINALES2.db import Tenant as DbTenant
 from FINALES2.db.session import get_db
 
-from . import logger
+from ..logging import logger
 
 
 class Request(BaseModel):
@@ -29,10 +32,10 @@ class Request(BaseModel):
         # Retrieving methods and quantity
         query_inp = (
             select(DbQuantity.quantity, DbQuantity.method)
-            .join(DBLinkQuantityRequest)
+            .join(DbLinkQuantityRequest)
             .join(DbRequest)
-            .where(db_request.uuid == DBLinkQuantityRequest.request_uuid)
-            .where(DbQuantity.uuid == DBLinkQuantityRequest.method_uuid)
+            .where(db_request.uuid == DbLinkQuantityRequest.request_uuid)
+            .where(DbQuantity.uuid == DbLinkQuantityRequest.method_uuid)
         )
 
         with get_db() as session:
@@ -88,11 +91,23 @@ class RequestInfo(BaseModel):
     @classmethod
     def from_db_request(cls, db_request: DbRequest):
         """Initializes the object from the data of an orm object"""
+
+        # Retrieve current status for a request
+        query_inp = (
+            select(DbStatusLogRequest)
+            .where(DbStatusLogRequest.request_uuid == db_request.uuid)
+            .order_by(DbStatusLogRequest.load_time.desc())
+        )
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).first()
+
+        reqeust_status = query_out[0].status
         request_internals = Request.from_db_request(db_request)
         init_params = {
             "uuid": str(db_request.uuid),
             "ctime": db_request.requesting_recieved_timestamp,
-            "status": db_request.status,
+            "status": reqeust_status,
             "request": request_internals,
         }
 
@@ -113,10 +128,10 @@ class Result(BaseModel):
         # Retrieving methods and quantity from the quantity table
         query_inp = (
             select(DbQuantity.quantity, DbQuantity.method)
-            .join(DBLinkQuantityResult)
+            .join(DbLinkQuantityResult)
             .join(DbResult)
-            .where(db_result.uuid == DBLinkQuantityResult.result_uuid)
-            .where(DbQuantity.uuid == DBLinkQuantityResult.method_uuid)
+            .where(db_result.uuid == DbLinkQuantityResult.result_uuid)
+            .where(DbQuantity.uuid == DbLinkQuantityResult.method_uuid)
         )
 
         with get_db() as session:
@@ -151,12 +166,24 @@ class ResultInfo(BaseModel):
 
     @classmethod
     def from_db_result(cls, db_result: DbResult):
+        # Retrieve current status for a result
+        query_inp = (
+            select(DbStatusLogResult)
+            .where(DbStatusLogResult.result_uuid == db_result.uuid)
+            .order_by(DbStatusLogResult.load_time.desc())
+        )
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).first()
+
+        result_status = query_out[0].status
+
         """Initializes the object from the data of an orm object"""
         result_internals = Result.from_db_result(db_result)
         init_params = {
             "uuid": str(db_result.uuid),
             "ctime": db_result.load_time,
-            "status": db_result.status,
+            "status": result_status,
             "result": result_internals,
         }
 
@@ -197,11 +224,37 @@ class TenantInfo(BaseModel):
     @classmethod
     def from_db_tenant(cls, db_tenant: DbTenant):
         """Initializes the object from the data of an orm object"""
+
+        # Retrieving methods and quantity
+        query_inp = (
+            select(DbIsActiveLogTenant.is_active)
+            .where(db_tenant.uuid == DbIsActiveLogTenant.tenant_uuid)
+            .order_by(DbIsActiveLogTenant.load_time.desc())  # Descending load_time
+        )
+
+        with get_db() as session:
+            query_out = session.execute(query_inp).first()
+
+        if query_out is None:
+            logger.raise_runtime_error(
+                logger=logger,
+                msg=(
+                    f"Corrupted DB! No tenant was found {db_tenant.uuid}"
+                    f"- check of None type"
+                ),
+            )
+        if len(query_out) < 1:
+            logger.raise_runtime_error(
+                logger=logger,
+                msg=(f"Corrupted DB! No tenant was found for {db_tenant.uuid}"),
+            )
+
+        is_active = query_out[0]
         init_params = {
             "tenant_uuid": str(db_tenant.uuid),
             "name": db_tenant.name,
             "limitations": json.loads(db_tenant.limitations),
             "contact_person": db_tenant.contact_person,
-            "is_active": db_tenant.is_active,
+            "is_active": is_active,
         }
         return cls(**init_params)
