@@ -16,7 +16,7 @@ from FINALES2.db import StatusLogResult as DbStatusLogResult
 from FINALES2.db import Tenant as DbTenant
 from FINALES2.db.session import get_db
 
-from . import logger
+from ..logging import logger
 
 
 class Request(BaseModel):

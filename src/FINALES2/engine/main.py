@@ -20,7 +20,7 @@ from FINALES2.db import StatusLogResult as DbStatusLogResult
 from FINALES2.db.session import get_db
 from FINALES2.server.schemas import Request, RequestInfo, Result, ResultInfo
 
-from . import logger
+from ..logging import logger
 
 
 class RequestStatus(Enum):

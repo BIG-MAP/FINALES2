@@ -10,7 +10,7 @@ from sqlalchemy.orm import aliased
 from FINALES2.db import IsActiveLogQuantity, IsActiveLogTenant, Quantity, Tenant
 from FINALES2.server.schemas import CapabilityInfo, LimitationsInfo, TenantInfo
 
-from . import logger
+from ..logging import logger
 
 
 class ServerManager:

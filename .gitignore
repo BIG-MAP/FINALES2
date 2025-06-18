@@ -136,7 +136,7 @@ dmypy.json
 *.db
 
 # Configuration
-/config/config.json
+src/FINALES2/config/config.json
 
 # User related files
 /user_management/files_user_management
