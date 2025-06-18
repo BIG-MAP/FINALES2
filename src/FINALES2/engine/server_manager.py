@@ -108,14 +108,7 @@ class ServerManager:
         """
 
         # Make subquery of the latest is_active log entry for each quantity.uuid
-        sub_query = (
-            select(
-                IsActiveLogQuantity.quantity_uuid,
-                func.max(IsActiveLogQuantity.load_time).label("latest_load_time"),
-            )
-            .group_by(IsActiveLogQuantity.quantity_uuid)
-            .subquery()
-        )
+        sub_query = self._latest_active_log_quantity_sub_query()
 
         # Alias for Y to allow a clean join
         IsActiveLogQuantity_latest = aliased(IsActiveLogQuantity)
@@ -195,6 +188,19 @@ class ServerManager:
                 ),  # Get latest timestamp
             )
             .group_by(IsActiveLogTenant.tenant_uuid)
+            .subquery()
+        )
+
+        return sub_query
+
+    def _latest_active_log_quantity_sub_query(self):
+        # Make subquery of the latest is_active log entry for each quantity.uuid
+        sub_query = (
+            select(
+                IsActiveLogQuantity.quantity_uuid,
+                func.max(IsActiveLogQuantity.load_time).label("latest_load_time"),
+            )
+            .group_by(IsActiveLogQuantity.quantity_uuid)
             .subquery()
         )
 
@@ -327,14 +333,9 @@ class ServerManager:
         Method for checking if the method being added to the capabilities is already
         present in the database with status active
         """
-        sub_query = (
-            select(
-                IsActiveLogQuantity.quantity_uuid,
-                func.max(IsActiveLogQuantity.load_time).label("latest_load_time"),
-            )
-            .group_by(IsActiveLogQuantity.quantity_uuid)
-            .subquery()
-        )
+
+        # Make subquery of the latest is_active log entry for each quantity.uuid
+        sub_query = self._latest_active_log_quantity_sub_query()
 
         # Alias for Y to allow a clean join
         IsActiveLogQuantity_latest = aliased(IsActiveLogQuantity)
