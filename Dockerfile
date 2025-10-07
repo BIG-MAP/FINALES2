@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3:4.12.0
+FROM docker.io/continuumio/miniconda3:4.12.0
 
 # --- Installing relevant tools
 RUN apt-get update && \
