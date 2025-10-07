@@ -16,7 +16,7 @@ Follow these steps to set up Docker for deplying the latest development version 
 
 1. Install Docker on your system (make sure to keep the WSL configuration unchanged)
 
-1. Download the docker file and the docker-compose.yml file from the FINALES2/Dockerfiles directory in the repository and save them to a directory of your choice
+1. Download the docker file and the docker-compose.yml file from the FINALES2/.docker directory in the repository and save them to a directory of your choice
 
 1. Run the Docker container for the FINALES environment using the following commands:
 
