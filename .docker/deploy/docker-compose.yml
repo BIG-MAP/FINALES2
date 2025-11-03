@@ -1,0 +1,36 @@
+# By ramirezfranciscof
+# reworked by MonikaVo
+
+# version: "4"
+services:
+  finales:
+    build:
+      context: ../..
+      dockerfile: ./.docker/deploy/Dockerfile
+    ports:
+      - 8888:1337
+    tty: true
+    volumes:
+      - finales_data:/root/data
+      - finales_internals:/root/internals
+      - finales_server_administration:/root/server_administration
+
+    env_file:
+      - deploy.env
+    # environment:
+    # #   KEY_DATABASE_DUMP_ENDPOINT_ACCESS: "DEFAULT_KEY_PLACEHOLDER" # Placeholder key must be changed to open the endpoint
+    #   FINALES_CONFIG_FILEPATH: "/root/internals/config.json"
+    # #   # DEFAULT_USERDB_PATH: "./src/FINALES2/user_management"
+    # #   # DEFAULT_LOG_PATH: "/root/internals/logging"
+    
+volumes:
+  finales_data:
+    # external: true
+  finales_internals:
+    # external: true
+  finales_server_administration:
+    # external: true
+
+  # extra_hosts:
+  #   FINALEShost:0.0.0.0
+

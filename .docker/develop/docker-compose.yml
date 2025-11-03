@@ -1,0 +1,29 @@
+# By ramirezfranciscof
+# reworked by MonikaVo
+
+version: "4"
+
+services:
+  finales:
+    build: .
+    ports:
+      - 8888:8888
+    volumes:
+      - type: volume
+        source: finales_data
+        target: /root/data
+        external: true
+      - type: volume
+        source: finales_code
+        target: /root/code
+        external: true
+      - type: volume
+        source: finales_server_administration
+        target: /root/server_administration
+        volume:
+         subpath: capability_specs
+         subpath: tenants_specs
+         subpath: backups
+        external: true
+    environment:
+      KEY_DATABASE_DUMP_ENDPOINT_ACCESS: "DEFAULT_KEY_PLACEHOLDER" # Placeholder key must be changed to open the endpoint
