@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI
 from FINALES2.server.endpoints import operations_router
 from FINALES2.user_management import user_manager
 from FINALES2.user_management.classes_user_manager import User
+from FINALES2 import __version__
 
 from ..logging import logger
 
@@ -39,7 +40,7 @@ def server_start(ip, port):
     app = FastAPI(
         title="FINALES2",
         description="FINALES2 accepting requests, managing queues and serving queries",
-        version="0.0.1",
+        version=__version__,
     )
     app.include_router(router=user_manager.user_router)
     app.include_router(router=operations_router)
